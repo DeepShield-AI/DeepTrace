@@ -1,0 +1,2 @@
+resources/docker/images/aarch64/memcached.tar filter=lfs diff=lfs merge=lfs -text
+tests/protocols/thrift/social.pcap filter=lfs diff=lfs merge=lfs -text
