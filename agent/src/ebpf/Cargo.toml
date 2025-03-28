@@ -1,0 +1,17 @@
+[package]
+name = "mercury-ebpf"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+
+[dependencies]
+mercury-common = { path = "../common" }
+aya-ebpf = { workspace = true }
+aya-log-ebpf = { workspace = true }
+
+[build-dependencies]
+which = { workspace = true }
+
+[[bin]] 
+name = "mercury"
+path = "src/main.rs"
