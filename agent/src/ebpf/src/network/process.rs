@@ -1,7 +1,7 @@
 #![allow(static_mut_refs)]
 
 use crate::{
-	maps::{EGRESS, INGRESS, MESSAGE},
+	maps::{EGRESS, INGRESS, DATA, EVENTS},
 	structs::Args,
 	utils::{quintuple_from_sock, tcp_sock_from_fd},
 };
@@ -49,44 +49,44 @@ pub fn try_exit(
 	}
 	let ret = ret as u32;
 	let args = unsafe { map.get(&id).ok_or(0_u32)? };
+	let data = unsafe {
+		let data_ptr = DATA.get_ptr_mut(0).ok_or(0_u32)?;
+		&mut *data_ptr
+	};
+	let sock = tcp_sock_from_fd(args.fd())?;
+	data.tgid = ctx.tgid();
+	data.pid = ctx.pid();
+	data.comm = ctx.command().map_err(|e| e as u32)?;
+	let quintuple = quintuple_from_sock(sock);
+	data.quintuple = quintuple;
+	let enter_seq = args.seq();
+	data.enter_seq = enter_seq;
+	let exit_seq = match direction {
+		SyscallType::Ingress => unsafe { &*sock }.copied_seq,
+		SyscallType::Egress => unsafe { &*sock }.write_seq,
+	};
+	data.exit_seq = exit_seq;
+	data.timestamp_ns = unsafe { bpf_ktime_get_ns() };
+	let copy_size = args.extract(data.buf.as_mut_ptr(), ret)?;
+	data.len = copy_size;
+	// collect metrics
+	data.srtt_us = unsafe { &*sock }.srtt_us;
+	data.mdev_max_us = unsafe { &*sock }.mdev_max_us;
+	data.rttvar_us = unsafe { &*sock }.rttvar_us;
+	data.mdev_us = unsafe { &*sock }.mdev_us;
+	data.bytes_sent = unsafe { &*sock }.bytes_sent;
+	data.bytes_received = unsafe { &*sock }.bytes_received;
+	data.bytes_acked = unsafe { &*sock }.bytes_acked;
+	data.delivered = unsafe { &*sock }.delivered;
+	data.snd_cwnd = unsafe { &*sock }.snd_cwnd;
+	data.rtt_us = unsafe { &*sock }.rcv_rtt_est.rtt_us;
 
-	if let Some(mut message) = unsafe { &MESSAGE }.reserve::<Data>(0) {
-		let data = unsafe { &mut *message.as_mut_ptr() };
-		data.tgid = ctx.tgid();
-		data.pid = ctx.pid();
-		unsafe { bpf_get_current_comm(data.comm.as_mut_ptr() as *mut _, TASK_COMM_LEN as u32) };
-		let sock = match tcp_sock_from_fd(args.fd()) {
-			Ok(sock) => sock,
-			Err(_) => {
-				message.discard(0);
-				map.remove(&id).map_err(|e| e as u32)?;
-				return Err(0)
-			},
-		};
-		let quintuple = quintuple_from_sock(sock);
-		data.quintuple = quintuple;
-		let enter_seq = args.seq();
-		data.enter_seq = enter_seq;
-		let exit_seq = match direction {
-			SyscallType::Ingress => unsafe { &*sock }.copied_seq,
-			SyscallType::Egress => unsafe { &*sock }.write_seq,
-		};
-		data.exit_seq = exit_seq;
-		data.timestamp_ns = unsafe { bpf_ktime_get_ns() };
-		data.syscall = syscall;
-		data.direction = direction;
-		let copy_size = match args.extract(data.buf.as_mut_ptr() as *mut _, ret) {
-			Ok(size) => size,
-			Err(_) => {
-				message.discard(0);
-				map.remove(&id).map_err(|e| e as u32)?;
-				return Err(0)
-			},
-		};
-		data.len = copy_size;
-		message.submit(0);
-	}
+	data.syscall = syscall;
+	data.direction = direction;
+
 	map.remove(&id).map_err(|e| e as u32)?;
+
+	unsafe { EVENTS.output(&ctx, &(*data), 0) };
 
 	Ok(0)
 }

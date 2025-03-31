@@ -139,6 +139,18 @@ pub struct Data {
 	pub exit_seq: u32,
 	pub timestamp_ns: u64,
 	pub len: u32,
+
+	pub srtt_us: u32,
+	pub mdev_max_us: u32,
+	pub rttvar_us: u32,
+	pub mdev_us: u32,
+	pub bytes_sent: u64,
+	pub bytes_received: u64,
+	pub bytes_acked: u64,
+	pub delivered: u32,
+	pub snd_cwnd: u32,
+	pub rtt_us: u32,
+
 	pub syscall: SyscallName,
 	pub direction: SyscallType,
 	pub quintuple: Quintuple,

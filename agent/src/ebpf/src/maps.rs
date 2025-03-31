@@ -5,7 +5,7 @@ use crate::{
 };
 use aya_ebpf::{
 	macros::map,
-	maps::{HashMap, LruHashMap, PerCpuArray, RingBuf},
+	maps::{HashMap, LruHashMap, PerCpuArray, RingBuf, PerfEventArray},
 };
 use mercury_common::Data;
 
@@ -31,6 +31,11 @@ pub(crate) static mut EGRESS: HashMap<u64, Args> = HashMap::with_max_entries((1 
 pub(crate) static mut PRE_PAYLOAD: LruHashMap<PreKey, PrePayload> =
 	LruHashMap::with_max_entries((1 << 10) * 10, 0);
 /// Struct for eBPF kernel data transform to user space.
-#[map(name = "message")]
-pub(crate) static mut MESSAGE: RingBuf =
-	RingBuf::with_byte_size(size_of::<Data>() as u32 * (1 << 12), 0);
+// #[map(name = "message")]
+// pub(crate) static mut MESSAGE: RingBuf =
+// 	RingBuf::with_byte_size(size_of::<Data>() as u32 * (1 << 12), 0);
+/// Struct for eBPF kernel data transform to user space.
+#[map(name = "data")]
+pub(crate) static mut DATA: PerCpuArray<Data> = PerCpuArray::with_max_entries(1, 0);
+#[map(name = "events")]
+pub(crate) static mut EVENTS: PerfEventArray<Data> = PerfEventArray::new(0);
