@@ -67,10 +67,10 @@ Enumeration types in DeepTrace define sets of named constants, which are used to
   - `enter_seq: u32`: Enter TCP sequence number
   - `exit_seq: u32`: Exit TCP sequence number
   - `timestamp_ns: u64`: Exit timestamp
-  - `len: u32`: 
-  - `syscall: SyscallName`:
-  - `direction: SyscallType`:
-  - `quintuple: Quintuple`:
-  - `comm: [u8; TASK_CMD_LEN]`:
-  - `buf: [u8; MAX_PAYLOAD_SIZE]`
-- **Description**: Used to wrap the TCP socket structure retrieved during system call handling, facilitating easy access and manipulation of socket-specific data.
+  - `len: u32`: The length value returned after the system call ends
+  - `syscall: SyscallName`
+  - `direction: SyscallType`
+  - `quintuple: Quintuple`
+  - `comm: [u8; TASK_CMD_LEN]`
+  - `buf: [u8; MAX_PAYLOAD_SIZE]`: Collected buffer information for system calls
+- **Description**: The system call information collected by the kernel state is passed to the user state for subsequent analysis
