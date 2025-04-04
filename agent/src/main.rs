@@ -1,29 +1,41 @@
+#![allow(unused_imports, dead_code)]
 use aya::{
 	Ebpf,
-	maps::{HashMap, RingBuf, AsyncPerfEventArray},
+	maps::{AsyncPerfEventArray, HashMap, RingBuf},
 	util::online_cpus,
 };
-use log::error;
-#[rustfmt::skip]
+use bytes::BytesMut;
+use clap::Parser;
 use log::{debug, warn};
 use mercury_common::Data;
-use process::handle_data;
+use process::{handle_data, handle_output};
+use std::ffi::CStr;
 use tokio::{
-	fs::{self, OpenOptions},
-	io::{AsyncWriteExt, BufWriter},
+	fs::OpenOptions,
+	io::{self, AsyncWrite, BufWriter},
 	signal,
 	sync::mpsc,
 };
-use bytes::BytesMut;
-
-const CHANNEL_CAPACITY: usize = 65536;
-const FLUSH_INTERVAL: usize = 1000;
 
 mod attach;
 mod process;
 mod utils;
+
+#[derive(Debug, Parser)]
+struct Opts {
+	#[clap(long, default_value = "tests/output/ebpf.txt")]
+	file: String,
+	#[clap(long, conflicts_with_all = ["file", "no_output"])]
+	stdout: bool,
+	#[clap(long, conflicts_with_all = ["file", "stdout"])]
+	no_output: bool,
+	#[arg(short, long, value_delimiter = ',', value_parser = clap::value_parser!(u32))]
+	pids: Vec<u32>,
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+	let opt = Opts::parse();
 	env_logger::init();
 	// Bump the memlock rlimit. This is needed for older kernels that don't use the
 	// new memcg based accounting, see https://lwn.net/Articles/837122/
@@ -43,8 +55,12 @@ async fn main() -> anyhow::Result<()> {
 		warn!("failed to initialize eBPF logger: {}", e);
 	}
 
-	let pids = utils::get_pids().await.expect("Get pids error.");
-
+	let pids = if opt.pids.is_empty() {
+		utils::get_pids().await.expect("Get pids error.")
+	} else {
+		opt.pids
+	};
+	println!("Pids: {:?}", pids);
 	let mut pids_map: HashMap<&mut aya::maps::MapData, u32, u32> =
 		HashMap::try_from(ebpf.map_mut("pids").expect("Failure to take pids map."))?;
 
@@ -54,12 +70,28 @@ async fn main() -> anyhow::Result<()> {
 
 	attach::attach_ingress(&mut ebpf)?;
 	attach::attach_egress(&mut ebpf)?;
-	fs::create_dir_all("experiments").await?;
+	
 	// Retrieve the perf event array from the eBPF program to read events from it.
 	let mut perf_array = AsyncPerfEventArray::try_from(ebpf.take_map("events").unwrap())?;
-	let (global_tx, mut global_rx) = mpsc::channel::<String>(CHANNEL_CAPACITY);
+	let (global_tx, global_rx) = mpsc::unbounded_channel();
 	// Calculate the size of the Data structure in bytes.
-	let len_of_data = 16384u32;
+	let len_of_data = size_of::<Data>();
+
+	let output: Box<dyn AsyncWrite + Unpin + Send> = match (opt.stdout, opt.no_output) {
+		(true, false) => Box::new(BufWriter::new(io::stdout())),
+		(_, true) => Box::new(io::sink()),
+		_ => {
+			let file = OpenOptions::new()
+				.create(true)
+				.write(true)
+				.truncate(true)
+				.open(&opt.file)
+				.await
+				.expect("Failed to open file");
+			Box::new(BufWriter::with_capacity(1024 * 1024, file))
+		},
+	};
+	
 	// Iterate over each online CPU core. For eBPF applications, processing is often done per CPU core.
 	for cpu_id in online_cpus().expect("error") {
 		// open a separate perf buffer for each cpu
@@ -86,42 +118,29 @@ async fn main() -> anyhow::Result<()> {
 				for i in 0..events.read {
 					let buf = &mut buffers[i];
 					let data = unsafe { *(buf.as_ptr() as *const Data) }; // Convert the buffer to a Data structure.
-					handle_data(data, &tx).await.expect("error");
+					// handle_data(data, &tx).await.expect("error");
+					let message = format!(
+						"{}, {}, {}, {}, {}, {}, {}, {}, {:?}\n",
+						data.tgid,
+						data.syscall,
+						CStr::from_bytes_until_nul(&data.comm)
+							.expect("command error")
+							.to_string_lossy()
+							.into_owned(),
+						data.quintuple,
+						data.timestamp_ns,
+						data.enter_seq,
+						data.exit_seq,
+						data.len,
+						data.buffer()
+					);
+					tx.send(message).expect("message send error");
 				}
 			}
 		});
 	}
 
-    tokio::spawn(async move {
-        let file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("experiments/output.txt")
-            .await
-            .expect("Failed to open file");
-        
-        let mut writer = BufWriter::with_capacity(1024 * 1024, file);
-        let mut count = 0;
-
-        while let Some(line) = global_rx.recv().await {
-            if let Err(e) = writer.write_all(line.as_bytes()).await {
-                error!("Failed to write to file: {}", e);
-                break;
-            }
-
-            count += 1;
-            if count % FLUSH_INTERVAL == 0 {
-                if let Err(e) = writer.flush().await {
-                    error!("Failed to flush buffer: {}", e);
-                    break;
-                }
-            }
-        }
-
-        if let Err(e) = writer.flush().await {
-            error!("Final flush failed: {}", e);
-        }
-    });
+	tokio::spawn(handle_output(output, global_rx));
 
 	let ctrl_c = signal::ctrl_c();
 	println!("Waiting for Ctrl-C...");

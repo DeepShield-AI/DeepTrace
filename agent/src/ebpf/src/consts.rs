@@ -5,7 +5,7 @@ pub const MAX_PID_NUMBER: u32 = 256;
 /// use 1024 and this is good choice.  Since the C library implementation of readv/writev is able to
 /// emulate the functionality even if the currently running kernel does not support this large value
 /// the readv/writev call will not fail because of this.
-pub const IOV_MAX: usize = 1 << 4;
+pub const IOV_MAX: usize = 1 << 3;
 
 pub const IOVLEN_MAX: usize = 1;
 

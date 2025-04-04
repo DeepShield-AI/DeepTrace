@@ -27,15 +27,15 @@ fn sys_enter_sendto(ctx: TracePointContext) -> u32 {
 	}
 	let timestamp = unsafe { bpf_ktime_get_ns() };
 	let fd = match unsafe { ctx.read_at::<c_ulong>(16) } {
-		Ok(fd) => fd as u32,
+		Ok(fd) => fd,
 		Err(_) => return 0,
 	};
-	let ubuf: *const u8 = match unsafe { ctx.read_at::<c_ulong>(24) } {
-		Ok(ubuf) => ubuf as *const u8,
+	let ubuf = match unsafe { ctx.read_at::<c_ulong>(24) } {
+		Ok(ubuf) => ubuf,
 		Err(_) => return 0,
 	};
 	let len = match unsafe { ctx.read_at::<c_ulong>(32) } {
-		Ok(len) => len as u32,
+		Ok(len) => len,
 		Err(_) => return 0,
 	};
 	let seq = match write_seq(fd) {

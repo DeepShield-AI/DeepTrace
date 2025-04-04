@@ -9,20 +9,27 @@ use aya_ebpf::helpers::{
 use core::cmp::min;
 use mercury_common::{Quintuple, MAX_PAYLOAD_SIZE, MAX_PRE_PAYLOAD_SIZE};
 
+mod mask {
+	use mercury_common::MAX_PAYLOAD_SIZE;
+	use crate::consts::MAX_IOVEC_BUF_SIZE;
+	pub const PAYLOAD_MASK: u32 = MAX_PAYLOAD_SIZE as u32 - 1;
+	pub const IOVEC_MASK: u32 = MAX_IOVEC_BUF_SIZE as u32 - 1;
+}
 pub(crate) struct NormalBuffer {
-	buf: *const u8,
-	// TODO: is u32 right here?
-	count: u32,
+	buf: u64,
+	// TODO: is u64 right here?
+	count: u64,
 }
 impl NormalBuffer {
-	pub fn new(buf: *const u8, count: u32) -> Self {
+	pub fn new(buf: u64, count: u64) -> Self {
 		Self { buf, count }
 	}
-	pub fn extract(&self, buf: *mut u8, ret: u32) -> Result<u32, u32> {
+	#[inline]
+	pub fn extract(&self, buf: *mut u8, ret: u64) -> Result<u32, u32> {
 		let copy_size = min(ret, MAX_PAYLOAD_SIZE);
-		let copy_size = min(copy_size, self.count);
+		let copy_size = min(copy_size, self.count) as u32;
 		match unsafe {
-			bpf_probe_read(buf as *mut _, copy_size & (MAX_PAYLOAD_SIZE - 1), self.buf as *const _)
+			bpf_probe_read(buf as *mut _, copy_size & mask::PAYLOAD_MASK, self.buf as *const u8 as *const _)
 		} {
 			0 => Ok(copy_size),
 			_ => Err(0),
@@ -32,43 +39,36 @@ impl NormalBuffer {
 
 /// scatter/gather array
 pub(crate) struct VectoredBuffer {
-	msg_iov: *mut iovec,
+	msg_iov: u64,
 	/// elements in msg_iov
 	msg_iovlen: u64,
 }
 impl VectoredBuffer {
-	pub fn new(msg_iov: *mut iovec, msg_iovlen: u64) -> Self {
+	pub fn new(msg_iov: u64, msg_iovlen: u64) -> Self {
 		Self { msg_iov, msg_iovlen }
 	}
-	pub fn extract(&self, buf: *mut u8, ret: u32) -> Result<u32, u32> {
-		let max = min(ret, MAX_PAYLOAD_SIZE);
+	#[inline]
+	pub fn extract(&self, buf: *mut u8, ret: u64) -> Result<u32, u32> {
+		let max = min(ret, MAX_PAYLOAD_SIZE) as u32;
 
 		let round = min(self.msg_iovlen as usize, IOV_MAX);
 		let mut offset: u32 = 0;
+		let msg_iov = self.msg_iov as *mut iovec;
 		for i in 0..round {
 			if offset >= max {
 				break;
 			}
 
 			let iovec = unsafe {
-				let iovec_ptr = self.msg_iov.add(i);
+				let iovec_ptr = msg_iov.add(i);
 				bpf_helper_read(iovec_ptr)
 			}
 			.map_err(|_| 0_u32)?;
 
-			let mut iov_len = iovec.iov_len as u32;
-			if 0 < iov_len && iov_len < MAX_IOVEC_BUF_SIZE {
-				iov_len &= MAX_IOVEC_BUF_SIZE - 1;
-			} else if iov_len >= MAX_IOVEC_BUF_SIZE {
-				iov_len = MAX_IOVEC_BUF_SIZE;
-			} else {
-				return Err(0);
-			}
-
-			let copy_size = min(iov_len, max.saturating_sub(offset));
+			let copy_size = min(iovec.iov_len as u32, max - offset) & mask::IOVEC_MASK;
 			if unsafe {
 				bpf_probe_read_user(
-					buf.add(offset as usize) as *mut _,
+					buf.add((offset & mask::PAYLOAD_MASK) as usize) as *mut _,
 					copy_size,
 					iovec.iov_base as *const _,
 				)
@@ -83,24 +83,26 @@ impl VectoredBuffer {
 }
 
 pub(crate) struct MsgBuffer {
-	mmsg: *mut mmsghdr,
-	vlen: u32,
+	mmsg: u64,
+	vlen: u64,
 }
 impl MsgBuffer {
-	pub fn new(mmsg: *mut mmsghdr, vlen: u32) -> Self {
+	pub fn new(mmsg: u64, vlen: u64) -> Self {
 		Self { mmsg, vlen }
 	}
-	pub fn extract(&self, buf: *mut u8, ret: u32) -> Result<u32, u32> {
-		let max = MAX_PAYLOAD_SIZE;
+	#[inline]
+	pub fn extract(&self, buf: *mut u8, ret: u64) -> Result<u32, u32> {
+		let max = MAX_PAYLOAD_SIZE as u32;
 		let round = min(IOV_MAX, self.vlen as usize);
-		let mut remain_msg = ret;
+		let mut remain_msg = ret as u32;
 		let mut offset: u32 = 0;
+		let mmsg = self.mmsg as *mut mmsghdr;
 		for i in 0..round {
 			if offset >= max || remain_msg == 0 {
 				break;
 			}
 			let mmsghdr = unsafe {
-				let mmsghdr_ptr = self.mmsg.add(i);
+				let mmsghdr_ptr = mmsg.add(i);
 				bpf_helper_read(mmsghdr_ptr)
 			}
 			.map_err(|_| 0_u32)?;
@@ -115,17 +117,8 @@ impl MsgBuffer {
 					break;
 				}
 				let iovec = unsafe { bpf_helper_read(msg_hdr.msg_iov.add(j)) }.map_err(|_| 0u32)?;
-				let mut iov_len = iovec.iov_len as u32;
-
-				if 0 < iov_len && iov_len < MAX_IOVEC_BUF_SIZE {
-					iov_len &= MAX_IOVEC_BUF_SIZE - 1;
-				} else if iov_len >= MAX_IOVEC_BUF_SIZE {
-					iov_len = MAX_IOVEC_BUF_SIZE;
-				} else {
-					return Err(0);
-				}
-
-				let copy_size = if offset + iov_len > max { max - offset } else { iov_len };
+				
+				let copy_size = min(iovec.iov_len as u32, max - offset) & mask::IOVEC_MASK;
 
 				let len = unsafe {
 					bpf_probe_read(
@@ -144,7 +137,6 @@ impl MsgBuffer {
 		Ok(offset)
 	}
 }
-
 pub(crate) enum Buffer {
 	Normal(NormalBuffer),
 	Vectored(VectoredBuffer),
@@ -152,48 +144,48 @@ pub(crate) enum Buffer {
 }
 
 impl Buffer {
-	pub fn normal(buffer: *const u8, count: u32) -> Self {
+	pub fn normal(buffer: u64, count: u64) -> Self {
 		Self::Normal(NormalBuffer::new(buffer, count))
 	}
-	pub fn vectored(msg_iov: *mut iovec, msg_iovlen: u64) -> Self {
+	pub fn vectored(msg_iov: u64, msg_iovlen: u64) -> Self {
 		Self::Vectored(VectoredBuffer::new(msg_iov, msg_iovlen))
 	}
-	pub fn msg(msg_buffer: *mut mmsghdr, vlen: u32) -> Self {
+	pub fn msg(msg_buffer: u64, vlen: u64) -> Self {
 		Self::Msg(MsgBuffer::new(msg_buffer, vlen))
 	}
 }
-
+#[repr(C)]
 pub(crate) struct Args {
-	// pub tgid: u32,
-	fd: u32,
-	seq: u32,
+	fd: u64,
 	timestamp: u64,
 	// quintuple: Quintuple,
 	buffer: Buffer,
+	seq: u32,
+	padding: u32,
 }
 impl Args {
-	pub fn new(fd: u32, seq: u32, timestamp: u64, buffer: Buffer) -> Self {
-		Self { fd, seq, buffer, timestamp }
+	pub fn new(fd: u64, seq: u32, timestamp: u64, buffer: Buffer) -> Self {
+		Self { fd, seq, buffer, timestamp, padding: 0 }
 	}
-	pub fn normal(fd: u32, seq: u32, buffer: *const u8, count: u32, timestamp: u64) -> Self {
+	pub fn normal(fd: u64, seq: u32, buffer: u64, count: u64, timestamp: u64) -> Self {
 		let buffer = Buffer::normal(buffer, count);
 		Self::new(fd, seq, timestamp, buffer)
 	}
 	pub fn vectored(
-		fd: u32,
+		fd: u64,
 		seq: u32,
-		msg_iov: *mut iovec,
+		msg_iov: u64,
 		msg_iovlen: u64,
 		timestamp: u64,
 	) -> Self {
 		let buffer = Buffer::vectored(msg_iov, msg_iovlen);
 		Self::new(fd, seq, timestamp, buffer)
 	}
-	pub fn msg(fd: u32, seq: u32, msg_buffer: *mut mmsghdr, vlen: u32, timestamp: u64) -> Self {
+	pub fn msg(fd: u64, seq: u32, msg_buffer: u64, vlen: u64, timestamp: u64) -> Self {
 		let buffer = Buffer::msg(msg_buffer, vlen);
 		Self::new(fd, seq, timestamp, buffer)
 	}
-	pub fn fd(&self) -> u32 {
+	pub fn fd(&self) -> u64 {
 		self.fd
 	}
 	pub fn seq(&self) -> u32 {
@@ -202,7 +194,8 @@ impl Args {
 	pub fn timestamp(&self) -> u64 {
 		self.timestamp
 	}
-	pub fn extract(&self, buf: *mut u8, ret: u32) -> Result<u32, u32> {
+	#[inline]
+	pub fn extract(&self, buf: *mut u8, ret: u64) -> Result<u32, u32> {
 		match &self.buffer {
 			Buffer::Normal(normal) => normal.extract(buf, ret),
 			Buffer::Vectored(vectored) => vectored.extract(buf, ret),

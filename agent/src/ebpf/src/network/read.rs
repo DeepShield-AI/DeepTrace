@@ -23,15 +23,15 @@ fn sys_enter_read(ctx: TracePointContext) -> u32 {
 	}
 	let timestamp = unsafe { bpf_ktime_get_ns() };
 	let fd = match unsafe { ctx.read_at::<c_ulong>(16) } {
-		Ok(fd) => fd as u32,
+		Ok(fd) => fd,
 		Err(_) => return 0,
 	};
-	let buf: *const u8 = match unsafe { ctx.read_at::<c_ulong>(24) } {
-		Ok(buf) => buf as *const u8,
+	let buf = match unsafe { ctx.read_at::<c_ulong>(24) } {
+		Ok(buf) => buf,
 		Err(_) => return 0,
 	};
 	let count = match unsafe { ctx.read_at::<c_ulong>(32) } {
-		Ok(count) => count as u32,
+		Ok(count) => count,
 		Err(_) => return 0,
 	};
 	let seq = match read_seq(fd) {

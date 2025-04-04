@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["agent", "server", "tests", "sigil"]
+members = ["agent", "server"]
 default-members = ["agent"]
 
 [workspace.dependencies]

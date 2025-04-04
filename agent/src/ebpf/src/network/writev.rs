@@ -25,11 +25,11 @@ fn sys_enter_writev(ctx: TracePointContext) -> u32 {
 	}
 	let timestamp = unsafe { bpf_ktime_get_ns() };
 	let fd = match unsafe { ctx.read_at::<c_ulong>(16) } {
-		Ok(fd) => fd as u32,
+		Ok(fd) => fd,
 		Err(_) => return 0,
 	};
-	let vec: *mut iovec = match unsafe { ctx.read_at::<c_ulong>(24) } {
-		Ok(vec) => vec as *mut iovec,
+	let vec = match unsafe { ctx.read_at::<c_ulong>(24) } {
+		Ok(vec) => vec,
 		Err(_) => return 0,
 	};
 	let vlen = match unsafe { ctx.read_at::<c_ulong>(32) } {

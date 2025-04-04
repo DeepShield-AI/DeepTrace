@@ -25,15 +25,15 @@ fn sys_enter_readv(ctx: TracePointContext) -> u32 {
 	// info!(&ctx, "call readv");
 	let timestamp = unsafe { bpf_ktime_get_ns() };
 	let fd = match unsafe { ctx.read_at::<c_ulong>(16) } {
-		Ok(fd) => fd as u32,
+		Ok(fd) => fd,
 		Err(_) => return 0,
 	};
 	let vec = match unsafe { ctx.read_at::<c_ulong>(24) } {
-		Ok(vec) => vec as *mut iovec,
+		Ok(vec) => vec,
 		Err(_) => return 0,
 	};
 	let vlen = match unsafe { ctx.read_at::<c_ulong>(32) } {
-		Ok(vlen) => vlen as u64,
+		Ok(vlen) => vlen,
 		Err(_) => return 0,
 	};
 	let seq = match read_seq(fd) {

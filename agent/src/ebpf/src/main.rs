@@ -1,6 +1,6 @@
 #![no_std]
 #![no_main]
-
+#![allow(unused_imports, dead_code, unused_imports)]
 mod consts;
 mod maps;
 mod network;

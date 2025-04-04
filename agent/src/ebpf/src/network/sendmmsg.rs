@@ -26,15 +26,15 @@ fn sys_enter_sendmmsg(ctx: TracePointContext) -> u32 {
 	}
 	let timestamp = unsafe { bpf_ktime_get_ns() };
 	let fd = match unsafe { ctx.read_at::<c_ulong>(16) } {
-		Ok(fd) => fd as u32,
+		Ok(fd) => fd,
 		Err(_) => return 0,
 	};
 	let mmsg = match unsafe { ctx.read_at::<c_ulong>(24) } {
-		Ok(mmsg) => mmsg as *mut mmsghdr,
+		Ok(mmsg) => mmsg,
 		Err(_) => return 0,
 	};
 	let vlen = match unsafe { ctx.read_at::<c_ulong>(32) } {
-		Ok(vlen) => vlen as u32,
+		Ok(vlen) => vlen,
 		Err(_) => return 0,
 	};
 	let seq = match write_seq(fd) {

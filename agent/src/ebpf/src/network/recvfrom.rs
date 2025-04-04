@@ -37,15 +37,15 @@ fn sys_enter_recvfrom(ctx: TracePointContext) -> u32 {
 		return 0;
 	}
 	let fd = match unsafe { ctx.read_at::<c_ulong>(16) } {
-		Ok(fd) => fd as u32,
+		Ok(fd) => fd,
 		Err(_) => return 0,
 	};
-	let ubuf: *mut u8 = match unsafe { ctx.read_at::<c_ulong>(24) } {
-		Ok(ubuf) => ubuf as *mut u8,
+	let ubuf = match unsafe { ctx.read_at::<c_ulong>(24) } {
+		Ok(ubuf) => ubuf,
 		Err(_) => return 0,
 	};
 	let size = match unsafe { ctx.read_at::<c_ulong>(32) } {
-		Ok(size) => size as u32,
+		Ok(size) => size,
 		Err(_) => return 0,
 	};
 	let seq = match read_seq(fd) {

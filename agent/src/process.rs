@@ -1,8 +1,37 @@
 use anyhow::anyhow;
+use log::error;
 use mercury_common::Data;
 use sigil::Sigil;
 use std::ffi::CStr;
-use tokio::sync::mpsc;
+use tokio::{
+	io::{AsyncWrite, AsyncWriteExt},
+	sync::mpsc,
+};
+
+const FLUSH_INTERVAL: usize = 1000;
+
+pub async fn handle_output(
+	mut writer: impl AsyncWrite + Unpin + Send,
+	mut global_rx: mpsc::UnboundedReceiver<String>,
+) {
+	let mut count = 0;
+	while let Some(line) = global_rx.recv().await {
+		if let Err(e) = writer.write_all(line.as_bytes()).await {
+			error!("Failed to write: {}", e);
+			break;
+		}
+		count += 1;
+		if count % FLUSH_INTERVAL == 0 {
+			if let Err(e) = writer.flush().await {
+				error!("Flush failed: {}", e);
+				break;
+			}
+		}
+	}
+	if let Err(e) = writer.flush().await {
+		error!("Final flush failed: {}", e);
+	}
+}
 
 pub async fn handle_data(data: Data, tx: &mpsc::Sender<String>) -> anyhow::Result<Option<()>> {
 	let sigil = Sigil::new();

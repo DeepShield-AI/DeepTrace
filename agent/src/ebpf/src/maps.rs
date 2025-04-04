@@ -5,7 +5,7 @@ use crate::{
 };
 use aya_ebpf::{
 	macros::map,
-	maps::{HashMap, LruHashMap, PerCpuArray, RingBuf, PerfEventArray},
+	maps::{HashMap, LruHashMap, PerCpuArray, PerfEventArray, RingBuf},
 };
 use mercury_common::Data;
 

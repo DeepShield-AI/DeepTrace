@@ -26,7 +26,7 @@ fn sys_enter_sendmsg(ctx: TracePointContext) -> u32 {
 	}
 	let timestamp = unsafe { bpf_ktime_get_ns() };
 	let fd = match unsafe { ctx.read_at::<c_ulong>(16) } {
-		Ok(fd) => fd as u32,
+		Ok(fd) => fd,
 		Err(_) => return 0,
 	};
 	let msg = match unsafe { ctx.read_at::<c_ulong>(24) } {
@@ -50,7 +50,7 @@ fn sys_enter_sendmsg(ctx: TracePointContext) -> u32 {
 		Ok(seq) => seq,
 		Err(_) => return 0,
 	};
-	let args = Args::vectored(fd, seq, msg.msg_iov, msg.msg_iovlen, timestamp);
+	let args = Args::vectored(fd, seq, msg.msg_iov.addr() as u64, msg.msg_iovlen, timestamp);
 	try_enter(ctx, args, SyscallType::Egress).unwrap_or_else(|ret| ret)
 }
 /// name: sys_exit_sendmsg

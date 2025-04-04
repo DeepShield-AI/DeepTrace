@@ -17,7 +17,7 @@ pub(crate) fn is_filtered_pid() -> bool {
 }
 // TODO: use too much stack memory, need to optimize
 #[inline]
-pub(crate) fn tcp_sock_from_fd(fd: u32) -> Result<*const tcp_sock, u32> {
+pub(crate) fn tcp_sock_from_fd(fd: u64) -> Result<*const tcp_sock, u32> {
 	let current_task = unsafe { bpf_get_current_task() } as *const task_struct;
 	let task = unsafe { TASK_STRUCT.get_ptr_mut(0) }.ok_or(0_u32)?;
 	if unsafe {
@@ -42,7 +42,7 @@ pub(crate) fn tcp_sock_from_fd(fd: u32) -> Result<*const tcp_sock, u32> {
 	let fd_table = unsafe { bpf_helper_read((*files).fdt) }.map_err(|_| 0u32)?;
 	let max_fds = fd_table.max_fds;
 
-	if fd > max_fds {
+	if fd as u32 > max_fds {
 		return Err(1_u32);
 	}
 
@@ -74,12 +74,12 @@ pub(crate) fn tcp_sock_from_fd(fd: u32) -> Result<*const tcp_sock, u32> {
 	Ok(tcp_sock)
 }
 
-pub(crate) fn read_seq(fd: u32) -> Result<u32, u32> {
+pub(crate) fn read_seq(fd: u64) -> Result<u32, u32> {
 	let sock = tcp_sock_from_fd(fd)?;
 	Ok(unsafe { &*sock }.copied_seq)
 }
 
-pub(crate) fn write_seq(fd: u32) -> Result<u32, u32> {
+pub(crate) fn write_seq(fd: u64) -> Result<u32, u32> {
 	let sock = tcp_sock_from_fd(fd)?;
 	Ok(unsafe { &*sock }.write_seq)
 }

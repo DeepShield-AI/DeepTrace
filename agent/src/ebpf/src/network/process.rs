@@ -1,13 +1,13 @@
 #![allow(static_mut_refs)]
 
 use crate::{
-	maps::{EGRESS, INGRESS, DATA, EVENTS},
+	maps::{DATA, EGRESS, EVENTS, INGRESS},
 	structs::Args,
 	utils::{quintuple_from_sock, tcp_sock_from_fd},
 };
 use aya_ebpf::{
 	cty::c_long,
-	helpers::{bpf_get_current_pid_tgid, gen::bpf_get_current_comm, r#gen::bpf_ktime_get_ns},
+	helpers::{bpf_get_current_pid_tgid, bpf_map_update_elem, gen::{bpf_get_current_comm, bpf_ktime_get_ns}},
 	programs::TracePointContext,
 	EbpfContext, TASK_COMM_LEN,
 };
@@ -16,6 +16,7 @@ use mercury_common::{Data, SyscallName, SyscallType, MAX_PAYLOAD_SIZE};
 /// Processing enter of `read`, `readv`, `recvfrom`, `recvmsg`, `recvmmsg` syscalls
 pub fn try_enter(_ctx: TracePointContext, args: Args, direction: SyscallType) -> Result<u32, u32> {
 	let id = bpf_get_current_pid_tgid();
+	
 	let map = match direction {
 		SyscallType::Ingress => unsafe { &INGRESS },
 		SyscallType::Egress => unsafe { &EGRESS },
@@ -47,7 +48,7 @@ pub fn try_exit(
 		map.remove(&id).map_err(|e| e as u32)?;
 		return Err(0);
 	}
-	let ret = ret as u32;
+	let ret = ret as u64;
 	let args = unsafe { map.get(&id).ok_or(0_u32)? };
 	let data = unsafe {
 		let data_ptr = DATA.get_ptr_mut(0).ok_or(0_u32)?;
