@@ -1,9 +1,7 @@
-# DeepTrace Workflow
-
-This document provides a comprehensive guide to the processes and mechanisms employed by DeepTrace to collect information across network transactions. 
 
 ## Overview
 
+This document provides a comprehensive guide to the processes and mechanisms employed by DeepTrace to collect information across network transactions. 
 DeepTrace utilizes advanced monitoring and tracing techniques to maintain and manage the state of network communications efficiently, leveraging eBPF technology to intercept and manipulate network packets at the kernel level. 
 
 Please follow through the workflow sections below to grasp how each part of the process integrates.

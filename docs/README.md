@@ -4,36 +4,37 @@ This document provides an overview of the eBPF program developed for DeepTrace, 
 
 ## DeepTrace Documentation Overview
 
-This directory contains detailed documentation for various components of the DeepTrace tool. Each subdirectory focuses on different aspects of DeepTrace, providing insights into its implementation and usage. Below is an overview of what each documentation file covers:
+This directory contains detailed documentation for various components of the DeepTrace tool. Each subdirectory focuses on different aspects of DeepTrace, providing insights into its implementation and usage. DeepTrace consists of two main components: an **agent** deployed on each host and a **server** running in the microservices cluster. The agent is responsible for collecting request metadata through eBPF, including timestamps, protocol types, request or response types, and linking requests and responses to build spans, while the server is responsible for linking parent-child spans and assembling traces.
+The following is a general overview of each module on the agent and server.
 
-### Files
+### Agent
 
-- [**Hooks.md**](./Hooks.md)
+#### [eBPF](./eBPF/)
+The eBPF code in the agent is responsible for capturing request metadata by intercepting 10 system calls related to network communication, including timestamps, process IDs, thread IDs, socket quintuples, and message content. Its documentation includes the following files:
+
+- [**Overview.md**](./eBPF/Overview.md)
+  - Description: This file describes the execution process of eBPF code.
+- [**Hooks.md**](./eBPF/Hooks.md)
   - Description: Details the specific system hooks that DeepTrace utilizes to monitor and interact with the system. This includes hooks into network events, system calls, and other critical points that DeepTrace uses to extract or inject data.
-- [**Maps.md**](./Maps.md)
+- [**Maps.md**](./eBPF/Maps.md)
   - Description: Outlines the various maps used by DeepTrace for storing and accessing data efficiently. It describes each map's purpose, structure, and role in the overall functionality of the tool.
-- [**Structures.md**](./Structures.md)
+- [**Structures.md**](./eBPF/Structures.md)
   - Description: Discusses the data structures defined and used by DeepTrace. This file is crucial for understanding how data is organized, manipulated, and stored during the operation of DeepTrace.
-- [**Usage.md**](./Usage.md)
+- [**Overhead.md**](./eBPF/Overhead.md)
+  - Description: This file demonstrates the performance overhead of DeepTrace's eBPF code on the observed application.
+
+### Server
+
+  - TODO
+
+### Usage
+- [**Usage.md**](./usage/Usage.md)
   - Description: Provides step-by-step instructions on how to set up and use the DeepTrace tool. It includes details on configuration, deployment, and operational best practices to help users maximize the tool's capabilities.
-- [**Overview.md**](./Overview.md)
-  - Description: Provides an in-depth explanation of how context propagation is implemented in DeepTrace. It covers the mechanisms used to track and manage context across different parts of the system.
 
 
-Each document is designed to provide a comprehensive understanding of its respective topic, ensuring that developers and users alike can get the most out of DeepTrace.
 
-Please refer to each individual file for more detailed information on each topic.
 
-## Prerequisites
 
-1. stable rust toolchains: `rustup toolchain install stable`
-2. nightly rust toolchains: `rustup toolchain install nightly --component rust-src`
-3. (if cross-compiling) rustup target: `rustup target add ${ARCH}-unknown-linux-musl`
-4. (if cross-compiling) LLVM: (e.g.) `brew install llvm` (on macOS)
-5. (if cross-compiling) C toolchain: (e.g.) [`brew install filosottile/musl-cross/musl-cross`](https://github.com/FiloSottile/homebrew-musl-cross) (on macOS)
-6. bpf-linker: `cargo install bpf-linker` (`--no-default-features` on macOS)
-
-## Source Code Architecture
 
 ## Tested Environments
 
