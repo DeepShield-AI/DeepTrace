@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["agent", "server"]
+members = ["agent", "server", "tests"]
 default-members = ["agent"]
 
 [workspace.dependencies]
@@ -11,6 +11,7 @@ aya-log = { version = "0.2.1", default-features = false }
 aya-log-ebpf = { version = "0.1.1", default-features = false }
 
 anyhow = { version = "1", default-features = false }
+bitflags = { version = "2.9.0", default-features = false }
 bytes = { version = "1.9.0", default-features = false }
 # `std` feature is currently required to build `clap`.
 #
@@ -23,6 +24,10 @@ thiserror = { version = "2.0.11", default-features = false }
 tokio = { version = "1.40.0", default-features = false }
 which = { version = "7.0.2", default-features = false }
 
+[workspace.dependencies.nom]
+version = "8.0.0"
+default-features = false
+
 [profile.release.package.mercury-ebpf]
 debug = 2
-# codegen-units = 1
+ codegen-units = 1

@@ -1,0 +1,11 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "dev"
+path = "dev/main.rs"
+
+[dependencies]
+nom ={ workspace = true, default-features = false }
