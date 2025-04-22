@@ -2,7 +2,6 @@ use crate::{
 	network::process::{try_enter, try_exit},
 	structs::Args,
 	utils::{is_filtered_pid, write_seq},
-	vmlinux::mmsghdr,
 };
 use aya_ebpf::{
 	cty::{c_long, c_ulong},
@@ -10,7 +9,7 @@ use aya_ebpf::{
 	macros::tracepoint,
 	programs::TracePointContext,
 };
-use mercury_common::{SyscallName, SyscallType};
+use mercury_common::structs::{Direction, Syscall};
 
 /// name: sys_enter_recvmmsg  send multiple messages on a socket
 /// ID: 1415
@@ -24,25 +23,15 @@ fn sys_enter_sendmmsg(ctx: TracePointContext) -> u32 {
 	if !is_filtered_pid() {
 		return 0;
 	}
+
 	let timestamp = unsafe { bpf_ktime_get_ns() };
-	let fd = match unsafe { ctx.read_at::<c_ulong>(16) } {
-		Ok(fd) => fd,
-		Err(_) => return 0,
-	};
-	let mmsg = match unsafe { ctx.read_at::<c_ulong>(24) } {
-		Ok(mmsg) => mmsg,
-		Err(_) => return 0,
-	};
-	let vlen = match unsafe { ctx.read_at::<c_ulong>(32) } {
-		Ok(vlen) => vlen,
-		Err(_) => return 0,
-	};
-	let seq = match write_seq(fd) {
-		Ok(seq) => seq,
-		Err(_) => return 0,
-	};
-	let args = Args::msg(fd, seq, mmsg, vlen, timestamp);
-	try_enter(ctx, args, SyscallType::Egress).unwrap_or_else(|ret| ret)
+	let Ok(fd) = (unsafe { ctx.read_at::<c_ulong>(16) }) else { return 0 };
+	let Ok(mmsg) = (unsafe { ctx.read_at::<c_ulong>(24) }) else { return 0 };
+	let Ok(vlen) = (unsafe { ctx.read_at::<c_ulong>(32) }) else { return 0 };
+	let Ok(seq) = write_seq(fd) else { return 0 };
+
+	let args = Args::msg(fd, mmsg, vlen, timestamp, seq);
+	try_enter(args, Direction::Egress).unwrap_or_else(|ret| ret)
 }
 /// name: sys_exit_sendmmsg
 /// ID: 1414
@@ -53,9 +42,7 @@ fn sys_exit_sendmmsg(ctx: TracePointContext) -> u32 {
 	if !is_filtered_pid() {
 		return 0;
 	}
-	let ret = match unsafe { ctx.read_at::<c_long>(16) } {
-		Ok(ret) => ret,
-		Err(_) => return 0,
-	};
-	try_exit(ctx, ret, SyscallName::SendMMsg, SyscallType::Egress).unwrap_or_else(|ret| ret)
+
+	let Ok(ret) = (unsafe { ctx.read_at::<c_long>(16) }) else { return 0 };
+	try_exit(ctx, ret, Syscall::SendMMsg, Direction::Egress).unwrap_or_else(|ret| ret)
 }

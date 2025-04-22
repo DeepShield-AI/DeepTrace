@@ -5,9 +5,15 @@ edition = "2021"
 build = "build.rs"
 
 [dependencies]
-mercury-common = { path = "../common" }
 aya-ebpf = { workspace = true }
 aya-log-ebpf = { workspace = true }
+bitflags = { workspace = true }
+mercury-common = { path = "../common" }
+nom = { workspace = true, default-features = false }
+
+[dev-dependencies]
+pcap = { version = "2.2.0" }
+pnet = { version = "0.35.0" }
 
 [build-dependencies]
 which = { workspace = true }

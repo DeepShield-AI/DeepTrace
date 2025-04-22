@@ -2,7 +2,6 @@ use crate::{
 	network::process::{try_enter, try_exit},
 	structs::Args,
 	utils::{is_filtered_pid, read_seq},
-	vmlinux::iovec,
 };
 use aya_ebpf::{
 	cty::{c_long, c_ulong},
@@ -10,7 +9,7 @@ use aya_ebpf::{
 	macros::tracepoint,
 	programs::TracePointContext,
 };
-use mercury_common::{SyscallName, SyscallType};
+use mercury_common::structs::{Direction, Syscall};
 
 /// `name`: sys_enter_readv `ID`: 693
 ///
@@ -22,26 +21,15 @@ fn sys_enter_readv(ctx: TracePointContext) -> u32 {
 	if !is_filtered_pid() {
 		return 0;
 	}
-	// info!(&ctx, "call readv");
+
 	let timestamp = unsafe { bpf_ktime_get_ns() };
-	let fd = match unsafe { ctx.read_at::<c_ulong>(16) } {
-		Ok(fd) => fd,
-		Err(_) => return 0,
-	};
-	let vec = match unsafe { ctx.read_at::<c_ulong>(24) } {
-		Ok(vec) => vec,
-		Err(_) => return 0,
-	};
-	let vlen = match unsafe { ctx.read_at::<c_ulong>(32) } {
-		Ok(vlen) => vlen,
-		Err(_) => return 0,
-	};
-	let seq = match read_seq(fd) {
-		Ok(seq) => seq,
-		Err(_) => return 0,
-	};
-	let args = Args::vectored(fd, seq, vec, vlen, timestamp);
-	try_enter(ctx, args, SyscallType::Ingress).unwrap_or_else(|ret| ret)
+	let Ok(fd) = (unsafe { ctx.read_at::<c_ulong>(16) }) else { return 0 };
+	let Ok(vec) = (unsafe { ctx.read_at::<c_ulong>(24) }) else { return 0 };
+	let Ok(vlen) = (unsafe { ctx.read_at::<c_ulong>(32) }) else { return 0 };
+	let Ok(seq) = read_seq(fd) else { return 0 };
+
+	let args = Args::vectored(fd, vec, vlen, timestamp, seq);
+	try_enter(args, Direction::Ingress).unwrap_or_else(|ret| ret)
 }
 /// name: sys_exit_readv
 /// ID: 692
@@ -52,9 +40,8 @@ fn sys_exit_readv(ctx: TracePointContext) -> u32 {
 	if !is_filtered_pid() {
 		return 0;
 	}
-	let ret = match unsafe { ctx.read_at::<c_long>(16) } {
-		Ok(ret) => ret,
-		Err(_) => return 0,
-	};
-	try_exit(ctx, ret, SyscallName::ReadV, SyscallType::Ingress).unwrap_or_else(|ret| ret)
+
+	let Ok(ret) = (unsafe { ctx.read_at::<c_long>(16) }) else { return 0 };
+
+	try_exit(ctx, ret, Syscall::ReadV, Direction::Ingress).unwrap_or_else(|ret| ret)
 }

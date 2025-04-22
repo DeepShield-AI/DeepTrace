@@ -11,7 +11,7 @@ use aya_ebpf::{
 	programs::TracePointContext,
 };
 use core::mem::MaybeUninit;
-use mercury_common::{SyscallName, SyscallType};
+use mercury_common::structs::{Direction, Syscall};
 
 /// name: sys_enter_recvmsg
 /// ID: 1413
@@ -25,11 +25,9 @@ fn sys_enter_recvmsg(ctx: TracePointContext) -> u32 {
 	if !is_filtered_pid() {
 		return 0;
 	}
+
 	let timestamp = unsafe { bpf_ktime_get_ns() };
-	let fd = match unsafe { ctx.read_at::<c_ulong>(16) } {
-		Ok(fd) => fd,
-		Err(_) => return 0,
-	};
+	let Ok(fd) = (unsafe { ctx.read_at::<c_ulong>(16) }) else { return 0 };
 	let msg = match unsafe { ctx.read_at::<c_ulong>(24) } {
 		Ok(msg) => {
 			let mut v: MaybeUninit<user_msghdr> = MaybeUninit::uninit();
@@ -47,12 +45,10 @@ fn sys_enter_recvmsg(ctx: TracePointContext) -> u32 {
 		},
 		Err(_) => return 0,
 	};
-	let seq = match read_seq(fd) {
-		Ok(seq) => seq,
-		Err(_) => return 0,
-	};
-	let args = Args::vectored(fd, seq, msg.msg_iov.addr() as u64, msg.msg_iovlen, timestamp);
-	try_enter(ctx, args, SyscallType::Ingress).unwrap_or_else(|ret| ret)
+	let Ok(seq) = read_seq(fd) else { return 0 };
+
+	let args = Args::vectored(fd, msg.msg_iov.addr() as u64, msg.msg_iovlen, timestamp, seq);
+	try_enter(args, Direction::Ingress).unwrap_or_else(|ret| ret)
 }
 /// name: sys_exit_recvmsg
 /// ID: 1412
@@ -63,9 +59,7 @@ fn sys_exit_recvmsg(ctx: TracePointContext) -> u32 {
 	if !is_filtered_pid() {
 		return 0;
 	}
-	let ret = match unsafe { ctx.read_at::<c_long>(16) } {
-		Ok(ret) => ret,
-		Err(_) => return 0,
-	};
-	try_exit(ctx, ret, SyscallName::RecvMsg, SyscallType::Ingress).unwrap_or_else(|ret| ret)
+
+	let Ok(ret) = (unsafe { ctx.read_at::<c_long>(16) }) else { return 0 };
+	try_exit(ctx, ret, Syscall::RecvMsg, Direction::Ingress).unwrap_or_else(|ret| ret)
 }

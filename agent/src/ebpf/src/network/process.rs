@@ -1,33 +1,51 @@
 #![allow(static_mut_refs)]
-
 use crate::{
-	maps::{DATA, EGRESS, EVENTS, INGRESS},
+	maps::{DATA, EGRESS, EVENTS, INGRESS, SOCKET_INFO},
+	protocols::infer_protocol,
 	structs::Args,
-	utils::{quintuple_from_sock, tcp_sock_from_fd},
+	utils::{gen_connect_key, is_tcp_udp, quintuple_from_sock, tcp_sock_from_fd},
+	vmlinux::tcp_sock,
 };
 use aya_ebpf::{
 	cty::c_long,
-	helpers::{bpf_get_current_pid_tgid, bpf_map_update_elem, gen::{bpf_get_current_comm, bpf_ktime_get_ns}},
+	helpers::{bpf_get_current_pid_tgid, gen::bpf_ktime_get_ns},
 	programs::TracePointContext,
-	EbpfContext, TASK_COMM_LEN,
+	EbpfContext,
 };
-use mercury_common::{Data, SyscallName, SyscallType, MAX_PAYLOAD_SIZE};
+use mercury_common::{
+	consts::MAX_PAYLOAD_SIZE,
+	structs::{Direction, Syscall},
+};
 
 /// Processing enter of `read`, `readv`, `recvfrom`, `recvmsg`, `recvmmsg` syscalls
-pub fn try_enter(_ctx: TracePointContext, args: Args, direction: SyscallType) -> Result<u32, u32> {
+pub fn try_enter(args: Args, direction: Direction) -> Result<u32, u32> {
 	let id = bpf_get_current_pid_tgid();
-	
+
 	let map = match direction {
-		SyscallType::Ingress => unsafe { &INGRESS },
-		SyscallType::Egress => unsafe { &EGRESS },
+		Direction::Ingress => unsafe { &INGRESS },
+		Direction::Egress => unsafe { &EGRESS },
+		Direction::Unknown => return Err(0_u32),
 	};
+
+	// let sock_info = unsafe { &SOCKET_INFO };
+
+	// TODO: add five tuple logic which may be implemented at entries point
+	// let tcp_sock = tcp_sock_from_fd(args.fd)? as u64;
+	// // TODO: remove to right place
+	// let mut sock = SocketInfo::new();
+	// sock.enter_seq = seq(tcp_sock)?;
+	// sock.direction = direction;
+
+	// let key = gen_connect_key(id, args.fd);
+
+	// if unsafe { sock_info.get(&key).is_some() } {
+	// 	sock_info.remove(&key).map_err(|e| e as u32)?;
+	// }
+	// sock_info.insert(&key, &sock, 0).map_err(|e| e as u32)?;
+
 	if unsafe { map.get(&id) }.is_some() {
 		map.remove(&id).map_err(|e| e as u32)?;
 	}
-	// TODO: add five tuple logic which may be implemented at entries point
-	// let tcp_sock = get_tcp_sock_from_fd(&ctx, fd as u32)?;
-	// let tcp = unsafe { TCP_SOCK.get_ptr_mut(0).ok_or(0_u32)? };
-
 	map.insert(&id, &args, 0).map_err(|e| e as u32)?;
 	Ok(0)
 }
@@ -35,52 +53,54 @@ pub fn try_enter(_ctx: TracePointContext, args: Args, direction: SyscallType) ->
 pub fn try_exit(
 	ctx: TracePointContext,
 	ret: c_long,
-	syscall: SyscallName,
-	direction: SyscallType,
+	syscall: Syscall,
+	direction: Direction,
 ) -> Result<u32, u32> {
 	let id = bpf_get_current_pid_tgid();
 	let map = match direction {
-		SyscallType::Ingress => unsafe { &INGRESS },
-		SyscallType::Egress => unsafe { &EGRESS },
+		Direction::Ingress => unsafe { &INGRESS },
+		Direction::Egress => unsafe { &EGRESS },
+		Direction::Unknown => return Err(0_u32),
 	};
 
 	if !(0 < ret && ret <= MAX_PAYLOAD_SIZE as i64) {
 		map.remove(&id).map_err(|e| e as u32)?;
 		return Err(0);
 	}
+
 	let ret = ret as u64;
-	let args = unsafe { map.get(&id).ok_or(0_u32)? };
+	let args = {
+		let ptr = map.get_ptr_mut(&id).ok_or(0_u32)?;
+		&mut unsafe { *ptr }
+	};
 	let data = unsafe {
 		let data_ptr = DATA.get_ptr_mut(0).ok_or(0_u32)?;
 		&mut *data_ptr
 	};
-	let sock = tcp_sock_from_fd(args.fd())?;
+	let sock = tcp_sock_from_fd(args.fd)? as *const tcp_sock;
+	let mut quintuple = quintuple_from_sock(sock);
+
 	data.tgid = ctx.tgid();
 	data.pid = ctx.pid();
 	data.comm = ctx.command().map_err(|e| e as u32)?;
-	let quintuple = quintuple_from_sock(sock);
+
+	quintuple.l4_protocol = is_tcp_udp(sock)?;
 	data.quintuple = quintuple;
-	let enter_seq = args.seq();
-	data.enter_seq = enter_seq;
+	data.enter_seq = args.enter_seq;
 	let exit_seq = match direction {
-		SyscallType::Ingress => unsafe { &*sock }.copied_seq,
-		SyscallType::Egress => unsafe { &*sock }.write_seq,
+		Direction::Ingress => unsafe { &*sock }.copied_seq,
+		Direction::Egress => unsafe { &*sock }.write_seq,
+		_ => return Err(0_u32),
 	};
 	data.exit_seq = exit_seq;
 	data.timestamp_ns = unsafe { bpf_ktime_get_ns() };
-	let copy_size = args.extract(data.buf.as_mut_ptr(), ret)?;
+
+	let msg = infer_protocol(&ctx, args, quintuple, direction, exit_seq, ret as u32)?;
+	data.protocol = msg.protocol;
+	data.type_ = msg.type_;
+
+	let copy_size = args.extract(data.buf.as_mut_ptr(), ret as u32)?;
 	data.len = copy_size;
-	// collect metrics
-	data.srtt_us = unsafe { &*sock }.srtt_us;
-	data.mdev_max_us = unsafe { &*sock }.mdev_max_us;
-	data.rttvar_us = unsafe { &*sock }.rttvar_us;
-	data.mdev_us = unsafe { &*sock }.mdev_us;
-	data.bytes_sent = unsafe { &*sock }.bytes_sent;
-	data.bytes_received = unsafe { &*sock }.bytes_received;
-	data.bytes_acked = unsafe { &*sock }.bytes_acked;
-	data.delivered = unsafe { &*sock }.delivered;
-	data.snd_cwnd = unsafe { &*sock }.snd_cwnd;
-	data.rtt_us = unsafe { &*sock }.rcv_rtt_est.rtt_us;
 
 	data.syscall = syscall;
 	data.direction = direction;
@@ -89,5 +109,14 @@ pub fn try_exit(
 
 	unsafe { EVENTS.output(&ctx, &(*data), 0) };
 
+	Ok(0)
+}
+
+pub fn try_close(_ctx: TracePointContext, fd: u64) -> Result<u32, u32> {
+	let key = gen_connect_key(bpf_get_current_pid_tgid(), fd);
+	let map = unsafe { &SOCKET_INFO };
+	if unsafe { map.get(&key) }.is_some() {
+		map.remove(&key).map_err(|e| e as u32)?;
+	}
 	Ok(0)
 }

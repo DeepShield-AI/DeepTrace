@@ -12,5 +12,8 @@ mod sendto;
 mod write;
 mod writev;
 
+/// Socket
+mod close;
+
 /// handle
 mod process;

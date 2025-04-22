@@ -7,8 +7,8 @@ use aya::{
 use bytes::BytesMut;
 use clap::Parser;
 use log::{debug, warn};
-use mercury_common::Data;
-use process::{handle_data, handle_output};
+use mercury_common::structs::Data;
+use process::handle_output;
 use std::ffi::CStr;
 use tokio::{
 	fs::OpenOptions,
@@ -68,9 +68,10 @@ async fn main() -> anyhow::Result<()> {
 		pids_map.insert(pid, 0, 0)?
 	}
 
+	attach::attach_socket(&mut ebpf)?;
 	attach::attach_ingress(&mut ebpf)?;
 	attach::attach_egress(&mut ebpf)?;
-	
+
 	// Retrieve the perf event array from the eBPF program to read events from it.
 	let mut perf_array = AsyncPerfEventArray::try_from(ebpf.take_map("events").unwrap())?;
 	let (global_tx, global_rx) = mpsc::unbounded_channel();
@@ -91,7 +92,7 @@ async fn main() -> anyhow::Result<()> {
 			Box::new(BufWriter::with_capacity(1024 * 1024, file))
 		},
 	};
-	
+
 	// Iterate over each online CPU core. For eBPF applications, processing is often done per CPU core.
 	for cpu_id in online_cpus().expect("error") {
 		// open a separate perf buffer for each cpu
@@ -120,7 +121,7 @@ async fn main() -> anyhow::Result<()> {
 					let data = unsafe { *(buf.as_ptr() as *const Data) }; // Convert the buffer to a Data structure.
 					// handle_data(data, &tx).await.expect("error");
 					let message = format!(
-						"{}, {}, {}, {}, {}, {}, {}, {}, {:?}\n",
+						"{}, {}, {}, {}, {}, {}, {}, length: {}, {}, {}, {:?}\n",
 						data.tgid,
 						data.syscall,
 						CStr::from_bytes_until_nul(&data.comm)
@@ -132,6 +133,8 @@ async fn main() -> anyhow::Result<()> {
 						data.enter_seq,
 						data.exit_seq,
 						data.len,
+						data.protocol,
+						data.type_,
 						data.buffer()
 					);
 					tx.send(message).expect("message send error");

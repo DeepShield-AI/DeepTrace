@@ -1,4 +1,10 @@
 pub const MAX_PID_NUMBER: u32 = 256;
+
+pub const TASK_COMM_LEN: usize = 16;
+
+pub const MAX_PAYLOAD_SIZE: u32 = 1 << 14;
+
+pub const MAX_INFER_PAYLOAD_SIZE: u32 = 1 << 6;
 /// Maximum length of the 'struct iovec' array in a single call to readv or writev.
 ///
 /// This macro has different values in different kernel versions.  The latest versions of the kernel
@@ -9,4 +15,4 @@ pub const IOV_MAX: usize = 1 << 3;
 
 pub const IOVLEN_MAX: usize = 1;
 
-pub const MAX_IOVEC_BUF_SIZE: u32 = 1 << 10; // must be double of MAX_PAYLOAD_SIZE
+pub const MAX_IOVEC_PAYLOAD_SIZE: u32 = 1 << 10; // must be double of MAX_PAYLOAD_SIZE

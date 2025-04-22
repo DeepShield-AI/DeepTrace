@@ -9,6 +9,7 @@ user = ["aya"]
 
 [dependencies]
 aya = { workspace = true, optional = true }
+num_enum = { version = "0.7.3", default-features = false }
 
 [lib]
-path = "lib.rs"
+path = "src/lib.rs"

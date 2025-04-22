@@ -1,5 +1,13 @@
 use aya::{Ebpf, programs::TracePoint};
 
+pub(crate) fn attach_socket(ebpf: &mut Ebpf) -> anyhow::Result<()> {
+	let sys_enter_close: &mut TracePoint =
+		ebpf.program_mut("sys_enter_close").unwrap().try_into()?;
+	sys_enter_close.load()?;
+	sys_enter_close.attach("syscalls", "sys_enter_close")?;
+	Ok(())
+}
+
 pub(crate) fn attach_ingress(ebpf: &mut Ebpf) -> anyhow::Result<()> {
 	let sys_enter_read: &mut TracePoint = ebpf.program_mut("sys_enter_read").unwrap().try_into()?;
 	sys_enter_read.load()?;

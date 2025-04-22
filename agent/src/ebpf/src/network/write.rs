@@ -9,7 +9,7 @@ use aya_ebpf::{
 	macros::tracepoint,
 	programs::TracePointContext,
 };
-use mercury_common::{SyscallName, SyscallType};
+use mercury_common::structs::{Direction, Syscall};
 
 /// `name`: sys_enter_write
 /// `ID`: 699
@@ -22,25 +22,19 @@ fn sys_enter_write(ctx: TracePointContext) -> u32 {
 	if !is_filtered_pid() {
 		return 0;
 	}
+
 	let timestamp = unsafe { bpf_ktime_get_ns() };
-	let fd = match unsafe { ctx.read_at::<c_ulong>(16) } {
-		Ok(fd) => fd,
-		Err(_) => return 0,
-	};
-	let buf = match unsafe { ctx.read_at::<c_ulong>(24) } {
-		Ok(buf) => buf,
-		Err(_) => return 0,
-	};
-	let count = match unsafe { ctx.read_at::<c_ulong>(32) } {
-		Ok(count) => count,
-		Err(_) => return 0,
-	};
-	let seq = match write_seq(fd) {
-		Ok(seq) => seq,
-		Err(_) => return 0,
-	};
-	let args = Args::normal(fd, seq, buf, count, timestamp);
-	try_enter(ctx, args, SyscallType::Egress).unwrap_or_else(|ret| ret)
+	let Ok(fd) = (unsafe { ctx.read_at::<c_ulong>(16) }) else { return 0 };
+	if fd < 3 {
+		return 0;
+	}
+
+	let Ok(buf) = (unsafe { ctx.read_at::<c_ulong>(24) }) else { return 0 };
+	let Ok(count) = (unsafe { ctx.read_at::<c_ulong>(32) }) else { return 0 };
+	let Ok(seq) = write_seq(fd) else { return 0 };
+
+	let args = Args::normal(fd, buf, count, timestamp, seq);
+	try_enter(args, Direction::Egress).unwrap_or_else(|ret| ret)
 }
 /// `name`: sys_exit_write
 /// `ID`: 698
@@ -51,9 +45,7 @@ fn sys_exit_write(ctx: TracePointContext) -> u32 {
 	if !is_filtered_pid() {
 		return 0;
 	}
-	let ret = match unsafe { ctx.read_at::<c_long>(16) } {
-		Ok(ret) => ret,
-		Err(_) => return 0,
-	};
-	try_exit(ctx, ret, SyscallName::Write, SyscallType::Egress).unwrap_or_else(|ret| ret)
+
+	let Ok(ret) = (unsafe { ctx.read_at::<c_long>(16) }) else { return 0 };
+	try_exit(ctx, ret, Syscall::Write, Direction::Egress).unwrap_or_else(|ret| ret)
 }
