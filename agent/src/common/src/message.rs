@@ -8,6 +8,16 @@ pub enum MessageType {
 	Response,
 }
 
+impl MessageType {
+	pub fn debug(&self) -> &'static str {
+		match self {
+			MessageType::Unknown => "Unknown",
+			MessageType::Request => "Request",
+			MessageType::Response => "Response",
+		}
+	}
+}
+
 #[derive(Default)]
 pub struct Message {
 	pub protocol: L7Protocol,

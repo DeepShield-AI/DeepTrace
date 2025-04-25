@@ -204,24 +204,32 @@ impl VectoredBuffer {
 				};
 				v.assume_init()
 			};
-
 			let copy_size = min(iovec.iov_len as u32, (max - offset) as u32);
-			let copy_size = if copy_size >= MAX_INFER_PAYLOAD_SIZE {
-				MAX_INFER_PAYLOAD_SIZE
+			if copy_size >= MAX_INFER_PAYLOAD_SIZE {
+				if unsafe {
+					bpf_probe_read(
+						buf.add(offset) as *mut _,
+						MAX_INFER_PAYLOAD_SIZE,
+						iovec.iov_base as *const _,
+					)
+				} != 0
+				{
+					return Err(0);
+				}
+				offset += MAX_INFER_PAYLOAD_SIZE as usize;
 			} else {
-				copy_size & INFER_MASK
+				if unsafe {
+					bpf_probe_read(
+						buf.add(offset) as *mut _,
+						copy_size & INFER_MASK,
+						iovec.iov_base as *const _,
+					)
+				} != 0
+				{
+					return Err(0);
+				}
+				offset += (copy_size & INFER_MASK) as usize;
 			};
-			if unsafe {
-				bpf_probe_read(
-					buf.add(offset) as *mut _,
-					copy_size & INFER_MASK,
-					iovec.iov_base as *const _,
-				)
-			} != 0
-			{
-				return Err(0);
-			}
-			offset += copy_size as usize;
 		}
 		Ok(offset as u32)
 	}
@@ -484,7 +492,7 @@ impl MsgBuffer {
 		Ok(offset)
 	}
 }
-
+#[repr(C)]
 pub(crate) struct InferInfo {
 	/// SocketInfo key
 	pub key: u64,
@@ -495,7 +503,8 @@ pub(crate) struct InferInfo {
 	pub enter_seq: u32,
 	pub exit_seq: u32,
 	pub direction: Direction,
-	padding: u8,
+	padding_0: u8,
+	padding_1: u16,
 	/// Payload to be parsed
 	pub buf: [u8; MAX_INFER_PAYLOAD_SIZE as usize * IOV_MAX],
 }

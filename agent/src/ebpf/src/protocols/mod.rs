@@ -5,6 +5,7 @@ use crate::{
 	utils::{gen_connect_key, is_filtered_comm},
 };
 use aya_ebpf::{helpers::bpf_get_current_pid_tgid, programs::TracePointContext};
+use dns::DNS;
 use memcached::Memcached;
 use mercury_common::{
 	consts::MAX_INFER_PAYLOAD_SIZE,
@@ -17,13 +18,19 @@ use redis::Redis;
 use thrift::Thrift;
 
 mod dns;
+mod http1;
 mod memcached;
 mod mongodb;
 mod redis;
 mod thrift;
+mod mysql;
 mod utils;
 pub trait Infer {
-	fn parse(ctx: &TracePointContext, info: &InferInfo, quintuple: Quintuple) -> Result<Message, u32>;
+	fn parse(
+		ctx: &TracePointContext,
+		info: &InferInfo,
+		quintuple: Quintuple,
+	) -> Result<Message, u32>;
 }
 // TODO: remove ctx arg when protocol parse finished
 pub(crate) fn infer_protocol(
@@ -39,13 +46,11 @@ pub(crate) fn infer_protocol(
 	}
 
 	let info = unsafe {
-		let infer_ptr = INFER.get_ptr_mut(0).ok_or(0_u32)?;
-		&mut *infer_ptr
+		let ptr = INFER.get_ptr_mut(0).ok_or(0_u32)?;
+		&mut *ptr
 	};
-
-	let len = args.infer_extract(info.buf.as_mut_ptr(), MAX_INFER_PAYLOAD_SIZE)?;
+	let len = args.infer_extract(info.buf.as_mut_ptr(), count)?;
 	info.len = len;
-
 	let key = gen_connect_key(bpf_get_current_pid_tgid(), args.fd);
 	info.key = key;
 	info.count = count;
@@ -54,7 +59,6 @@ pub(crate) fn infer_protocol(
 	info.direction = direction;
 
 	let message = infer_protocol_impl(ctx, info, quintuple);
-
 	let map = unsafe { &SOCKET_INFO };
 	let mut sock_info = SocketInfo::new();
 	if message.protocol == L7Protocol::Unknown {
@@ -69,7 +73,8 @@ pub(crate) fn infer_protocol(
 			map.insert(&key, &sock_info, 0).map_err(|e| e as u32)?;
 			Err(0)
 		} else {
-			Ok(message)
+			// Ok(message)
+			Err(0)
 		}
 	} else {
 		sock_info.l7protocol = message.protocol;
@@ -81,7 +86,7 @@ pub(crate) fn infer_protocol(
 fn infer_protocol_impl(ctx: &TracePointContext, info: &InferInfo, quintuple: Quintuple) -> Message {
 	let _skip = L7Protocol::Unknown;
 	// TODO: + 用户态可配置的逻辑
-	[Redis::parse, Thrift::parse, Memcached::parse, MongoDB::parse]
+	[Redis::parse, Thrift::parse, Memcached::parse, MongoDB::parse, DNS::parse]
 		.iter()
 		.find_map(|parser| parser(ctx, info, quintuple).ok())
 		.unwrap_or_default()

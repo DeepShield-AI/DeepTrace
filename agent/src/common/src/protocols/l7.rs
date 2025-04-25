@@ -3,7 +3,7 @@ use num_enum::{Default, FromPrimitive, IntoPrimitive};
 #[repr(u8)]
 #[derive(FromPrimitive, IntoPrimitive, Copy, Clone, Default, PartialEq)]
 pub enum L7Protocol {
-	#[num_enum(default)]
+	#[default]
 	Unknown = 0,
 
 	// HTTP

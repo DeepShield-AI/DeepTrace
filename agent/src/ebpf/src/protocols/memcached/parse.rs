@@ -80,7 +80,7 @@ mod tests {
 			return Err(0);
 		}
 		let mut output = String::new();
-		for (header, data) in packets {
+		for (_, data) in packets {
 			let Ok(header) = memcached_header(&data) else {
 				continue;
 			};

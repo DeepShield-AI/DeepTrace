@@ -4,21 +4,26 @@ use aya_ebpf::programs::TracePointContext;
 use mercury_common::{
 	message::{Message, MessageType},
 	protocols::L7Protocol,
+	structs::Quintuple,
 };
-use mercury_common::structs::Quintuple;
 use parse::redis;
 
 mod parse;
 #[derive(Debug)]
 pub(crate) struct Redis {
 	pub first: u8,
+	pub is_command: bool,
 }
 
 impl Redis {
+	pub fn new() -> Self {
+		Self { first: 0, is_command: false }
+	}
 	fn message_type(&self) -> MessageType {
-		match self.first as char {
-			'*' => MessageType::Request,
-			_ => MessageType::Response,
+		if self.first == b'*' && self.is_command {
+			MessageType::Request
+		} else {
+			MessageType::Response
 		}
 	}
 }
@@ -31,7 +36,11 @@ impl std::fmt::Display for Redis {
 }
 
 impl Infer for Redis {
-	fn parse(_ctx: &TracePointContext, info: &InferInfo, _quintuple: Quintuple) -> Result<Message, u32> {
+	fn parse(
+		_ctx: &TracePointContext,
+		info: &InferInfo,
+		_quintuple: Quintuple,
+	) -> Result<Message, u32> {
 		let payload = info.buf.as_slice();
 		if info.len < 4 {
 			return Err(0);

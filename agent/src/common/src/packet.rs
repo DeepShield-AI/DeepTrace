@@ -1,4 +1,3 @@
-
 #[repr(u8)]
 pub enum HeaderType {
 	Invalid = 0,

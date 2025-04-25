@@ -74,8 +74,8 @@ pub fn try_exit(
 		&mut unsafe { *ptr }
 	};
 	let data = unsafe {
-		let data_ptr = DATA.get_ptr_mut(0).ok_or(0_u32)?;
-		&mut *data_ptr
+		let ptr = DATA.get_ptr_mut(0).ok_or(0_u32)?;
+		&mut *ptr
 	};
 	let sock = tcp_sock_from_fd(args.fd)? as *const tcp_sock;
 	let mut quintuple = quintuple_from_sock(sock);

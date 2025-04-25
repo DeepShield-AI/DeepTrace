@@ -31,6 +31,6 @@ bitflags! {
 }
 pub(super) mod masks {
 	pub const OPCODE_MASK: u16 = 0b0111_1000_0000_0000;
-    pub const RESERVED_MASK: u16 = 0b0000_0000_0100_0000;
-    pub const RESPONSE_CODE_MASK: u16 = 0b0000_0000_0000_1111;
+	pub const RESERVED_MASK: u16 = 0b0000_0000_0100_0000;
+	pub const RESPONSE_CODE_MASK: u16 = 0b0000_0000_0000_1111;
 }

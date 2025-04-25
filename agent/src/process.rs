@@ -7,7 +7,7 @@ use tokio::{
 	sync::mpsc,
 };
 
-const FLUSH_INTERVAL: usize = 100;
+const FLUSH_INTERVAL: usize = 1;
 
 pub async fn handle_output(
 	mut writer: impl AsyncWrite + Unpin + Send,

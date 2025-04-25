@@ -79,7 +79,11 @@ impl Memcached {
 }
 
 impl Infer for Memcached {
-	fn parse(_ctx: &TracePointContext, info: &InferInfo, _quintuple: Quintuple) -> Result<Message, u32> {
+	fn parse(
+		_ctx: &TracePointContext,
+		info: &InferInfo,
+		_quintuple: Quintuple,
+	) -> Result<Message, u32> {
 		if info.count < HEADER_SIZE as u32 {
 			return Err(0)
 		}

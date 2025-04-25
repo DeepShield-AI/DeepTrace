@@ -9,6 +9,7 @@ aya-ebpf = { workspace = true }
 aya-log-ebpf = { workspace = true }
 bitflags = { workspace = true }
 mercury-common = { path = "../common" }
+memchr = { workspace = true, default-features = false }
 nom = { workspace = true, default-features = false }
 
 [dev-dependencies]

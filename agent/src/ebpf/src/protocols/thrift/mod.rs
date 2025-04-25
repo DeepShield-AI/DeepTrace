@@ -5,8 +5,8 @@ use kind::Kind;
 use mercury_common::{
 	message::{Message, MessageType},
 	protocols::L7Protocol,
+	structs::Quintuple,
 };
-use mercury_common::structs::Quintuple;
 
 mod constants;
 mod kind;
@@ -29,7 +29,11 @@ impl Thrift {
 }
 
 impl Infer for Thrift {
-	fn parse(_ctx: &TracePointContext, info: &InferInfo, _quintuple: Quintuple) -> Result<Message, u32> {
+	fn parse(
+		_ctx: &TracePointContext,
+		info: &InferInfo,
+		_quintuple: Quintuple,
+	) -> Result<Message, u32> {
 		let payload = info.buf.as_slice();
 		if !check_protocol(info.key, L7Protocol::Thrift) {
 			return Err(0);

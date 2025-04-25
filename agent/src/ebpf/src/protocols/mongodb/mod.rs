@@ -10,8 +10,8 @@ use mercury_common::{
 	mask::INFER_MASK,
 	message::{Message, MessageType},
 	protocols::L7Protocol,
+	structs::{Direction, Quintuple},
 };
-use mercury_common::structs::Quintuple;
 
 mod opcode;
 mod parse;
@@ -19,7 +19,7 @@ use super::utils::check_protocol;
 use opcode::OpCode;
 use parse::mongodb_header;
 
-pub(crate) const HEADER_SIZE: usize = size_of::<MongoDB>();
+pub(crate) const MONGODB_HEADER_SIZE: u32 = 16;
 /// In general, each message consists of a standard message header followed by request-specific data.
 #[derive(Debug)]
 pub(crate) struct MongoDB {
@@ -53,11 +53,18 @@ impl MongoDB {
 	}
 }
 impl Infer for MongoDB {
-	fn parse(_ctx: &TracePointContext, info: &InferInfo, _quintuple: Quintuple) -> Result<Message, u32> {
+	fn parse(
+		_ctx: &TracePointContext,
+		info: &InferInfo,
+		_quintuple: Quintuple,
+	) -> Result<Message, u32> {
+		let payload = info.buf.as_slice();
 		if !check_protocol(info.key, L7Protocol::MongoDB) {
 			return Err(0);
 		}
-		let payload = info.buf.as_slice();
+		if info.count <= MONGODB_HEADER_SIZE && info.direction == Direction::Ingress {
+			return Err(0);
+		}
 		if let Ok(header) = mongodb_header(payload, info.count) {
 			let mut message = Message::new();
 			message.protocol = L7Protocol::MongoDB;
@@ -73,8 +80,8 @@ impl Infer for MongoDB {
 			socket_info.exit_seq == info.enter_seq
 		{
 			let buf = unsafe { INFER_BUFFER.get_ptr_mut(0) }.ok_or(0_u32)?;
-
 			let ptr = unsafe { &mut *buf };
+
 			if unsafe {
 				bpf_probe_read(
 					ptr.as_mut_ptr() as *mut _,
@@ -100,14 +107,15 @@ impl Infer for MongoDB {
 				return Err(0);
 			}
 			return match mongodb_header(&unsafe { *buf }, info.count + socket_info.prev_len) {
-				Ok(header) => {
-					// info!(ctx, "MongoDB: {}", (&info.direction).);
-					Ok(Message { protocol: L7Protocol::MongoDB, type_: header.message_type() })
-				},
+				Ok(header) =>
+					Ok(Message { protocol: L7Protocol::MongoDB, type_: header.message_type() }),
 				Err(_) => Err(0),
 			}
-		} else if socket_info.l7protocol == L7Protocol::MongoDB {
-			return Ok(Message { protocol: L7Protocol::MongoDB, type_: MessageType::Unknown });
+		} else if socket_info.l7protocol == L7Protocol::MongoDB &&
+			info.direction == Direction::Egress
+		{
+			// bson response
+			return Ok(Message { protocol: L7Protocol::MongoDB, type_: MessageType::Response });
 		}
 		Err(0)
 	}

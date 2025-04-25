@@ -34,8 +34,33 @@ fn error(i: &[u8]) -> IResult<&[u8], &[u8]> {
 	.parse(i)
 }
 
-// fn check_cslf(i: &[u8]) -> IResult<&[u8], &[u8]> {
-// 	terminated(take_until("\r\n".as_bytes()), take(2_usize)).parse(i)
+// fn command(i: &[u8]) -> IResult<&[u8], &[u8]> {
+// 	alt([
+// 		tag("A".as_bytes()),
+// 		tag("B".as_bytes()),
+// 		tag("C".as_bytes()),
+// 		tag("D".as_bytes()),
+// 		tag("E".as_bytes()),
+// 		tag("F".as_bytes()),
+// 		tag("GE".as_bytes()),
+// 		tag("H".as_bytes()),
+// 		tag("I".as_bytes()),
+// 		tag("JS".as_bytes()),
+// 		tag("KE".as_bytes()),
+// 		tag("L".as_bytes()),
+// 		tag("M".as_bytes()),
+// 		tag("OB".as_bytes()),
+// 		tag("P".as_bytes()),
+// 		tag("QU".as_bytes()),
+// 		tag("R".as_bytes()),
+// 		tag("S".as_bytes()),
+// 		tag("T".as_bytes()),
+// 		tag("UN".as_bytes()),
+// 		tag("WA".as_bytes()),
+// 		tag("X".as_bytes()),
+// 		tag("Z".as_bytes()),
+// 	])
+// 	.parse(i)
 // }
 
 fn is_contain_crlf(i: &[u8], count: u32) -> bool {
@@ -46,15 +71,47 @@ fn is_contain_crlf(i: &[u8], count: u32) -> bool {
 	}
 	false
 }
-
+// TODO: need more strict check
 pub(super) fn redis(i: &[u8], count: u32) -> Result<Redis, u32> {
 	let (i, first) = prefix(i).map_err(|_| 0_u32)?;
-	if first as char == '-' {
+	let mut redis = Redis::new();
+	redis.first = first;
+	if first == b'-' {
 		error(i).map_err(|_| 0_u32)?;
-	} else if !is_contain_crlf(i, count - 1) {
-		return Err(0_u32);
+		return Ok(redis)
+	} else {
+		let mut p = count;
+		for r in 0..3 + 2 {
+			if i[r] == b'\r' && i[r + 1] == b'\n' {
+				p = r as u32 + 2;
+				break;
+			}
+		}
+		if p > count {
+			return Err(0_u32);
+		}
+		if first != b'*' || p == count {
+			return Ok(redis);
+		}
+
+		for r in 5..5 + 2 + 5 + 1 {
+			if i[r] == b'\r' && i[r + 1] == b'\n' {
+				let c = i[r + 2] as char;
+				let s = i[r + 3] as char;
+				match c {
+					'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' |
+					'M' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'W' | 'X' | 'Z'
+						if s.is_ascii_uppercase() =>
+					{
+						redis.is_command = true;
+					},
+					_ => {},
+				}
+				break;
+			}
+		}
+		return Ok(redis);
 	}
-	Ok(Redis { first })
 }
 
 #[cfg(test)]
@@ -87,7 +144,7 @@ mod tests {
 			return Err(0);
 		}
 		let mut output = String::new();
-		for (header, payload) in packets {
+		for (_, payload) in packets {
 			let Ok(header) = redis(&payload, payload.len() as u32) else {
 				continue;
 			};

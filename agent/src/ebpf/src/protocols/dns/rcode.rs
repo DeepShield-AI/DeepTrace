@@ -1,7 +1,9 @@
+use core::mem;
+
 /// Possible RCODE values for a DNS packet   
 /// [RFC 1035](https://tools.ietf.org/html/rfc1035) Response code - this 4 bit field is set as part of responses.  
 /// The values have the following interpretation
-#[repr(u8)]
+#[repr(u16)]
 pub enum RCode {
 	/// No error condition
 	NoError = 0,
@@ -39,4 +41,21 @@ pub enum RCode {
 
 	/// Reserved for future use.
 	Reserved,
+}
+
+impl TryFrom<u16> for RCode {
+	type Error = u16;
+
+	#[inline(always)]
+	fn try_from(rcode: u16) -> Result<Self, Self::Error> {
+		if (0..=10).contains(&rcode) || rcode == 16 {
+			return Ok(from_u16(rcode));
+		}
+		Err(rcode)
+	}
+}
+
+#[inline(always)]
+fn from_u16(x: u16) -> RCode {
+	unsafe { mem::transmute(x) }
 }
