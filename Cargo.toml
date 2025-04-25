@@ -28,6 +28,10 @@ which = { version = "7.0.2", default-features = false }
 version = "8.0.0"
 default-features = false
 
+[workspace.dependencies.memchr]
+version = "2.7.4"
+default-features = false
+
 [profile.release.package.mercury-ebpf]
 debug = 2
  codegen-units = 1
