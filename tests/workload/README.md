@@ -17,7 +17,7 @@ Docker Environment: Ensure Docker and Docker Compose are installed (v20.10+ reco
     In `deeptrace` folder, use
 
     ```bash
-    docker compose -f deployment/docker/Workload.yaml up -d
+    docker-compose -f deployment/docker/Workload.yaml up -d
     ```
 
     This launches memcached, redis, and mongo server containers in background.

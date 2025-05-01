@@ -11,10 +11,10 @@ use mercury_common::structs::Data;
 use process::{construct_spans, ebpf_output, spans_output};
 use std::{ffi::CStr, sync::Arc};
 use tokio::{
-	fs::OpenOptions,
+	fs::{self, OpenOptions},
 	io::{self, AsyncWrite, AsyncWriteExt, BufWriter},
 	signal,
-	sync::{Mutex, mpsc},
+	sync::{mpsc, Mutex},
 	task::JoinSet,
 };
 
@@ -134,6 +134,8 @@ async fn main() -> anyhow::Result<()> {
 			}
 		});
 	}
+
+	let _ = fs::create_dir_all("tests/output").await?;
 
 	let ebpf_writer: Box<dyn AsyncWrite + Unpin + Send> = match (opt.stdout, opt.no_output) {
 		(true, false) => Box::new(BufWriter::new(io::stdout())),
