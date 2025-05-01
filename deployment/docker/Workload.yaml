@@ -1,0 +1,25 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  redis:
+    image: redis:6.2.4
+    container_name: redis-workload
+    ports:
+      - "6379:6379"
+
+  memcached:
+    image: memcached:1.6.7
+    container_name: memcached-workload
+    ports:
+      - "11211:11211"
+
+  mongodb:
+    image: mongo:5.0.15
+    container_name: mongo-workload
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: test
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: admin
+    ports:
+      - "27017:27017"

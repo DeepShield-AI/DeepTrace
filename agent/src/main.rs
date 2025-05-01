@@ -1,24 +1,27 @@
-#![allow(unused_imports, dead_code)]
 use aya::{
 	Ebpf,
-	maps::{AsyncPerfEventArray, HashMap, RingBuf},
+	maps::{AsyncPerfEventArray, HashMap},
 	util::online_cpus,
 };
 use bytes::BytesMut;
+use cache::Cache;
 use clap::Parser;
 use log::{debug, warn};
 use mercury_common::structs::Data;
-use process::handle_output;
-use std::ffi::CStr;
+use process::{construct_spans, ebpf_output, spans_output};
+use std::{ffi::CStr, sync::Arc};
 use tokio::{
 	fs::OpenOptions,
-	io::{self, AsyncWrite, BufWriter},
+	io::{self, AsyncWrite, AsyncWriteExt, BufWriter},
 	signal,
-	sync::mpsc,
+	sync::{Mutex, mpsc},
+	task::JoinSet,
 };
 
 mod attach;
+mod cache;
 mod process;
+mod span;
 mod utils;
 
 #[derive(Debug, Parser)]
@@ -68,43 +71,30 @@ async fn main() -> anyhow::Result<()> {
 		pids_map.insert(pid, 0, 0)?
 	}
 
-	attach::attach_socket(&mut ebpf)?;
-	attach::attach_ingress(&mut ebpf)?;
-	attach::attach_egress(&mut ebpf)?;
+	attach::attach_tracepoint(&mut ebpf)?;
+	let (ebpf_sender, ebpf_receiver) = mpsc::unbounded_channel();
+	let (message_sender, message_receiver) = mpsc::unbounded_channel();
+	let (span_sender, span_receiver) = mpsc::unbounded_channel();
 
+	let cache = Cache::new();
 	// Retrieve the perf event array from the eBPF program to read events from it.
 	let mut perf_array = AsyncPerfEventArray::try_from(ebpf.take_map("events").unwrap())?;
-	let (global_tx, global_rx) = mpsc::unbounded_channel();
+
 	// Calculate the size of the Data structure in bytes.
 	let len_of_data = size_of::<Data>();
 
-	let output: Box<dyn AsyncWrite + Unpin + Send> = match (opt.stdout, opt.no_output) {
-		(true, false) => Box::new(BufWriter::new(io::stdout())),
-		(_, true) => Box::new(io::sink()),
-		_ => {
-			let file = OpenOptions::new()
-				.create(true)
-				.write(true)
-				.truncate(true)
-				.open(&opt.file)
-				.await
-				.expect("Failed to open file");
-			Box::new(BufWriter::with_capacity(1024 * 1024, file))
-		},
-	};
-
 	// Iterate over each online CPU core. For eBPF applications, processing is often done per CPU core.
-	for cpu_id in online_cpus().expect("error") {
+	for cpu_id in online_cpus().expect("Get CPU id error") {
 		// open a separate perf buffer for each cpu
-		let mut buf = perf_array.open(cpu_id, Some(64))?;
-		let tx = global_tx.clone();
+		let mut buf = perf_array.open(cpu_id, Some(128))?;
+		let tx = ebpf_sender.clone();
+		let message = message_sender.clone();
 		// process each perf buffer in a separate task
 		tokio::spawn(async move {
 			// Prepare a set of buffers to store the data read from the perf buffer.
-			// Here, 10 buffers are created, each with a capacity equal to the size of the Data structure.
-			let mut buffers = (0..10)
-				.map(|_| BytesMut::with_capacity(len_of_data as usize))
-				.collect::<Vec<_>>();
+			// Here, 16 buffers are created, each with a capacity equal to the size of the Data structure.
+			let mut buffers =
+				(0..16).map(|_| BytesMut::with_capacity(len_of_data)).collect::<Vec<_>>();
 			loop {
 				// Attempt to read events from the perf buffer into the prepared buffers.
 				let events = match buf.read_events(&mut buffers).await {
@@ -119,9 +109,10 @@ async fn main() -> anyhow::Result<()> {
 				for i in 0..events.read {
 					let buf = &mut buffers[i];
 					let data = unsafe { *(buf.as_ptr() as *const Data) }; // Convert the buffer to a Data structure.
+					message.send(data).expect("Error sending data");
 					// handle_data(data, &tx).await.expect("error");
 					let message = format!(
-						"{}, {}, {}, {}, {}, {}, {}, length: {}, {}, {}, {:?}\n",
+						"{}, {}, {}, {}, {}, {}, {}, length: {}, {}, {}, {}, {:?}\n",
 						data.tgid,
 						data.syscall,
 						CStr::from_bytes_until_nul(&data.comm)
@@ -132,22 +123,60 @@ async fn main() -> anyhow::Result<()> {
 						data.timestamp_ns,
 						data.enter_seq,
 						data.exit_seq,
-						data.len,
+						data.payload.len,
 						data.protocol,
 						data.type_,
+						data.uuid,
 						data.buffer()
 					);
-					tx.send(message).expect("message send error");
+					tx.send(message).expect("Sending message error");
 				}
 			}
 		});
 	}
 
-	tokio::spawn(handle_output(output, global_rx));
+	let ebpf_writer: Box<dyn AsyncWrite + Unpin + Send> = match (opt.stdout, opt.no_output) {
+		(true, false) => Box::new(BufWriter::new(io::stdout())),
+		(_, true) => Box::new(io::sink()),
+		_ => {
+			let file = OpenOptions::new()
+				.create(true)
+				.write(true)
+				.truncate(true)
+				.open(&opt.file)
+				.await
+				.expect("Failed to open file");
+			Box::new(BufWriter::with_capacity(1024 * 1024, file))
+		},
+	};
+
+	let span_writer = {
+		let file = OpenOptions::new()
+			.create(true)
+			.write(true)
+			.truncate(true)
+			.open("tests/output/spans.json")
+			.await
+			.expect("Failed to open file");
+		Arc::new(Mutex::new(BufWriter::with_capacity(1024 * 1024, file)))
+	};
+
+	let writer = span_writer.clone();
+
+	let mut tasks = JoinSet::new();
+
+	tasks.spawn(ebpf_output(ebpf_writer, ebpf_receiver));
+	tasks.spawn(construct_spans(cache, message_receiver, span_sender));
+	tasks.spawn(spans_output(writer, span_receiver));
 
 	let ctrl_c = signal::ctrl_c();
 	println!("Waiting for Ctrl-C...");
 	ctrl_c.await?;
+	tasks.shutdown().await;
+
+	let mut guard = span_writer.lock().await;
+	guard.write_all(b"\t]\n}").await?;
+	guard.flush().await?;
 	println!("Exiting...");
 
 	Ok(())

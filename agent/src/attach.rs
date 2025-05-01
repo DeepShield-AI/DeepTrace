@@ -1,6 +1,18 @@
 use aya::{Ebpf, programs::TracePoint};
 
-pub(crate) fn attach_socket(ebpf: &mut Ebpf) -> anyhow::Result<()> {
+pub(crate) fn attach_tracepoint(ebpf: &mut Ebpf) -> anyhow::Result<()> {
+	attach_socket(ebpf)?;
+	attach_ingress(ebpf)?;
+	attach_egress(ebpf)?;
+	Ok(())
+}
+
+fn attach_socket(ebpf: &mut Ebpf) -> anyhow::Result<()> {
+	let sys_exit_socket: &mut TracePoint =
+		ebpf.program_mut("sys_exit_socket").unwrap().try_into()?;
+	sys_exit_socket.load()?;
+	sys_exit_socket.attach("syscalls", "sys_exit_socket")?;
+
 	let sys_enter_close: &mut TracePoint =
 		ebpf.program_mut("sys_enter_close").unwrap().try_into()?;
 	sys_enter_close.load()?;
@@ -8,7 +20,7 @@ pub(crate) fn attach_socket(ebpf: &mut Ebpf) -> anyhow::Result<()> {
 	Ok(())
 }
 
-pub(crate) fn attach_ingress(ebpf: &mut Ebpf) -> anyhow::Result<()> {
+fn attach_ingress(ebpf: &mut Ebpf) -> anyhow::Result<()> {
 	let sys_enter_read: &mut TracePoint = ebpf.program_mut("sys_enter_read").unwrap().try_into()?;
 	sys_enter_read.load()?;
 	sys_enter_read.attach("syscalls", "sys_enter_read")?;
@@ -59,7 +71,7 @@ pub(crate) fn attach_ingress(ebpf: &mut Ebpf) -> anyhow::Result<()> {
 	Ok(())
 }
 
-pub(crate) fn attach_egress(ebpf: &mut Ebpf) -> anyhow::Result<()> {
+fn attach_egress(ebpf: &mut Ebpf) -> anyhow::Result<()> {
 	let sys_enter_write: &mut TracePoint =
 		ebpf.program_mut("sys_enter_write").unwrap().try_into()?;
 	sys_enter_write.load()?;

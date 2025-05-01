@@ -14,6 +14,7 @@ mod writev;
 
 /// Socket
 mod close;
+mod socket;
 
 /// handle
 mod process;

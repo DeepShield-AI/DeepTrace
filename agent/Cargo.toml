@@ -9,8 +9,11 @@ mercury-common = { path = "src/common", features = ["user"] }
 anyhow = { workspace = true, default-features = true }
 aya = { workspace = true }
 aya-log = { workspace = true }
-bitflags = { workspace = true }
+bollard = { workspace = true}
 bytes = { workspace = true, default-features = true }
+core_affinity = { version = "0.8.3", default-features = false }
+crossbeam-channel = { version = "0.5.15", default-features = false }
+dashmap = { version = "7.0.0-rc2", default-features = false }
 env_logger = { workspace = true }
 libc = { workspace = true }
 log = { workspace = true }
@@ -18,7 +21,8 @@ clap = { workspace = true, features = ["derive"] }
 kube = { version = "0.99.0", features = ["ws"] }
 k8s-openapi = { version = "0.24.0", features = ["v1_29"] }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "net", "signal", "fs", "io-std"] }
-
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 [build-dependencies]
 anyhow = { workspace = true }
 aya-build = { workspace = true }

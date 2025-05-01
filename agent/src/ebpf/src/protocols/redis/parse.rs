@@ -78,14 +78,19 @@ pub(super) fn redis(i: &[u8], count: u32) -> Result<Redis, u32> {
 	redis.first = first;
 	if first == b'-' {
 		error(i).map_err(|_| 0_u32)?;
-		return Ok(redis)
+		Ok(redis)
 	} else {
 		let mut p = count;
-		for r in 0..3 + 2 {
+		let mut found = false;
+		for r in 0..5 + 2 {
 			if i[r] == b'\r' && i[r + 1] == b'\n' {
 				p = r as u32 + 2;
+				found = true;
 				break;
 			}
+		}
+		if !found {
+			return Err(0_u32);
 		}
 		if p > count {
 			return Err(0_u32);
@@ -93,7 +98,7 @@ pub(super) fn redis(i: &[u8], count: u32) -> Result<Redis, u32> {
 		if first != b'*' || p == count {
 			return Ok(redis);
 		}
-
+		found = false;
 		for r in 5..5 + 2 + 5 + 1 {
 			if i[r] == b'\r' && i[r + 1] == b'\n' {
 				let c = i[r + 2] as char;
@@ -107,10 +112,14 @@ pub(super) fn redis(i: &[u8], count: u32) -> Result<Redis, u32> {
 					},
 					_ => {},
 				}
+				found = true;
 				break;
 			}
 		}
-		return Ok(redis);
+		if !found {
+			return Err(0_u32);
+		}
+		Ok(redis)
 	}
 }
 

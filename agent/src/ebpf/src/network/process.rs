@@ -2,7 +2,7 @@
 use crate::{
 	maps::{DATA, EGRESS, EVENTS, INGRESS, SOCKET_INFO},
 	protocols::infer_protocol,
-	structs::Args,
+	structs::{Args, SocketInfo},
 	utils::{gen_connect_key, is_tcp_udp, quintuple_from_sock, tcp_sock_from_fd},
 	vmlinux::tcp_sock,
 };
@@ -98,9 +98,10 @@ pub fn try_exit(
 	let msg = infer_protocol(&ctx, args, quintuple, direction, exit_seq, ret as u32)?;
 	data.protocol = msg.protocol;
 	data.type_ = msg.type_;
+	data.uuid = msg.uuid;
 
-	let copy_size = args.extract(data.buf.as_mut_ptr(), ret as u32)?;
-	data.len = copy_size;
+	let copy_size = args.extract(data.payload.buf.as_mut_ptr(), ret as u32)?;
+	data.payload.len = copy_size;
 
 	data.syscall = syscall;
 	data.direction = direction;
@@ -118,5 +119,13 @@ pub fn try_close(_ctx: TracePointContext, fd: u64) -> Result<u32, u32> {
 	if unsafe { map.get(&key) }.is_some() {
 		map.remove(&key).map_err(|e| e as u32)?;
 	}
+	Ok(0)
+}
+
+pub fn try_socket(fd: u64) -> Result<u32, u32> {
+	let key = gen_connect_key(bpf_get_current_pid_tgid(), fd);
+	let map = unsafe { &SOCKET_INFO };
+	let sock = SocketInfo::new();
+	map.insert(&key, &sock, 0).map_err(|e| e as u32)?;
 	Ok(0)
 }

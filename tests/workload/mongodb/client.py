@@ -19,12 +19,11 @@ import math
 import hashlib
 
 fake = Faker()
-MONGODB_URI = "mongodb://admin:password123@10.96.1.33:27017/"
-DB_NAME = "test_database"
+MONGODB_URI = "mongodb://test:password@localhost:27017/"
+DB_NAME = "admin"
 COLLECTION_NAME = "large_documents"
 
 def generate_geo_data():
-    """生成地理空间数据"""
     return {
         "type": "Point",
         "coordinates": [Decimal128(str(Decimal('146.725660'))),
@@ -32,7 +31,6 @@ def generate_geo_data():
     }
 
 def generate_binary_data(size=1024):
-    """生成符合不同子类型的二进制数据"""
     subtypes = {
         0: lambda: struct.pack(f'{size}H', *random.sample(range(65536), size)),
         1: lambda: Code(fake.pystr()).encode(),
@@ -43,7 +41,6 @@ def generate_binary_data(size=1024):
     return Binary(subtypes[subtype](), subtype=subtype)
 
 def generate_full_bson_doc():
-    """生成覆盖所有BSON类型的文档"""
     return {
         # 基础类型
         "double": random.uniform(-1e5, 1e5),

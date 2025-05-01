@@ -107,15 +107,22 @@ impl Infer for MongoDB {
 				return Err(0);
 			}
 			return match mongodb_header(&unsafe { *buf }, info.count + socket_info.prev_len) {
-				Ok(header) =>
-					Ok(Message { protocol: L7Protocol::MongoDB, type_: header.message_type() }),
+				Ok(header) => {
+					let mut message = Message::new();
+					message.protocol = L7Protocol::MongoDB;
+					message.type_ = header.message_type();
+					Ok(message)
+				},
 				Err(_) => Err(0),
 			}
 		} else if socket_info.l7protocol == L7Protocol::MongoDB &&
 			info.direction == Direction::Egress
 		{
 			// bson response
-			return Ok(Message { protocol: L7Protocol::MongoDB, type_: MessageType::Response });
+			let mut message = Message::new();
+			message.protocol = L7Protocol::MongoDB;
+			message.type_ = MessageType::Response;
+			return Ok(message);
 		}
 		Err(0)
 	}

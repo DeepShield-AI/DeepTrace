@@ -12,26 +12,29 @@ aya-log-ebpf = { version = "0.1.1", default-features = false }
 
 anyhow = { version = "1", default-features = false }
 bitflags = { version = "2.9.0", default-features = false }
+bollard = { version = "0.18.0", default-features = false }
 bytes = { version = "1.9.0", default-features = false }
 # `std` feature is currently required to build `clap`.
 #
 # See https://github.com/clap-rs/clap/blob/61f5ee5/clap_builder/src/lib.rs#L15.
 clap = { version = "4.5.20", default-features = false, features = ["std"] }
+core_affinity = { version = "0.8.3", default-features = false }
+crossbeam-channel = { version = "0.5.15", default-features = false }
+dashmap = { version = "7.0.0-rc2", default-features = false }
+
 env_logger = { version = "0.11.5", default-features = false }
 libc = { version = "0.2.159", default-features = false }
 log = { version = "0.4.22", default-features = false }
+serde = { version = "1.0.219", default-features = false }
+serde_json = { version = "1.0.140", default-features = false }
 thiserror = { version = "2.0.11", default-features = false }
 tokio = { version = "1.40.0", default-features = false }
 which = { version = "7.0.2", default-features = false }
 
+[profile.release.package.mercury-ebpf]
+debug = 2
+codegen-units = 1
+
 [workspace.dependencies.nom]
 version = "8.0.0"
 default-features = false
-
-[workspace.dependencies.memchr]
-version = "2.7.4"
-default-features = false
-
-[profile.release.package.mercury-ebpf]
-debug = 2
- codegen-units = 1

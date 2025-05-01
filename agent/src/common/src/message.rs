@@ -1,6 +1,7 @@
 use crate::protocols::L7Protocol;
+use serde::Serialize;
 
-#[derive(Default, Clone, Copy, Debug)]
+#[derive(Default, Clone, Copy, Serialize, Debug)]
 pub enum MessageType {
 	#[default]
 	Unknown,
@@ -20,6 +21,7 @@ impl MessageType {
 
 #[derive(Default)]
 pub struct Message {
+	pub uuid: u32,
 	pub protocol: L7Protocol,
 	pub type_: MessageType,
 }

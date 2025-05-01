@@ -10,6 +10,7 @@ user = ["aya"]
 [dependencies]
 aya = { workspace = true, optional = true }
 num_enum = { version = "0.7.3", default-features = false }
-
+serde = { workspace = true, features = ["derive"] }
+serde_bytes = { version = "0.11.17", default-features = false }
 [lib]
 path = "src/lib.rs"

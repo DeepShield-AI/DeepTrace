@@ -46,9 +46,6 @@ pub(crate) static mut INFER: PerCpuArray<InferInfo> = PerCpuArray::with_max_entr
 #[map(name = "infer_buffer")]
 pub(crate) static mut INFER_BUFFER: PerCpuArray<[u8; MAX_INFER_PAYLOAD_SIZE as usize * 128]> =
 	PerCpuArray::with_max_entries(1, 0);
-// #[map(name = "message")]
-// pub(crate) static mut MESSAGE: RingBuf =
-// 	RingBuf::with_byte_size(size_of::<Data>() as u32 * (1 << 12), 0);
 /// Struct for eBPF kernel data transform to user space.
 #[map(name = "data")]
 pub(crate) static mut DATA: PerCpuArray<Data> = PerCpuArray::with_max_entries(1, 0);

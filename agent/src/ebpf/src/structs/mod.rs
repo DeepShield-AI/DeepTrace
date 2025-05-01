@@ -1,8 +1,9 @@
 mod buffer;
+mod socket;
 
 use buffer::Buffer;
 pub(crate) use buffer::InferInfo;
-use mercury_common::{consts::MAX_INFER_PAYLOAD_SIZE, protocols::L7Protocol, structs::Direction};
+pub(crate) use socket::SocketInfo;
 
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -62,32 +63,6 @@ impl Args {
 			Buffer::Normal(normal) => normal.save_prev(buf),
 			Buffer::Vectored(vectored) => vectored.save_prev(buf),
 			Buffer::Msg(msg) => msg.save_prev(buf),
-		}
-	}
-}
-
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub(crate) struct SocketInfo {
-	pub exit_seq: u32,
-	pub direction: Direction,
-	pub pre_direction: Direction,
-	pub l7protocol: L7Protocol,
-	padding: u8,
-	pub prev_len: u32,
-	pub prev_buf: [u8; MAX_INFER_PAYLOAD_SIZE as usize],
-}
-
-impl SocketInfo {
-	pub fn new() -> Self {
-		Self {
-			exit_seq: 0,
-			pre_direction: Direction::Unknown,
-			direction: Direction::Unknown,
-			l7protocol: L7Protocol::Unknown,
-			padding: 0,
-			prev_len: 0,
-			prev_buf: [0; MAX_INFER_PAYLOAD_SIZE as usize],
 		}
 	}
 }

@@ -35,7 +35,7 @@ pub(super) fn mongodb_header(i: &[u8], count: u32) -> Result<MongoDB, u32> {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::{protocols::mongodb, utils::tests::load_pcap};
+	use crate::utils::tests::load_pcap;
 	use mercury_common::consts::MAX_PAYLOAD_SIZE;
 	// the binary file is in target/debug/deps, so use ../../../
 	const FILE_DIR: &str = "../../../tests/protocols/mongodb";
@@ -59,10 +59,10 @@ mod tests {
 		}
 		let mut output = String::new();
 		for (_, payload) in packets {
-			// let Ok(header) = mongodb_header(&payload, payload.len() as u32) else {
-			// 	continue;
-			// };
-			// output.push_str(&format!("{:?}, {:?}\n", header.message_type(), header));
+			let Ok(header) = mongodb_header(&payload, payload.len() as u32) else {
+				continue;
+			};
+			output.push_str(&format!("{:?}, {:?}\n", header.message_type(), header));
 		}
 		Ok(output)
 	}

@@ -1,13 +1,16 @@
-use num_enum::{Default, FromPrimitive, IntoPrimitive};
+use num_enum::{FromPrimitive, IntoPrimitive};
+use serde::Serialize;
 
 #[repr(u8)]
-#[derive(FromPrimitive, IntoPrimitive, Copy, Clone, Default, PartialEq)]
+#[derive(
+	FromPrimitive, IntoPrimitive, Copy, Clone, Default, PartialEq, Eq, Hash, Serialize, Debug,
+)]
 pub enum L7Protocol {
 	#[default]
 	Unknown = 0,
 
 	// HTTP
-	Http1 = 20,
+	HTTP1 = 20,
 	Http2 = 21,
 
 	// RPC
@@ -55,7 +58,7 @@ impl From<&L7Protocol> for &'static str {
 	fn from(protocol: &L7Protocol) -> Self {
 		match protocol {
 			L7Protocol::Unknown => "Unknown",
-			L7Protocol::Http1 => "HTTP/1",
+			L7Protocol::HTTP1 => "HTTP/1",
 			L7Protocol::Http2 => "HTTP/2",
 			L7Protocol::Dubbo => "Dubbo",
 			L7Protocol::Grpc => "gRPC",

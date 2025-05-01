@@ -86,7 +86,12 @@ impl Infer for DNS {
 			tmp
 		};
 		match parse::dns_header(payload) {
-			Ok(header) => Ok(Message { protocol: L7Protocol::DNS, type_: header.message_type() }),
+			Ok(header) => {
+				let mut message = Message::new();
+				message.protocol = L7Protocol::DNS;
+				message.type_ = header.message_type();
+				Ok(message)
+			},
 			Err(_) => Err(0_u32),
 		}
 	}

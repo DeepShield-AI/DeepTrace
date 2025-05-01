@@ -3,9 +3,10 @@ use super::{
 	protocols::{L4Protocol, L7Protocol},
 };
 use crate::message::MessageType;
+use serde::Serialize;
 
 #[repr(u8)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Debug)]
 pub enum Syscall {
 	Read,
 	RecvMsg,
@@ -46,7 +47,7 @@ impl std::fmt::Display for Syscall {
 }
 
 #[repr(u8)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Serialize)]
 pub enum Direction {
 	Ingress,
 	Egress,
@@ -64,7 +65,7 @@ impl From<&Direction> for &'static str {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Hash, Eq, PartialEq, Serialize, Debug)]
 pub struct Quintuple {
 	pub src_addr: u32,
 	pub dst_addr: u32,
@@ -106,56 +107,107 @@ impl std::fmt::Display for Quintuple {
 
 #[repr(C)]
 #[derive(Copy, Clone)]
+pub struct Payload {
+	pub len: u32,
+	pub buf: [u8; MAX_PAYLOAD_SIZE as usize],
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+#[cfg_attr(feature = "user", derive(Serialize))]
 pub struct Data {
 	pub tgid: u32,
 	pub pid: u32,
 	pub enter_seq: u32,
 	pub exit_seq: u32,
 	pub timestamp_ns: u64,
-	pub len: u32,
-
+	pub uuid: u32,
+	// #[serde(flatten)]
 	pub quintuple: Quintuple,
 	pub syscall: Syscall,
 	pub direction: Direction,
-
+	#[cfg_attr(feature = "user", serde(serialize_with = "vec_to_string"))]
 	pub comm: [u8; TASK_COMM_LEN],
-
-	pub buf: [u8; MAX_PAYLOAD_SIZE as usize],
+	#[cfg_attr(feature = "user", serde(serialize_with = "serialize_payload"))]
+	pub payload: Payload,
 	// for protocol infer
 	pub protocol: L7Protocol,
 	// 请求或者响应
 	pub type_: MessageType,
-	// 需要解析协议
-	pub require_recheck: bool,
+}
+
+#[cfg(feature = "user")]
+impl std::fmt::Debug for Data {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"tgid: {:?}, pid: {:?}, Quintuple: {}, Time: {:?}, Command: {:?}, Syscall: {}, Direction: {:?}, Length: {}, Protocol: {}, Type: {}, UUID: {}, Enter: {}, Exit: {}, Data: {:?}",
+			self.tgid,
+			self.pid,
+			self.quintuple,
+			self.timestamp_ns,
+			String::from_utf8_lossy(&self.comm),
+			self.syscall,
+			self.direction,
+			self.payload.len,
+			self.protocol,
+			self.type_,
+			self.uuid,
+			self.enter_seq,
+			self.exit_seq,
+			String::from_utf8_lossy(&self.payload.buf[..self.payload.len as usize]),
+		)
+	}
 }
 
 #[cfg(feature = "user")]
 impl std::fmt::Display for Data {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(
-            f,
-            "tgid: {:?}, Time: {:?}, Command: {:?}, Syscall: {}, Direction: {:?}, Length: {}, Data: {:?}",
-            self.tgid,
-            self.timestamp_ns,
-            // Convert 'cmd' and 'buf' fields to strings for display.
-            // 'String::from_utf8_lossy' will replace invalid UTF-8 sequences with U+FFFD REPLACEMENT CHARACTER.
-            String::from_utf8_lossy(&self.comm),
-            self.syscall,
-            self.direction,
-            self.len,
-            String::from_utf8_lossy(&self.buf[..self.len as usize]),
-        )
+			f,
+			"tgid: {:?}, pid: {:?}, Quintuple: {}, Time: {:?}, Command: {:?}, Syscall: {}, Direction: {:?}, Length: {}, Protocol: {}, Type: {}, UUID: {}, Enter: {}, Exit: {}, Data: {:?}",
+			self.tgid,
+			self.pid,
+			self.quintuple,
+			self.timestamp_ns,
+			String::from_utf8_lossy(&self.comm),
+			self.syscall,
+			self.direction,
+			self.payload.len,
+			self.protocol,
+			self.type_,
+			self.uuid,
+			self.enter_seq,
+			self.exit_seq,
+			String::from_utf8_lossy(&self.payload.buf[..self.payload.len as usize]),
+		)
 	}
 }
-
 #[cfg(feature = "user")]
 impl Data {
 	pub fn buffer(&self) -> Vec<u8> {
-		self.buf[..self.len as usize].to_vec()
+		self.payload.buf[..self.payload.len as usize].to_vec()
 		// self.pre_payload[..self.pre_len as usize]
 		// 	.iter()
 		// 	.chain(self.buf[..self.len as usize].iter())
 		// 	.copied()
 		// 	.collect()
 	}
+}
+#[cfg(feature = "user")]
+fn vec_to_string<S>(i: &[u8], serializer: S) -> Result<S::Ok, S::Error>
+where
+	S: serde::Serializer,
+{
+	let s = String::from_utf8_lossy(i);
+	serializer.serialize_str(&s)
+}
+
+#[cfg(feature = "user")]
+fn serialize_payload<S>(payload: &Payload, serializer: S) -> Result<S::Ok, S::Error>
+where
+	S: serde::Serializer,
+{
+	let s = String::from_utf8_lossy(&payload.buf[..payload.len as usize]);
+	serializer.serialize_str(&s)
 }

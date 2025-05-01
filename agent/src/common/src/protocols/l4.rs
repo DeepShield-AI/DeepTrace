@@ -1,5 +1,7 @@
 use core::fmt;
 use num_enum::{FromPrimitive, IntoPrimitive};
+use serde::Serialize;
+
 #[derive(FromPrimitive, IntoPrimitive)]
 #[repr(u16)]
 pub enum ProtocolFamily {
@@ -168,7 +170,7 @@ impl fmt::Display for ProtocolFamily {
 }
 
 /// Standard well-defined IP protocols.
-#[derive(FromPrimitive, IntoPrimitive, Copy, Clone, PartialEq)]
+#[derive(FromPrimitive, IntoPrimitive, Copy, Clone, PartialEq, Hash, Eq, Serialize, Debug)]
 #[repr(u16)]
 pub enum L4Protocol {
 	/// Dummy protocol for TCP.

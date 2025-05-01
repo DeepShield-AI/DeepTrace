@@ -3,7 +3,6 @@
 pub mod consts;
 pub mod mask;
 pub mod message;
-pub mod packet;
 pub mod protocols;
 pub mod socket;
 pub mod structs;
