@@ -1,8 +1,12 @@
 # DeepTrace Agent Compilation Guide
 
-## Ⅰ. Docker Installation by OS
+## Use Docker
 
-### 1. **Windows Installation** 
+The easiest way is to use our docker image:
+
+### Ⅰ. Docker Installation by OS
+
+#### 1. **Windows Installation** 
 **Prerequisites**:
 - Windows 10/11 64-bit (Build 19045+)
 - WSL 2 enabled (`wsl --install`)
@@ -23,7 +27,7 @@ Docker Desktop → Settings → Resources → WSL Integration → Enable Ubuntu
 docker --version
 ```
 
-### 2. **macOS Installation** 
+#### 2. **macOS Installation** 
 **Requirements**:
 - macOS 10.15+ (Catalina+) for Intel
 - macOS 11+ (Big Sur+) for Apple Silicon
@@ -41,7 +45,7 @@ brew install --cask docker
 docker --version
 ```
 
-### 3. **Linux Installation** 
+#### 3. **Linux Installation** 
 **For Ubuntu/Debian**:
 ```bash
 # 1. Uninstall old versions
@@ -78,10 +82,9 @@ sudo systemctl start docker
 
 ---
 
-## Ⅱ. Image Import Operations (Optional)
+### Ⅱ. Image Import Operations (Optional)
 
-## I. Architecture Detection & Prerequisites  
-### 1. **Host Architecture Detection**  
+#### 1. **Host Architecture Detection**  
 ```bash  
 # Linux/Unix  
 uname -m  # Output: x86_64 (AMD64), aarch64 (ARM64), armv7l (ARMv7), etc.  
@@ -92,15 +95,15 @@ uname -m  # Output: x86_64 (AMD64), aarch64 (ARM64), armv7l (ARMv7), etc.
 
 ---  
 
-## II. Single-Architecture Image Import  
+#### 2. Single-Architecture Image Import  
 
-First, clone the repository and navigate to the directory:
+First, assuming you have already cloned the repository and are currently in the `DeepTrace` directory:
 ```bash
-git clone https://github.com/DeepShield-AI/DeepTrace.git
-cd DeepTrace/deployment/docker/images
+# Navigate to the image directory
+cd deployment/docker/images
 ```
 
-### 1. **x86_64/AMD64**  
+**x86_64/AMD64**  
 ```bash
 cd x86_64
 # Import local .tar image  
@@ -110,7 +113,7 @@ docker load -i mongo.tar
 docker load -i ubuntu.tar
 ```  
 
-### 2. **ARM64**  
+**ARM64**  
 ```bash
 cd aarch64
 # Import local image  
@@ -122,9 +125,9 @@ docker load -i ubuntu.tar
 
 ---  
 
-## Ⅲ. Build & Deployment
+### Ⅲ. Build & Deployment
 
-### 1. **Compile Agent**
+#### 1. **Compile Agent**
 ```bash
 git clone https://github.com/DeepShield-AI/DeepTrace.git
 cd DeepTrace
@@ -138,10 +141,14 @@ docker build \
 
 _Note: The Docker image build process can be time-consuming. Please be patient during this period and ensure stable network connectivity to both github.com and Docker Hub (hub.docker.com), especially if relying on remote image repositories rather than local cached images._
 
-### 2. **Check Image**
+#### 2. **Check Image**
 ```bash
 docker images | grep deeptrace
 # Output:
 deeptrace            latest      04ed8cf89494   now    5.89GB
 ```
 The output of `docker images | grep deeptrace` should show the image you just built. If it doesn't, you may need to check your Docker build process or network connectivity.
+
+## Manually compilation
+
+TODO

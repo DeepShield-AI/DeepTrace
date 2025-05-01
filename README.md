@@ -20,7 +20,7 @@ It is capable of providing a tracing accuracy rate of over 90% in a non-intrusiv
 
 It takes just a few minutes to install DeepTrace. To get started, check out the Install Guides.
 
-## Compile DeepTrace from Source
+## Compile DeepTrace from Source Code
 
 - [Compile DeepTrace use docker](docs/build/build.md)
 
