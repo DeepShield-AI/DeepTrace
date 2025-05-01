@@ -58,7 +58,10 @@ Docker Environment: Ensure Docker and Docker Compose are installed (v20.10+ reco
     From host terminal:
 
     ```bash
-    cd test
+    cd tests
+    python3 -m venv workload/env
+    source workload/env/bin/activate
+    pip install redis python-binary-memcached
     python3 -m workload.prepare_spans
     ```
 
