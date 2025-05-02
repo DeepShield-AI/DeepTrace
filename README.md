@@ -24,8 +24,8 @@ Welcome to DeepTrace! Follow these simple steps to set up and verify your instal
 
 ## Installation Guide
 
-### Docker-based Compilation
-- [Compile DeepTrace using Docker](docs/build/build.md) - Containerized build environment for consistent results
+### Compilation
+- [Compile DeepTrace](docs/build/build.md)
 
 ## Verification & Testing
 Ensure your installation works correctly with our test suite:

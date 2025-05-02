@@ -22,36 +22,14 @@ docker ps
 ```
 
 This launches memcached, redis, and mongo server containers in background.
-### Initiate DeepTrace Container
+### Initiate DeepTrace
 
-```bash
-docker run --privileged --pid=host -it deeptrace bash
-# Verify:
-docker ps | grep deeptrace
-# Example output:
-# 9955619bac99   deeptrace         "bash"                   2 seconds ago   Up 2 seconds                              relaxed_panini
-```
-
-_Note: The --privileged flag and PID namespace sharing are required for system tracing_
-### Mount Tracing Subsystem
-
-```bash
-mount -t tracefs nodev /sys/kernel/tracing
-```
-
-This exposes kernel tracing capabilities to DeepTrace.
-
-### Start DeepTrace Collector
-
-You can start the DeepTrace collector using the following command:
 ```bash
 chmod +x ./scripts/run.sh
 ./scripts/run.sh
 ```
-This command starts the DeepTrace collector.
 
-### Generate Test Spans (Host Machine)
-From host terminal:
+### Generate Test Spans
 
 ```bash
 cd tests
@@ -72,7 +50,6 @@ Use Ctrl+C in DeepTrace container to:
     Generate span artifacts
     Clean up tracing resources
 ### Validate Span Construction
-Within container:
 
 ```bash
 cd tests/workload

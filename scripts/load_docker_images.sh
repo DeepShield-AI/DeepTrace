@@ -18,12 +18,8 @@ esac
 # Enter the subdirectory for the architecture
 cd "$subdir" || { echo "Error: dictory $subdir is not exist" >&2; exit 1; }
 
-echo "Merging Docker images..."
-# Merge the split tar files into a single tar file
-cat deeptrace_part_* > deeptrace.tar
-
 # List of Docker images to load
-images=("memcached" "redis" "mongo" "ubuntu" "deeptrace")
+images=("memcached" "redis" "mongo" "ubuntu")
 
 # Load Docker images
 for image in "${images[@]}"; do
