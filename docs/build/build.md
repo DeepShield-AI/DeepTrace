@@ -4,7 +4,7 @@
 
 The easiest way is to use our docker image:
 
-### Ⅰ. Docker Installation by OS
+### 1. Docker Installation by OS
 
 You can install Docker by following the official instructions: [Docker Installation](https://docs.docker.com/get-started/get-docker/)
 
@@ -13,9 +13,18 @@ Check if Docker is installed correctly:
 docker --version
 ```
 
+### 2. Git lfs
+
+Git LFS is required to handle large files in Git repositories. You can install it by following the official instructions: [Git LFS Installation](https://git-lfs.com/)
+
+Then you can clone the repository:
+```bash
+git lfs clone https://github.com/DeepShield-AI/DeepTrace.git
+```
+
 ---
 
-### Ⅱ. Image Import Operations
+### 3. Image Import Operations
 
 Once Docker is installed, you can import our pre-built Docker image:
 ```bash
@@ -30,7 +39,7 @@ If you load the images, you don't need to compile the image again.
 
 ---  
 
-### Ⅲ. Build & Deployment (Optional)
+### 4. Build & Deployment (Optional)
 
 #### 1. **Compile Agent**
 ```bash
