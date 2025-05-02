@@ -19,6 +19,7 @@ Git LFS is required to handle large files in Git repositories. You can install i
 
 Then you can clone the repository:
 ```bash
+git lfs install
 git lfs clone https://github.com/DeepShield-AI/DeepTrace.git
 ```
 
