@@ -1,6 +1,6 @@
 # DeepTrace Span Construct Testing Guide
 
-The DeepTrace system is designed to construct spans from network transactions. This guide will walk you through the process of testing span construction, including identifying the parent-child relationships and calculating span construct accuracy.
+The DeepTrace system is designed to construct spans from network transactions. This guide will walk you through the process of testing span construction, including identifying the request-response relationships and calculating span construct accuracy.
 
 ## Overview
 
@@ -10,9 +10,8 @@ In this guide, we need to set up a test environment, initiate a DeepTrace contai
 
 ### Start Workload Services
 
-In `deeptrace` folder, use
-
 ```bash
+cd DeepTrace
 docker-compose -f deployment/docker/Workload.yaml up -d
 # Verify:
 docker ps
@@ -41,25 +40,16 @@ mount -t tracefs nodev /sys/kernel/tracing
 ```
 
 This exposes kernel tracing capabilities to DeepTrace.
-### Identify Target Processes
 
-```bash
-pgrep -f "memcached|redis"
-# Example output:
-# 91634 # memcached
-# 91636 # redis
-```
-_Note: These PIDs will be used for performance monitoring and trace collection._
 ### Start DeepTrace Collector
 
+You can start the DeepTrace collector using the following command:
 ```bash
-cargo run --release -- --pids 91634,91636
+chmod +x ./scripts/run.sh
+./scripts/run.sh
 ```
+This command starts the DeepTrace collector.
 
-Flags explanation:
-    --release: Optimized build for performance-sensitive tracing
-    --pids: Specifies processes to monitor (comma-separated)
-_Note: The pids is separated by commas, not spaces._
 ### Generate Test Spans (Host Machine)
 From host terminal:
 

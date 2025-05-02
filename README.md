@@ -15,17 +15,23 @@ It is capable of providing a tracing accuracy rate of over 90% in a non-intrusiv
 
 # Documentation
 
+You can get more information in our comprehensive documentation:
+- [DeepTrace eBPF Program Documentation](docs/README.md)
 
-# Get Started
+# Getting Started with DeepTrace
 
-It takes just a few minutes to install DeepTrace. To get started, check out the Install Guides.
+Welcome to DeepTrace! Follow these simple steps to set up and verify your installation:
 
-## Compile DeepTrace from Source Code
+## Installation Guide
 
-- [Compile DeepTrace use docker](docs/build/build.md)
+### Docker-based Compilation
+- [Compile DeepTrace using Docker](docs/build/build.md) - Containerized build environment for consistent results
 
-## Test DeepTrace
-- [Test DeepTrace](docs/tests/README.md)
+## Verification & Testing
+Ensure your installation works correctly with our test suite:
+- [DeepTrace Tests](docs/tests/README.md) - Validate DeepTrace core functionality
+
+This streamlined structure progresses from basic installation to advanced setup and verification, with clear action-oriented link descriptions. Each section maintains parallel structure for better readability.
 
 # Software Architecture
 

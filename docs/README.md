@@ -32,14 +32,8 @@ The eBPF code in the agent is responsible for capturing request metadata by inte
   - Description: Provides step-by-step instructions on how to set up and use the DeepTrace tool. It includes details on configuration, deployment, and operational best practices to help users maximize the tool's capabilities.
 
 
-
-
-
-
 ## Tested Environments
 
 DeepTrace is tested deployable and runnable on 
 
-- Kubernetes v1.29.0, Kernel version 6.8.0-55-generic, Ubuntu 22.04.2 LTS
-
-We strongly recommend deploying on Linux 6.8.0 version, as there may be strange bugs in lower versions
+- Docker v26.1.3, Kernel version 6.8.0-55-generic, Ubuntu 24.04.2 LTS
