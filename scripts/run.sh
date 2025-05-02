@@ -14,5 +14,8 @@ echo "Workloads found: ${pids//,/ , }"
 
 # Start DeepTrace
 echo "Starting DeepTrace... (PID: ${pids})"
-exec cargo run --release -- \
+RUST_LOG=info cargo run \
+    --release \
+    --config 'target."cfg(all())".runner="sudo -E"' -- \
     --pids "$pids"
+    
