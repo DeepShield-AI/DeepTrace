@@ -83,6 +83,14 @@ sed -i '2i\#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals
 # Build the project
 cargo build --release  # Compile with optimizations 
 ```
+
+### Step 6: Load the Workload Images
+Import our pre-built Docker image (memcached, redis, and mongo):
+```bash
+cd DeepTrace/
+chmod +x ./scripts/load_docker_images.sh
+./scripts/load_docker_images.sh
+```
 ---
 
 ### References

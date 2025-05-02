@@ -19,7 +19,7 @@ esac
 cd "$subdir" || { echo "Error: dictory $subdir is not exist" >&2; exit 1; }
 
 # List of Docker images to load
-images=("memcached" "redis" "mongo" "ubuntu")
+images=("memcached" "redis" "mongo")
 
 # Load Docker images
 for image in "${images[@]}"; do

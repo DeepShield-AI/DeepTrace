@@ -13,3 +13,4 @@ Cargo.lock
 tests/dev
 tests/workload/env/
 tests/workload/**/__pycache__/
+resources/docker/images/**/ubuntu.*
