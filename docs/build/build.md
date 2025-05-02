@@ -27,7 +27,7 @@ source ~/.bashrc
 
 ---
 
-## Step 2: Build and Install `bpftool`
+### Step 2: Build and Install `bpftool`
 ```bash
 git clone --recurse-submodules https://github.com/libbpf/bpftool.git
 cd bpftool/src
@@ -44,7 +44,7 @@ sudo mount -t tracefs nodev /sys/kernel/tracing
 
 ---
 
-## Step 3: Set Up Rust and BPF Toolchain
+### Step 3: Set Up Rust and BPF Toolchain
 ```bash
 # Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=stable
@@ -64,7 +64,7 @@ cargo install --git https://github.com/aya-rs/aya -- aya-tool
 
 ---
 
-## Step 4: Clone the Repository
+### Step 4: Clone the Repository
 ```bash
 git clone https://github.com/DeepShield-AI/DeepTrace.git
 cd DeepTrace
@@ -72,7 +72,7 @@ cd DeepTrace
 
 ---
 
-## Step 5: Generate Kernel Bindings
+### Step 5: Generate Kernel Bindings
 ```bash
 mkdir -p agent/src/ebpf/src
 aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > agent/src/ebpf/src/vmlinux.rs
@@ -85,7 +85,7 @@ cargo build --release  # Compile with optimizations
 ```
 ---
 
-## References
+### References
 - [Ubuntu 24.04 Installation Guide](https://ubuntu.com/download/desktop)   
 - [bpftool Installation from Source](https://99rdp.com/mastering-ebpf-how-to-install-bpftool-in-linux)   
 - [Aya eBPF Framework Documentation](https://github.com/aya-rs/aya)   
