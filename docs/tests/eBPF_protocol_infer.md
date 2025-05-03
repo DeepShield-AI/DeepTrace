@@ -29,10 +29,10 @@ RUST_LOG=info cargo run --release --config 'target."cfg(all())".runner="sudo -E"
 ```
 - In another terminal, generate workload traffic:
 ```bash
-cd tests/eBPF/protocols/
+cd tests/workload/{protocols}
 python3 -m venv env  # Create Python virtual environment
 source env/bin/activate  # Activate Python virtual environment
-pip install -r redis python-binary-memcached pymongo
+pip install -r redis python-binary-memcached pymongo aiohttp
 cd {protocol}            # Target protocol directory
 python3 client.py
 ```
