@@ -1,0 +1,26 @@
+[package]
+name = "provenance-ebpf"
+version = "0.1.0"
+build = "build.rs"
+readme = "README.md"
+
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aya-ebpf = { workspace = true }
+aya-log-ebpf = { workspace = true }
+
+[build-dependencies]
+which = { workspace = true }
+
+[[bin]] 
+name = "provenance"
+path = "src/main.rs"
+
+[lib]
+name = "provenance"
+path = "src/lib.rs"

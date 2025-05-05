@@ -4,24 +4,20 @@ use aya::{
 	util::online_cpus,
 };
 use bytes::BytesMut;
-use cache::Cache;
 use clap::Parser;
 use log::{debug, warn};
-use mercury_common::structs::Data;
-use process::{construct_spans, ebpf_output, spans_output};
 use std::{ffi::CStr, sync::Arc};
 use tokio::{
 	fs::{self, OpenOptions},
 	io::{self, AsyncWrite, AsyncWriteExt, BufWriter},
 	signal,
-	sync::{mpsc, Mutex},
+	sync::{Mutex, mpsc},
 	task::JoinSet,
 };
+use trace::{message::ebpf_output, span::{construct_spans, spans_output}, Cache};
+use trace_common::structs::Data;
+use utils::attach;
 
-mod attach;
-mod cache;
-mod process;
-mod span;
 mod utils;
 
 #[derive(Debug, Parser)]
@@ -51,7 +47,7 @@ async fn main() -> anyhow::Result<()> {
 	// This will include eBPF object file as raw bytes at compile-time and load it at runtime.
 	// This approach is recommended for most real-world use cases. If you would like to specify the
 	// eBPF program at runtime rather than at compile-time, you can reach for `Bpf::load_file` instead.
-	let mut ebpf = Ebpf::load(aya::include_bytes_aligned!(concat!(env!("OUT_DIR"), "/mercury")))?;
+	let mut ebpf = Ebpf::load(aya::include_bytes_aligned!(concat!(env!("OUT_DIR"), "/trace")))?;
 
 	if let Err(e) = aya_log::EbpfLogger::init(&mut ebpf) {
 		// This can happen if you remove all log statements from your eBPF program.

@@ -1,0 +1,22 @@
+[package]
+name = "trace_common"
+version = "0.1.0"
+readme = "README.md"
+
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[features]
+default = []
+user = ["aya"]
+
+[dependencies]
+aya = { workspace = true, optional = true }
+num_enum = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+
+[lib]
+path = "src/lib.rs"

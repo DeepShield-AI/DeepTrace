@@ -1,0 +1,3 @@
+pub const BINARY_PROTOCOL_VERSION: u16 = 1;
+pub const COMPACT_PROTOCOL_VERSION: u8 = 1;
+pub const COMPACT_PROTOCOL_ID: u8 = 0x82;

@@ -16,7 +16,7 @@ source "$HOME/.cargo/env"
 echo 'source "$HOME/.cargo/env"' >> ~/.bashrc
 
 # Install essential components
-echo "Installing common toolchain components..."
+echo "Installing trace_common toolchain components..."
 rustup component add rust-src rustfmt clippy
 
 # Verify installation

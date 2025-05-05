@@ -1,0 +1,50 @@
+[package]
+name = "trace-ebpf"
+version = "0.1.0"
+build = "build.rs"
+edition = "2021"
+readme = "README.md"
+
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aya-ebpf = { workspace = true }
+aya-log-ebpf = { workspace = true }
+bitflags = { workspace = true }
+trace_common = { path = "../../common/trace-common" }
+nom = { workspace = true, default-features = false }
+num_enum = { workspace = true }
+
+[dev-dependencies]
+pcap = { version = "2.2.0" }
+pnet = { version = "0.35.0" }
+
+[build-dependencies]
+which = { workspace = true }
+
+[[bin]] 
+name = "trace"
+path = "src/main.rs"
+
+[lib]
+name = "trace"
+path = "src/lib.rs"
+
+[profile.dev]
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = true
+panic = "abort"
+incremental = false
+codegen-units = 1
+rpath = false
+
+[profile.release]
+lto = true
+panic = "abort"
+codegen-units = 1

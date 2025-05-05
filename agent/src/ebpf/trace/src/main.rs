@@ -1,0 +1,10 @@
+#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(test), no_main)]
+#![allow(clippy::empty_loop)]
+
+pub use trace::network;
+
+#[cfg_attr(not(test), panic_handler)]
+fn panic(_info: &core::panic::PanicInfo) -> ! {
+	loop {}
+}

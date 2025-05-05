@@ -1,19 +1,29 @@
 [package]
 name = "agent"
+keywords = ["ebpf", "kernel", "linux", "network", "cloud"]
+description = "The DeepTrace project aims to provide deep observability for complex cloud-native applications."
+readme = "README.md"
 version = "0.1.0"
-edition = "2024"
+
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+rust-version.workspace = true
 
 [dependencies]
-mercury-common = { path = "src/common", features = ["user"] }
+trace = { path = "src/user/trace" }
+
+trace_common = { path = "src/common/trace-common", features = ["user"] }
+provenance_common = { path = "src/common/provenance-common", features = [] }
 
 anyhow = { workspace = true, default-features = true }
 aya = { workspace = true }
 aya-log = { workspace = true }
 bollard = { workspace = true}
 bytes = { workspace = true, default-features = true }
-core_affinity = { version = "0.8.3", default-features = false }
-crossbeam-channel = { version = "0.5.15", default-features = false }
-dashmap = { version = "7.0.0-rc2", default-features = false }
+# core_affinity = { version = "0.8.3", default-features = false }
+# crossbeam-channel = { version = "0.5.15", default-features = false }
 env_logger = { workspace = true }
 libc = { workspace = true }
 log = { workspace = true }
@@ -22,7 +32,7 @@ kube = { version = "0.99.0", features = ["ws"] }
 k8s-openapi = { version = "0.24.0", features = ["v1_29"] }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "net", "signal", "fs", "io-std"] }
 serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
+
 [build-dependencies]
 anyhow = { workspace = true }
 aya-build = { workspace = true }
@@ -38,8 +48,9 @@ aya-build = { workspace = true }
 # Finally note that *any* usage of `artifact = ...` in *any* Cargo.toml in the workspace breaks
 # workflows with stable cargo; stable cargo outright refuses to load manifests that use unstable
 # features.
-mercury-ebpf = { path = "src/ebpf" }
+trace-ebpf = { path = "src/ebpf/trace" }
+provenance-ebpf = { path = "src/ebpf/provenance" }
 
 [[bin]]
-name = "mercury"
+name = "agent"
 path = "src/main.rs"
