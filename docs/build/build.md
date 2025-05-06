@@ -75,10 +75,10 @@ cd DeepTrace
 ### Step 5: Generate Kernel Bindings
 ```bash
 mkdir -p agent/src/ebpf/src
-aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > agent/src/ebpf/src/vmlinux.rs
+aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > agent/src/ebpf/trace/src/vmlinux.rs
 
 # Allow non-standard naming in generated code
-sed -i '2i\#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code, unnecessary_transmutes)]' agent/src/ebpf/src/vmlinux.rs
+sed -i '2i\#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code, unnecessary_transmutes)]' agent/src/ebpf/trace/src/vmlinux.rs
 
 # Build the project
 cargo build --release  # Compile with optimizations 
@@ -92,6 +92,17 @@ chmod +x ./scripts/load_docker_images.sh
 ./scripts/load_docker_images.sh
 ```
 ---
+
+### Step 7: Output
+
+The compiled agent will be located at `target/release/deeptrace`. You can run it with:
+```bash
+RUST_LOG=info cargo run --release \
+  --config 'target."cfg(all())".runner="sudo -E"' \
+  -- --pids <pid>
+```
+
+For more testing, check the [Testing Guide](../tests/README.md) for more details.
 
 ### References
 - [Ubuntu 24.04 Installation Guide](https://ubuntu.com/download/desktop)   

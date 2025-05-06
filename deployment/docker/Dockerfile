@@ -24,8 +24,8 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --de
     cargo install --git https://github.com/aya-rs/aya -- aya-tool && \
     . "$HOME/.cargo/env" && \
     mkdir -p agent/src/ebpf/src && \
-    aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > agent/src/ebpf/src/vmlinux.rs && \
-    sed -i '2i\#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code, unnecessary_transmutes)]' agent/src/ebpf/src/vmlinux.rs && \
+    aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > agent/src/ebpf/trace/src/vmlinux.rs && \
+    sed -i '2i\#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code, unnecessary_transmutes)]' agent/src/ebpf/trace/src/vmlinux.rs && \
     cargo build --release
 
 ENV RUST_LOG=info

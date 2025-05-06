@@ -1,5 +1,6 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), no_main)]
+#![allow(dead_code)]
 #![allow(clippy::empty_loop)]
 
 pub use trace::network;
