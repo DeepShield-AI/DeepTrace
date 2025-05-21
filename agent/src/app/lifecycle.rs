@@ -40,17 +40,16 @@ async fn run() -> Result<(), AgentError> {
 		message_receiver.clone(),
 	);
 	ebpf_log.start()?;
-	// let mut span_log = SenderProcess::new(
-	// 	"span",
-	// 	Elastic::new(elastic_config()).await.expect("Elastic error"),
-	// 	span_receiver,
-	// 	sender_config(),
-	// );
 	let mut span_log = SenderProcess::new(
 		"span",
-		FlatFile::new("span.txt").await.expect("Flat file error"),
+		Elastic::new(elastic_config()).await.expect("Elastic error"),
 		span_receiver,
 	);
+	// let mut span_log = SenderProcess::new(
+	// 	"span",
+	// 	FlatFile::new("span.txt").await.expect("Flat file error"),
+	// 	span_receiver,
+	// );
 	span_log.start()?;
 	let mut span_constructor = SpanConstructor::new(message_receiver, span_sender);
 	span_constructor.start()?;
