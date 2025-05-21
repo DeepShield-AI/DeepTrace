@@ -1,5 +1,5 @@
 [workspace]
-members = ["agent", "server"]
+members = ["agent"]
 resolver = "2"
 default-members = ["agent"]
 
