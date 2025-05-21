@@ -1,0 +1,19 @@
+[package]
+name = "trace-tests"
+version = "0.1.0"
+edition = "2024"
+readme = "README.md"
+
+[dependencies]
+# testcontainers-modules = { version = "0.12.0", features = ["redis"]}
+testcontainers = { version = "*", features = ["blocking"] }
+anyhow = { workspace = true }
+# bb8-redis = { version = "*"}
+rand = { version = "*"}
+redis = { version = "*", features = ["tokio-comp"]}
+tokio = { workspace = true, features = ["process"]}
+
+
+[lib]
+name = "trace_tests"
+path = "src/lib.rs"

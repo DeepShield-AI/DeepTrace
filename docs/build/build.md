@@ -74,7 +74,7 @@ cd DeepTrace
 
 ### Step 5: Generate Kernel Bindings
 ```bash
-mkdir -p agent/src/ebpf/src
+mkdir -p agent/src/ebpf/trace/src
 aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > agent/src/ebpf/trace/src/vmlinux.rs
 
 # Allow non-standard naming in generated code

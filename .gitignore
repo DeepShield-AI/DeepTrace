@@ -16,4 +16,5 @@ tests/protocols/
 tests/workload/env/
 tests/workload/__pycache__
 tests/workload/**/__pycache__/
+tests/**.py
 resources/docker/images/**/ubuntu.*

@@ -12,26 +12,39 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-trace = { path = "src/user/trace" }
-
-trace_common = { path = "src/common/trace-common", features = ["user"] }
-provenance_common = { path = "src/common/provenance-common", features = [] }
+trace_common = { path = "src/trace/common", features = ["user"] }
+provenance_common = { path = "src/provenance/common", features = ["user"]}
 
 anyhow = { workspace = true, default-features = true }
+
+arc-swap = { workspace = true }
 aya = { workspace = true }
 aya-log = { workspace = true }
-bollard = { workspace = true}
+bollard = { workspace = true }
 bytes = { workspace = true, default-features = true }
+
 # core_affinity = { version = "0.8.3", default-features = false }
-# crossbeam-channel = { version = "0.5.15", default-features = false }
+clap = { workspace = true, features = ["derive"] }
+chrono = { workspace = true, features = ["clock"]}
+config = { workspace = true }
+crossbeam-channel = { workspace = true }
+dashmap = { workspace = true, default-features = false }
+elasticsearch = { workspace = true }
 env_logger = { workspace = true }
+flate2 = { workspace = true, features = ["zlib-rs"], default-features = false }
 libc = { workspace = true }
 log = { workspace = true }
-clap = { workspace = true, features = ["derive"] }
-kube = { version = "0.99.0", features = ["ws"] }
-k8s-openapi = { version = "0.24.0", features = ["v1_29"] }
+
+# kube = { version = "0.99.0", features = ["ws"] }
+# k8s-openapi = { version = "0.24.0", features = ["v1_29"] }
+nix = { workspace = true, features = ["process", "signal"] }
+thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "net", "signal", "fs", "io-std"] }
+rocket = { workspace = true, features = ["json"]}
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+signal-hook = { workspace = true, features = ["iterator"] }
+url = { workspace = true }
 
 [build-dependencies]
 anyhow = { workspace = true }
@@ -48,8 +61,8 @@ aya-build = { workspace = true }
 # Finally note that *any* usage of `artifact = ...` in *any* Cargo.toml in the workspace breaks
 # workflows with stable cargo; stable cargo outright refuses to load manifests that use unstable
 # features.
-trace-ebpf = { path = "src/ebpf/trace" }
-provenance-ebpf = { path = "src/ebpf/provenance" }
+trace-ebpf = { path = "src/trace/ebpf" }
+provenance-ebpf = { path = "src/provenance/ebpf" }
 
 [[bin]]
 name = "agent"

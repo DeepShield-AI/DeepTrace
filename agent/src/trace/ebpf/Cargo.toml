@@ -1,0 +1,67 @@
+[package]
+name = "trace-ebpf"
+version = "0.1.0"
+build = "build.rs"
+edition = "2021"
+readme = "README.md"
+
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aya-ebpf = { workspace = true }
+aya-log-ebpf = { workspace = true }
+bitflags = { workspace = true }
+trace_common = { path = "../common" }
+nom = { workspace = true, default-features = false }
+num_enum = { workspace = true }
+
+[dev-dependencies]
+# trace-tests = { path = "../tests" }
+pcap = { version = "2.2.0" }
+pnet = { version = "0.35.0" }
+# testcontainers-modules = { version = "0.12.0", features = ["redis"]}
+testcontainers = { version = "*", features = ["blocking"] }
+rand = { version = "*" }
+redis = { version = "*", features = ["tokio-comp"] }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+anyhow = { workspace = true }
+# bollard = { workspace = true, default-features = true}
+
+[build-dependencies]
+which = { workspace = true }
+
+[[bin]] 
+name = "trace"
+path = "src/main.rs"
+
+[lib]
+name = "trace"
+path = "src/lib.rs"
+
+[profile.test]
+opt-level = 0 
+# [profile.dev]
+# opt-level = 3
+# debug = false
+# debug-assertions = false
+# overflow-checks = false
+# lto = true
+# panic = "abort"
+# incremental = false
+# codegen-units = 1
+# rpath = false
+
+# [profile.release]
+# opt-level = 3
+# debug = 2
+# lto = true
+# panic = "abort"
+# codegen-units = 1
+
+[[test]]
+name = "redis"
+path = "src/protocols/redis/tests/mod.rs"
+harness = false

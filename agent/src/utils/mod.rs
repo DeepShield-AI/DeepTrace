@@ -1,28 +1,28 @@
 // use k8s_openapi::api::core::v1::Pod;
 // use kube::{Api, Client, api::ListParams};
 // use log::warn;
-use bollard::{Docker, container::ListContainersOptions};
-use std::error::Error;
+// use bollard::{Docker, container::ListContainersOptions};
+// use std::error::Error;
 
-pub mod attach;
+pub mod sys;
 
-const CONTAINERS: &[&str] = &["redis", "mongodb", "memcached"];
-pub async fn get_pids() -> Result<Vec<u32>, Box<dyn Error>> {
-	let mut pids = Vec::with_capacity(32);
-	let docker = Docker::connect_with_defaults()?;
+// const CONTAINERS: &[&str] = &["redis", "mongodb", "memcached"];
+// pub async fn get_pids() -> Result<Vec<u32>, Box<dyn Error>> {
+// 	let mut pids = Vec::with_capacity(32);
+// 	let docker = Docker::connect_with_defaults()?;
 
-	let options = Some(ListContainersOptions::<String> { all: true, ..Default::default() });
-	let containers = docker.list_containers(options).await?;
-	for container in containers {
-		let inspect = docker.inspect_container(&container.id.unwrap(), None).await?;
-		let image_name = inspect.config.as_ref().and_then(|c| c.image.as_deref()).unwrap_or("");
-		if CONTAINERS.iter().any(|white_list| image_name.contains(white_list)) {
-			pids.push(inspect.state.as_ref().and_then(|s| s.pid).unwrap_or(0) as u32);
-		}
-	}
+// 	let options = Some(ListContainersOptions::<String> { all: true, ..Default::default() });
+// 	let containers = docker.list_containers(options).await?;
+// 	for container in containers {
+// 		let inspect = docker.inspect_container(&container.id.unwrap(), None).await?;
+// 		let image_name = inspect.config.as_ref().and_then(|c| c.image.as_deref()).unwrap_or("");
+// 		if CONTAINERS.iter().any(|white_list| image_name.contains(white_list)) {
+// 			pids.push(inspect.state.as_ref().and_then(|s| s.pid).unwrap_or(0) as u32);
+// 		}
+// 	}
 
-	Ok(pids)
-}
+// 	Ok(pids)
+// }
 
 // const FILTERED: &[&str] = &["redis", "mongodb", "memcached", "jaeger"];
 // pub async fn get_pids() -> Result<Vec<u32>, Box<dyn Error>> {

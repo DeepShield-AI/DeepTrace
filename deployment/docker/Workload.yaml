@@ -23,3 +23,11 @@ services:
       MONGO_INITDB_DATABASE: admin
     ports:
       - "27017:27017"
+  mysql:
+    image: mysql:9.3.0
+    container_name: mysql-workload
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: test
+    ports:
+      - "3306:3306"

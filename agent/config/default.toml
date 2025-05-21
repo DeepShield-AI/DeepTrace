@@ -1,0 +1,31 @@
+[agent]
+workers = 16
+# channel_size = 4096
+
+[api]
+address = "0.0.0.0"
+port = 7899
+workers = 1
+ident = "deeptrace"
+
+
+[sender]
+batch_size = 1024
+
+[sender.flat_file]
+mem_buffer_size = 67108864
+file_buffer_size = 67108864
+file_size_limit = 107374182400
+
+[sender.elastic]
+node_url = "http://0.0.0.0:9200"
+username = "elastic"
+password = "netsys204"
+request_timeout = 10
+index_name = "workload"
+bulk_size = 1024
+
+[ebpf]
+pids = [3056354, 3056217, 3056210]
+# pids = [3244665, 3244682]
+
