@@ -1,0 +1,68 @@
+# 指定 Docker Compose 文件的版本
+version: '3.7'
+
+# 定义服务
+services:
+  # Elasticsearch 服务
+  es:
+    # 使用 Elasticsearch 镜像
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    # 指定容器名称
+    container_name: es
+    # 设置环境变量
+    environment:
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+    # 挂载卷
+    volumes:
+      - es-data:/user/share/es/data
+      - es-logs:/user/share/es/logs
+      - es-plugins:/user/share/es/plugins
+    # 授予特权权限
+    privileged: true
+    # 指定网络
+    networks:
+      - es-net
+    # 端口映射
+    ports:
+      # - "127.0.0.1:9200:9200"
+      - "9200:9200"
+      - "127.0.0.1:9300:9300"
+
+  # Kibana 服务
+  kibana:
+    # 使用 Kibana 镜像
+    image: docker.elastic.co/kibana/kibana:8.17.0
+    # 指定容器名称
+    container_name: kibana
+    # 设置环境变量
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es:9200
+      - ELASTICSEARCH_USERNAME=kibana
+      - ELASTICSEARCH_PASSWORD=netsys204
+    # 指定网络
+    networks:
+      - es-net
+    # 端口映射
+    ports:
+      - "5601:5601"
+      # - "127.0.0.1:5601:5601"
+    # 依赖关系，确保 Elasticsearch 服务先于 Kibana 服务启动
+    depends_on:
+      - es
+
+# 定义网络
+networks:
+  # 定义名为 es-net 的网络，使用 bridge 驱动
+  es-net:
+    driver: bridge
+
+# 定义卷
+volumes:
+  # 定义名为 es-data 的卷
+  es-data:
+  # 定义名为 es-logs 的卷
+  es-logs:
+  # 定义名为 es-plugins 的卷
+  es-plugins:

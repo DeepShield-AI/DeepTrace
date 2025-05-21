@@ -1,0 +1,16 @@
+{
+    "elastic_password": "***",
+    "kibana_password": "***",
+    "server_ip": "127.0.0.1",
+    "agents": [
+        {
+            "agent_name": "agent1",
+            "user_name": "ubuntu",
+            "ip": "202.112.237.33",
+            "ssh_port": 22,
+            "password": "***",
+            "deeptrace_port": 13701,
+            "code_path": "~/"
+        }
+    ]
+  }
