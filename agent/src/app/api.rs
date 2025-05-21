@@ -1,8 +1,7 @@
 use crate::config::{AppConfig, api_config, update_config};
 use arc_swap::access::Access;
 use rocket::{
-	Build, Config, Request, Rocket, catch, catchers, launch, post, routes,
-	serde::json::Json,
+	Build, Config, Request, Rocket, catch, catchers, launch, post, routes, serde::json::Json,
 };
 
 #[post("/config/update", format = "json", data = "<config>")]

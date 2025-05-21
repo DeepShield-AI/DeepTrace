@@ -6,7 +6,7 @@ use super::{
 use crate::{
 	AgentError,
 	config::ConfigModule,
-	sender::{FlatFile, SenderProcess},
+	sender::{Elastic, FlatFile, SenderProcess},
 	trace::{SpanConstructor, TraceModule},
 };
 use log::info;
@@ -40,11 +40,8 @@ async fn run() -> Result<(), AgentError> {
 		message_receiver.clone(),
 	);
 	ebpf_log.start()?;
-	let mut span_log = SenderProcess::new(
-		"span",
-		Elastic::new(elastic_config()).await.expect("Elastic error"),
-		span_receiver,
-	);
+	let mut span_log =
+		SenderProcess::new("span", Elastic::new().await.expect("Elastic error"), span_receiver);
 	// let mut span_log = SenderProcess::new(
 	// 	"span",
 	// 	FlatFile::new("span.txt").await.expect("Flat file error"),

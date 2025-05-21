@@ -3,10 +3,7 @@
 use super::ConfigError;
 use crate::{
 	AgentError, Module,
-	app::{
-		config_listener,
-		runtime::block_on,
-	}
+	app::{config_listener, runtime::block_on},
 };
 use log::info;
 use std::thread::{self, JoinHandle};

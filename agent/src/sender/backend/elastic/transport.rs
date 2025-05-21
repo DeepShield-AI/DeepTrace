@@ -1,6 +1,6 @@
 use super::{Error, utils};
 use crate::{
-	config::ElasticAccess,
+	config::{ElasticAccess, elastic_config},
 	sender::{
 		SendError,
 		strategy::{Sendable, TransportStrategy},
@@ -28,7 +28,8 @@ pub struct Elastic {
 }
 
 impl Elastic {
-	pub async fn new(config: ElasticAccess) -> Result<Self, SendError> {
+	pub async fn new() -> Result<Self, SendError> {
+		let config = elastic_config();
 		let c = config.load();
 		let url = Url::parse(&c.node_url).map_err(|e| Error::Url(e))?;
 		let conn_pool = SingleNodeConnectionPool::new(url);
