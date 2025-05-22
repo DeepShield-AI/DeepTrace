@@ -7,5 +7,9 @@ source "$HOME/.cargo/env"
 if ! grep -q 'source "$HOME/.cargo/env"' ~/.bashrc; then
     echo 'source "$HOME/.cargo/env"' >> ~/.bashrc
 fi
+echo "source ~/.bashrc"
+cargo build --release
+echo "compile done"
 
-RUST_LOG=info cargo run --release > /dev/null 2>&1 & disown
+
+# RUST_LOG=info cargo run --release --config 'target."cfg(all())".runner="sudo -E"'
