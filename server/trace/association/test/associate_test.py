@@ -9,6 +9,10 @@ sys.path.append(os.path.normpath(UTILS_DIR))
 from utils import Span, es_read_spans, es_write_spans, pair_acc, service_acc, e2e_acc
 from fifo import fifo
 from vpath import vpath
+from deeptrace import deeptrace
+from wap5 import wap5
+from traceweaver_v1 import traceweaver_v1
+from traceweaver_v2 import traceweaver_v2
 from cross import inter_association
 import copy
 # from elasticsearch import Elasticsearch
@@ -17,7 +21,7 @@ import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--algo", type=str, choices=["fifo", "vpath"], default="fifo")
+    parser.add_argument("--algo", type=str, choices=["traceweaver_v2", "traceweaver_v1", "fifo", "vpath", "deeptrace", "wap5"], default="fifo")
 
     args = parser.parse_args()
     algo = args.algo
@@ -30,15 +34,23 @@ if __name__ == "__main__":
 
         spans = inter_association(spans)
         
+        print("-" * 50)
         if algo == 'fifo':
             processed_spans = fifo(copy.deepcopy(spans))
-        else:
+        elif algo == 'deeptrace':
+            processed_spans = deeptrace(copy.deepcopy(spans))
+        elif algo == 'vpath':
             processed_spans = vpath(copy.deepcopy(spans))
+        elif algo == 'wap5':
+            processed_spans = wap5(copy.deepcopy(spans))
+        elif algo == 'traceweaver_v1':
+            processed_spans = traceweaver_v1(copy.deepcopy(spans))
+        elif algo == 'traceweaver_v2':
+            processed_spans = traceweaver_v2(copy.deepcopy(spans))
         
         acc1 = pair_acc(processed_spans)
         acc2 = service_acc(processed_spans)
         acc3 = e2e_acc(processed_spans)
-        print("-" * 50)
         print(f"RPS: {rps}")
         print("Pair Accuracy:")
         for tgid in acc1:

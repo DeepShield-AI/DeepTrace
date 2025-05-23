@@ -8,8 +8,8 @@ with open("../../../config/config.json", "r") as f:
     config = json.load(f)
 
 ES_USERNAME = "elastic"
-ES_PASSWORD = config.get("elastic_password")  
-SERVER_IP = config.get("server_ip") 
+ES_PASSWORD = config.get("elastic").get("elastic_password")  
+SERVER_IP = "0.0.0.0" 
 
 
 
