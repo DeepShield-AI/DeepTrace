@@ -1,16 +1,43 @@
-{
-    "elastic_password": "***",
-    "kibana_password": "***",
-    "server_ip": "127.0.0.1",
+{   
+    "elastic":
+    {
+        "elastic_password": "***",
+        "port": 9200,
+        "address": "114.215.254.187",
+        "kibana_password": "***",
+        "bulk_size": 1024,
+        "request_timeout": 10,
+        "agent_status_index": "agent_status"
+    },
     "agents": [
-        {
-            "agent_name": "agent1",
-            "user_name": "ubuntu",
-            "ip": "202.112.237.33",
-            "ssh_port": 22,
-            "password": "***",
-            "deeptrace_port": 13701,
-            "code_path": "~/"
+        {   
+            "agent_info": {
+                "agent_name": "agent1",
+                "user_name": "ubuntu",
+                "host_ip": "202.112.237.33",
+                "ssh_port": 22,
+                "host_password": "***",
+                "deeptrace_port": 52001,
+                "code_path": "~/gyt-file",
+                "workers": 16
+            },
+            "sender": {
+                "index_name": "agent1_spans",
+                "mem_buffer_size": 67108864,
+                "file_buffer_size": 67108864,
+                "file_size_limit": 107374182400,
+                "batch_size": 1024
+            },
+            "ebpf": {
+                "pids": [3056354, 3056217, 3056210]
+            },
+            "api": {
+                "port": 7899,
+                "address": "0.0.0.0",
+                "workers": 1,
+                "ident": "deeptrace"
+            }
+
         }
     ]
   }
