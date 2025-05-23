@@ -6,5 +6,6 @@ from agent import Agent
 def load_agents(config_path):
     with open(config_path, 'r') as f:
         config = json.load(f)
-    agent_dict = {info['agent_name']: Agent(info) for info in config['agents']}
+    elastic_config = config.get('elastic', {})
+    agent_dict = {agent_config['agent_info']['agent_name']: Agent(agent_config, elastic_config) for agent_config in config['agents']}
     return agent_dict
