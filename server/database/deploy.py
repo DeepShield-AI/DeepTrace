@@ -7,8 +7,8 @@ import json
 with open("../config/config.json", "r") as f:
     config = json.load(f)
 try:
-    elastic_pwd = config.get("elastic_password")
-    kibana_pwd = config.get("kibana_password")
+    elastic_pwd = config.get("elastic").get("elastic_password")
+    kibana_pwd = config.get("elastic").get("kibana_password")
 except KeyError as e:
     raise KeyError(f"请设置elastic_password和kibana_password: {e}")
 
