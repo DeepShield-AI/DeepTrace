@@ -2,13 +2,14 @@ import json
 import time
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
+import toml
 
 # 从外部配置文件读取密码
-with open("../../../config/config.json", "r") as f:
-    config = json.load(f)
+with open("../../../config/config.toml", "r") as f:
+    config = toml.load(f)
 
 ES_USERNAME = "elastic"
-ES_PASSWORD = config.get("elastic").get("elastic_password")  
+ES_PASSWORD = config.get("elastic", {}).get("elastic_password") 
 SERVER_IP = "0.0.0.0"
 
 

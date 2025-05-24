@@ -7,7 +7,7 @@ import time
 import argparse  # 用于解析命令行参数
 
 agents = {}
-config_path = '../config/config.json' 
+config_path = '../config/config.toml' 
 
 def first_start_agent():
     for agent_name, agent in agents.items():

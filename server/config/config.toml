@@ -1,0 +1,43 @@
+[elastic]  # Elasticsearch 相关配置
+elastic_password = "***"         # Elasticsearch 用户密码
+port = 9200                     # Elasticsearch 服务端口
+address = "114.215.254.187"     # Elasticsearch 服务地址
+kibana_password = "***"         # Kibana 用户密码
+bulk_size = 1024                # 批量写入大小
+request_timeout = 10            # 请求超时时间（秒）
+agent_status_index = "agent_status"  # agent 状态索引名
+
+# ========== agent1 配置 ==========
+[[agents]]
+  [agents.agent_info]  # agent 基本信息
+  agent_name = "agent1"           # agent 名称
+  user_name = "ubuntu"            # 登录用户名
+  host_ip = "202.112.237.33"      # agent 所在主机 IP
+  ssh_port = 22                   # SSH 端口
+  host_password = "***"           # 主机密码
+  deeptrace_port = 52001          # deeptrace 服务端口
+  code_path = "~/gyt-file"        # 代码路径
+  workers = 16                    # 工作线程数
+
+  [agents.sender]  # 数据发送相关配置
+  index_name = "agent1_spans"     # Elasticsearch 索引名
+  mem_buffer_size = 67108864      # 内存缓冲区大小
+  file_buffer_size = 67108864     # 文件缓冲区大小
+  file_size_limit = 107374182400  # 文件大小上限
+  batch_size = 1024               # 批量发送大小
+
+  [agents.ebpf]  # eBPF 配置
+  pids = [3056354, 3056217, 3056210]  # 需要采集的进程 PID 列表
+
+  [agents.api]  # agent API 服务配置
+  port = 7899                   # API 服务端口
+  address = "0.0.0.0"           # API 监听地址
+  workers = 1                   # API 服务线程数
+  ident = "deeptrace"           # 服务标识
+
+# ========== agent2 配置 ==========
+# [[agents]]
+#   [agents.agent_info]
+#   [agents.sender]
+#   [agents.ebpf]
+#   [agents.api]
