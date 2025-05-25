@@ -1,58 +1,41 @@
 # DeepTrace Usage Guide
 
-## Command Line Arguments
+## Requirements
+- Docker and Docker Compose
+- Installation: `apt install docker.io docker-compose`
 
-|    Flag     |        Description        |   Type   |         Default         | 
-| ----------- | ------------------------- | -------- | ----------------------- |
-| --file      | eBPF output file position | String   | "tests/output/ebpf.txt" |
-| --stdout    | eBPF output to stdout     | bool     | false                   |
-| --no_output | eBPF has no output        | bool     | false                   |
-| -p, --pids  | Process IDs to monitor    | Vec<u32> | None                    |
+## Step 1: Fill in the Configuration File
+- **Server-related configurations that must be filled in the configuration file:**
+  - `elastic.address` # The IP address of the server running the Elastic database
+  - `elastic.elastic_password` # Password for Elastic
+  - `elastic.kibana_password` # Password for Kibana
 
+- **Agent-related configurations that must be filled in the configuration file:**
+  - `agents.agent_info.agent_name` # Name of the agent, which uniquely identifies each agent instance
+  - `agents.agent_info.user_name` # Username for logging into the agent host (e.g., SSH username)
+  - `agents.agent_info.host_ip` # IP address of the agent host
+  - `agents.agent_info.ssh_port` # SSH port of the agent host (usually 22)
+  - `agents.agent_info.host_password` # Password for logging into the agent host
+  - `agents.sender.index_name` # Index name in Elasticsearch where the agent writes collected spans
 
-*Note: When `pids` are not specified, DeepTrace automatically detects running container instance PIDs via CRI and Docker.*
+## Step 2: Install Python Virtual Environment on Server
+- `bash scripts/install_server_evn.sh`
 
-## Execution
+## Step 3: Start Elastic Database on Server
+- `bash scripts/install_es.sh`
+- You can access the database frontend via the web at `http://ip:5601`
+  - Username: `elastic`  
+  - Password: `elastic_password`
 
-### Test with Local Workload
+## Step 4: Remotely Start Agent on Server
+- `cd server ; source venv/bin/activate; cd controller`
+- `python3 cmd.py first_start`
+  - This command will automatically connect to the remote host, clone the code, compile, and run the agent. By default, it will automatically collect spans from all Docker containers and store them in the server's Elastic database.
 
-```bash
-# Navigate to test workload directory
-cd tests/workload/http
+## Step 5: Perform Span Correlation on Server
 
-# Start test server in background
-python3 server.py &
-SERVER_PID=$!  # Capture background process PID
+## Step 6: Perform Trace Assembly on Server
 
-# Run DeepTrace with PID monitoring
-RUST_LOG=info cargo run --release \
-  --config 'target."cfg(all())".runner="sudo -E"' \
-  -- --pids $SERVER_PID
-
-# Cleanup test server
-kill $SERVER_PID
-```
-
-Output will be generated at `tests/output/ebpf.txt`
-
-## Output Format
-
-The output file `ebpf.txt` contains structured records with the following fields:
-```plaintext
-1201353, RecvFrom, python3, l4_protocol: IP protocol family, saddr: 127.0.0.1, daddr: 127.0.0.1, sport: 8080, dport: 1814, 707083292245311, 2953620009, 2953620073, 64, [71, 69, 84, 32, 47, 32, 72, 84, 84, 80, 47, 49, 46, 49, 13, 10, 72, 111, 115, 116, 58, 32, 49, 50, 55, 46, 48, 46, 48, 46, 49, 58, 56, 48, 56, 48, 13, 10, 67, 111, 110, 110, 101, 99, 116, 105, 111, 110, 58, 32, 107, 101, 101, 112, 45, 97, 108, 105, 118, 101, 13, 10, 13, 10]
-```
-
-Field Breakdown:
-1. TGID: Thread Group ID (Process ID)
-2. Syscall: System call name (e.g., RecvFrom)
-3. Process: Process name
-4. Protocol Family: Network protocol (Ie.g., Pv4/IPv6)
-5. Source Address: Connection source IP
-6. Destination Address: Connection target IP
-7. Source Port: Connection source port
-8. Destination Port: Connection target port
-9. Timestamp: Nanosecond-precision event timestamp
-10. TCP Sequence Start: Initial TCP sequence number
-11. TCP Sequence End: Final TCP sequence number
-12. Payload Length: Message size in bytes
-13. Payload Buffer: Raw message bytes (ASCII decimal values)
+## Step 7: Clear Agent and Server
+- `bash scripts/clear.sh`
+  - This command will automatically stop all running agents and delete the database on the server.
