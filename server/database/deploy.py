@@ -26,8 +26,6 @@ run("sudo mkdir -p /user/share/es/config")
 run("sudo mkdir -p /user/share/es/plugins")
 run("chmod 777 -R ./")
 
-# 安装 elasticsearch Python 客户端
-run("pip3 install elasticsearch==8.7.0")
 
 # 拉取镜像
 run("sudo docker pull docker.elastic.co/elasticsearch/elasticsearch:8.7.0")
@@ -62,17 +60,25 @@ run("sudo docker-compose -f docker-compose.yaml up -d")
 print("等待 Elasticsearch 启动...")
 time.sleep(20)
 
-# 自动生成 elastic 密码
-cmd = "yes | sudo docker exec -i es /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic --auto"
-output = run(cmd, capture_output=True)
-elastic_pass = ""
-for line in output.splitlines():
-    if "New value:" in line:
-        elastic_pass = line.split("New value:")[-1].strip()
+# 自动生成 elastic 密码，循环直到获取成功
+max_retry = 60  # 最多重试60次（约1分钟）
+retry_interval = 5  # 每次重试间隔5秒
+
+for i in range(max_retry):
+    cmd = "yes | sudo docker exec -i es /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic --auto"
+    output = run(cmd, capture_output=True)
+    elastic_pass = ""
+    for line in output.splitlines():
+        if "New value:" in line:
+            elastic_pass = line.split("New value:")[-1].strip()
+            break
+    if elastic_pass:
         break
+    print(f"未能获取 elastic 用户的自动生成密码，第{i+1}次重试，等待{retry_interval}秒...")
+    time.sleep(retry_interval)
 
 if not elastic_pass:
-    raise RuntimeError("未能获取 elastic 用户的自动生成密码")
+    raise RuntimeError("未能获取 elastic 用户的自动生成密码，已重试多次仍失败")
 
 # 用新密码修改为你想要的密码
 run(f"""curl -u elastic:{elastic_pass} -X POST "http://localhost:9200/_security/user/elastic/_password" \
@@ -80,16 +86,21 @@ run(f"""curl -u elastic:{elastic_pass} -X POST "http://localhost:9200/_security/
   -d '{{"password":"{elastic_pwd}"}}'""")
 
 # 自动生成 kibana_system 密码
-cmd = "yes | sudo docker exec -i es /usr/share/elasticsearch/bin/elasticsearch-reset-password -u kibana --auto"
-output = run(cmd, capture_output=True)
-kibana_pass = ""
-for line in output.splitlines():
-    if "New value:" in line:
-        kibana_pass = line.split("New value:")[-1].strip()
+for i in range(max_retry):
+    cmd = "yes | sudo docker exec -i es /usr/share/elasticsearch/bin/elasticsearch-reset-password -u kibana --auto"
+    output = run(cmd, capture_output=True)
+    kibana_pass = ""
+    for line in output.splitlines():
+        if "New value:" in line:
+            kibana_pass = line.split("New value:")[-1].strip()
+            break
+    if kibana_pass:
         break
+    print(f"未能获取 kibana 用户的自动生成密码，第{i+1}次重试，等待{retry_interval}秒...")
+    time.sleep(retry_interval)
 
 if not kibana_pass:
-    raise RuntimeError("未能获取 kibana 用户的自动生成密码")
+    raise RuntimeError("未能获取 kibana 用户的自动生成密码，已重试多次仍失败")
 
 # 用新密码修改为你想要的密码
 run(f"""curl -u kibana:{kibana_pass} -X POST "http://localhost:9200/_security/user/kibana/_password" \
