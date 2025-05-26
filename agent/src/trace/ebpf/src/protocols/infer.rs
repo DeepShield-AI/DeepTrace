@@ -9,7 +9,6 @@ use crate::{
 	utils::{gen_connect_key, is_filtered_comm},
 };
 use aya_ebpf::{helpers::bpf_get_current_pid_tgid, programs::TracePointContext};
-use aya_log_ebpf::info;
 use trace_common::{
 	message::Message,
 	protocols::L7Protocol,
@@ -62,23 +61,23 @@ pub(crate) fn infer_protocol(
 			},
 		}
 	};
-	if message.protocol == L7Protocol::Unknown {
-		info!(ctx, "infer protocol error");
-		info!(
-			ctx,
-			"{} {} {} {} {} {} {} {}",
-			info.buf[0],
-			info.buf[1],
-			info.buf[2],
-			info.buf[3],
-			info.buf[4],
-			info.buf[5],
-			info.buf[6],
-			info.buf[7]
-		);
-		// info!(ctx, "{} {} {} {}", info.buf[0], info.buf[1], info.buf[2], info.buf[3]);
-		info!(ctx, "{} {}", info.count, info.len);
-	}
+	// if message.protocol == L7Protocol::Unknown {
+	// 	info!(ctx, "infer protocol error");
+	// 	info!(
+	// 		ctx,
+	// 		"{} {} {} {} {} {} {} {}",
+	// 		info.buf[0],
+	// 		info.buf[1],
+	// 		info.buf[2],
+	// 		info.buf[3],
+	// 		info.buf[4],
+	// 		info.buf[5],
+	// 		info.buf[6],
+	// 		info.buf[7]
+	// 	);
+	// 	// info!(ctx, "{} {} {} {}", info.buf[0], info.buf[1], info.buf[2], info.buf[3]);
+	// 	info!(ctx, "{} {}", info.count, info.len);
+	// }
 	if message.protocol == L7Protocol::Unknown && info.count <= MAX_INFER_PAYLOAD_SIZE {
 		sock_info.pre_direction = sock_info.direction;
 		sock_info.direction = info.direction;

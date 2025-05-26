@@ -1,19 +1,24 @@
-use agent::{App, utils::sys};
+use agent::App;
 use clap::Parser;
+use tokio::signal;
 
 #[derive(Debug, Parser)]
 struct Opts {
 	/// Specify config file location
-	#[clap(short = 'f', long, default_value = "agent/config/default.toml")]
+	#[clap(short = 'f', long, default_value = "config/default.toml")]
 	config: String,
 }
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
 	let opt = Opts::parse();
 	let mut deeptrace = App::new(opt.config).expect("Failed to create app");
+
 	deeptrace.start();
 
-	sys::wait_on_signal();
+	signal::ctrl_c().await?;
+	println!("ctrl-c received!");
+	// sys::wait_on_signal();
 
 	deeptrace.stop();
 

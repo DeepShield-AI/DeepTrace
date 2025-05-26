@@ -1,12 +1,9 @@
-use super::{
-	App, Module,
-	context::{self, init, state},
-	runtime::spawn,
-};
+use super::{App, Module, context::init, runtime::spawn, state, terminate};
 use crate::{
 	AgentError,
-	config::ConfigModule,
+	provenance::Provenance,
 	sender::{Elastic, FlatFile, SenderProcess},
+	synchronizer::Synchronizer,
 	trace::{SpanConstructor, TraceModule},
 };
 use log::info;
@@ -25,7 +22,7 @@ impl App {
 	}
 
 	pub fn stop(&mut self) {
-		context::terminate();
+		terminate();
 		self.handle.take().expect("Failed to stop app").abort();
 		info!("App stopped");
 	}
@@ -34,41 +31,38 @@ impl App {
 async fn run() -> Result<(), AgentError> {
 	let (message_sender, message_receiver) = crossbeam_channel::unbounded();
 	let (span_sender, span_receiver) = crossbeam_channel::unbounded();
-	let mut ebpf_log = SenderProcess::new(
-		"ebpf",
-		FlatFile::new("message.txt").await.expect("Flat file error"),
-		message_receiver.clone(),
-	);
-	ebpf_log.start()?;
-	let mut span_log =
-		SenderProcess::new("span", Elastic::new().await.expect("Elastic error"), span_receiver);
-	// let mut span_log = SenderProcess::new(
-	// 	"span",
-	// 	FlatFile::new("span.txt").await.expect("Flat file error"),
-	// 	span_receiver,
-	// );
-	span_log.start()?;
+
+	let mut synchronizer = Synchronizer::new();
+	synchronizer.start()?;
+
+	// let mut ebpf_log = SenderProcess::new("ebpf", message_receiver.clone());
+	// ebpf_log.start(FlatFile::new("message.txt").await.expect("Flat file error"))?;
+	let mut span_log = SenderProcess::new("span", span_receiver);
+	// span_log.start(FlatFile::new("span.txt").await.expect("Flat file error"))?;
+	span_log.start(Elastic::new().await.expect("Elastic error"))?;
+
 	let mut span_constructor = SpanConstructor::new(message_receiver, span_sender);
 	span_constructor.start()?;
 	let mut trace = TraceModule::new(message_sender).expect("Failed to create eBPF module");
 	trace.start()?;
 
-	let mut config = ConfigModule::new();
-	config.start()?;
+	let mut provenance = Provenance::new()?;
+	provenance.start()?;
 
-	// let mut component: Vec<Box<dyn Module>> = vec![];
-	// component.push(Box::new(trace));
-	// component.push(Box::new(config));
+	// let mut components: Vec<Box<&dyn Module<Error = dyn Into<AgentError>>>> = Vec::new();
+	// components.push(Box::new(&trace));
+	// components.push(Box::new(&config));
 	loop {
 		if state().load(Ordering::Relaxed) {
-			// for component in &mut component {
+			// for component in &mut components {
 			// 	component.stop().await?;
 			// }
-			config.stop()?;
-			trace.stop()?;
-			span_constructor.stop()?;
-			ebpf_log.stop()?;
-			span_log.stop()?;
+			synchronizer.stop().await?;
+			provenance.stop().await?;
+			trace.stop().await?;
+			span_constructor.stop().await?;
+			span_log.stop().await?;
+			// ebpf_log.stop().await?;
 			return Ok(());
 		}
 	}

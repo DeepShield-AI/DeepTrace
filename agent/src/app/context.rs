@@ -1,27 +1,24 @@
 use super::AgentError;
 use crate::config::AppConfig;
 use arc_swap::ArcSwap;
-use log::{error, info};
-use std::sync::{
-	Arc,
-	atomic::{AtomicBool, Ordering},
-};
+use log::error;
+use std::sync::{Arc, atomic::AtomicBool};
 use tokio::{
 	runtime::{Builder, Runtime},
 	sync::OnceCell,
 };
 
 #[derive(Debug)]
-pub(crate) struct Context {
-	pub config: Arc<ArcSwap<AppConfig>>,
-	pub runtime: Arc<Runtime>,
-	pub state: Arc<AtomicBool>,
+pub struct Context {
+	pub(crate) config: Arc<ArcSwap<AppConfig>>,
+	pub(crate) runtime: Arc<Runtime>,
+	pub(crate) state: Arc<AtomicBool>,
 }
 
 pub(crate) static CONTEXT: OnceCell<Context> = OnceCell::const_new();
 
 impl Context {
-	pub fn new(config: AppConfig, runtime: Runtime) -> Self {
+	pub(crate) fn new(config: AppConfig, runtime: Runtime) -> Self {
 		let config = Arc::new(ArcSwap::from_pointee(config));
 		let state = Arc::new(AtomicBool::new(false));
 		Self { config, runtime: Arc::new(runtime), state }
@@ -46,14 +43,4 @@ pub fn init(config_path: impl AsRef<str>) -> Result<(), AgentError> {
 
 pub(crate) fn context() -> &'static Context {
 	CONTEXT.get().expect("Runtime not initialized")
-}
-
-pub fn state() -> Arc<AtomicBool> {
-	context().state.clone()
-}
-
-pub fn terminate() {
-	if !context().state.swap(true, Ordering::Relaxed) {
-		info!("Agent state changed to terminate");
-	}
 }

@@ -1,11 +1,11 @@
 use super::{TraceError, attach, loader, utils};
 use crate::{
-	AgentError, Module,
-	app::runtime::spawn,
+	Module,
+	app::runtime::{block_on, spawn_blocking},
 	config::{TraceAccess, trace_config},
 	utils::sys,
 };
-use arc_swap::{Cache, access::Access};
+use arc_swap::access::Access;
 use aya::{Ebpf, maps::AsyncPerfEventArray, util::online_cpus};
 use bytes::BytesMut;
 use crossbeam_channel::Sender;
@@ -57,40 +57,42 @@ impl Module for TraceModule {
 			let mut buf = perf_array.open(cpu_id, Some(128)).expect("Failed to open perf buffer");
 			let output = self.output.clone();
 			// process each perf buffer in a separate task
-			let handle = spawn(async move {
-				// Prepare a set of buffers to store the data read from the perf buffer.
-				// Here, 16 buffers are created, each with a capacity equal to the size of the Data structure.
-				let mut buffers =
-					(0..16).map(|_| BytesMut::with_capacity(len_of_data)).collect::<Vec<_>>();
-				loop {
-					// Attempt to read events from the perf buffer into the prepared buffers.
-					let events = match buf.read_events(&mut buffers).await {
-						Ok(events) => events,
-						Err(e) => {
-							warn!("Error reading events: {e}");
-							continue;
-						},
-					};
+			let handle = spawn_blocking(move || {
+				block_on(async {
+					// Prepare a set of buffers to store the data read from the perf buffer.
+					// Here, 16 buffers are created, each with a capacity equal to the size of the Data structure.
+					let mut buffers =
+						(0..16).map(|_| BytesMut::with_capacity(len_of_data)).collect::<Vec<_>>();
+					loop {
+						// Attempt to read events from the perf buffer into the prepared buffers.
+						let events = match buf.read_events(&mut buffers).await {
+							Ok(events) => events,
+							Err(e) => {
+								warn!("Error reading events: {e}");
+								continue;
+							},
+						};
 
-					// Iterate over the number of events read. `events.read` indicates how many events were read.
-					for i in 0..events.read {
-						let buf = &mut buffers[i];
-						let data = unsafe { *(buf.as_ptr() as *const Data) }; // Convert the buffer to a Data structure.
-						output.send(data).expect("Error sending data");
+						// Iterate over the number of events read. `events.read` indicates how many events were read.
+						for i in 0..events.read {
+							let buf = &mut buffers[i];
+							let data = unsafe { *(buf.as_ptr() as *const Data) }; // Convert the buffer to a Data structure.
+							output.send(data).expect("Error sending data");
+						}
 					}
-				}
+				})
 			});
 			handlers.push(handle);
 		}
 		self.handles = Some(handlers);
 		Ok(())
 	}
-	fn stop(&mut self) -> Result<(), Self::Error> {
+	async fn stop(&mut self) -> Result<(), Self::Error> {
 		if let Some(handles) = self.handles.take() {
 			for handle in handles {
 				if !handle.is_finished() {
 					info!("Waiting for {} module to stop...", self.name());
-					handle.abort();
+					handle.await.expect("Failed to stop trace module");
 				}
 			}
 		}

@@ -2,7 +2,5 @@ use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {
-	pub name: String,
-	pub workers: usize,
-	pub state_index: String,
+	pub pids: Vec<u32>,
 }

@@ -1,28 +1,27 @@
 use super::{SendError, Sendable, TransportStrategy};
 use crate::{
-	Module,
-	app::runtime::block_on,
+	app::runtime::{block_on, spawn_blocking},
 	config::{SenderAccess, sender_config},
 };
 use arc_swap::access::Access;
 use crossbeam_channel::{Receiver, RecvTimeoutError};
 use log::{info, warn};
 use std::{
+	marker::PhantomData,
 	sync::{
 		Arc,
 		atomic::{AtomicBool, Ordering},
 	},
-	thread::{self, JoinHandle},
 	time::{Duration, Instant},
 };
-use tokio::sync::Mutex;
+use tokio::task::JoinHandle;
 
 pub struct Sender<S, T>
 where
 	S: Sendable,
 	T: TransportStrategy<S>,
 {
-	backend: Arc<Mutex<T>>,
+	backend: T,
 	receiver: Receiver<S>,
 	running: Arc<AtomicBool>,
 	config: SenderAccess,
@@ -35,7 +34,7 @@ where
 	SendError: From<<T as TransportStrategy<S>>::Error>,
 {
 	const RECV_TIMEOUT: Duration = Duration::from_secs(3);
-	pub async fn spawn(&mut self) -> Result<(), SendError> {
+	pub async fn process(&mut self) -> Result<(), SendError> {
 		let batch_size = self.config.load().batch_size;
 		let mut batch = Vec::with_capacity(batch_size);
 
@@ -67,25 +66,25 @@ where
 	}
 
 	async fn flush(&mut self, batch: &mut Vec<S>) -> Result<(), SendError> {
-		let mut backend = self.backend.lock().await;
 		for item in batch.drain(..) {
-			backend.send(item).await?;
+			self.backend.send(item).await?;
 		}
-		backend.flush().await?;
+		self.backend.flush().await?;
 		Ok(())
 	}
 }
-pub struct SenderProcess<S, T>
+
+pub(crate) struct SenderProcess<S, T>
 where
 	S: Sendable,
 	T: TransportStrategy<S>,
+	SendError: From<<T as TransportStrategy<S>>::Error>,
 {
 	running: Arc<AtomicBool>,
 	name: &'static str,
-	backend: Arc<Mutex<T>>,
 	receiver: Receiver<S>,
-	config: SenderAccess,
 	thread: Option<JoinHandle<Result<(), SendError>>>,
+	_marker: PhantomData<T>,
 }
 
 impl<S, T> SenderProcess<S, T>
@@ -94,58 +93,48 @@ where
 	T: TransportStrategy<S>,
 	SendError: From<<T as TransportStrategy<S>>::Error>,
 {
-	pub fn new(name: &'static str, backend: T, input: Receiver<S>) -> Self {
+	pub fn new(name: &'static str, input: Receiver<S>) -> Self {
 		Self {
-			running: Arc::new(AtomicBool::new(false)),
+			running: Default::default(),
 			name,
-			backend: Arc::new(Mutex::new(backend)),
 			receiver: input,
-			config: sender_config(),
 			thread: None,
+			_marker: PhantomData,
 		}
 	}
-}
-
-impl<S, T> Module for SenderProcess<S, T>
-where
-	S: Sendable,
-	T: TransportStrategy<S>,
-	SendError: From<<T as TransportStrategy<S>>::Error>,
-{
-	type Error = SendError;
-
 	fn name(&self) -> &str {
 		self.name
 	}
 
-	fn start(&mut self) -> Result<(), Self::Error> {
+	pub fn start(&mut self, backend: T) -> Result<(), SendError> {
 		if self.running.swap(true, Ordering::Relaxed) {
 			warn!("{} sender is already running.", self.name);
 			return Ok(());
 		}
 		let mut sender = Sender {
-			backend: self.backend.clone(),
+			backend,
 			receiver: self.receiver.clone(),
 			running: self.running.clone(),
-			config: self.config.clone(),
+			config: sender_config(),
 		};
-		self.thread = Some(
-			thread::Builder::new()
-				.name(format!("{}-sender", self.name))
-				.spawn(|| block_on(async move { sender.spawn().await }))
-				.expect("Failed to spawn sender thread"),
-		);
+		self.thread = Some(spawn_blocking(move || block_on(async { sender.process().await })));
+		// self.thread = Some(spawn(async move { sender.process().await }));
+		// thread::Builder::new()
+		// 	.name(format!("{}-sender", self.name))
+		// 	.spawn(|| block_on(async move { sender.spawn().await }))
+		// 	.expect("Failed to spawn sender thread"),
+		// );
 		info!("{} sender started.", &self.name);
 		Ok(())
 	}
 
-	fn stop(&mut self) -> Result<(), Self::Error> {
+	pub async fn stop(&mut self) -> Result<(), SendError> {
 		if !self.running.swap(false, Ordering::Relaxed) {
 			warn!("{} sender is not running.", self.name);
 			return Ok(());
 		}
 		if let Some(thread) = self.thread.take() {
-			thread.join().expect("Failed to join sender thread")?;
+			thread.await.expect("Failed to join sender thread")?;
 		}
 		Ok(())
 	}

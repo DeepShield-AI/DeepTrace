@@ -17,7 +17,7 @@ use trace_common::{
 	structs::{Direction, Syscall},
 };
 
-/// Processing enter of `read`, `readv`, `recvfrom`, `recvmsg`, `recvmmsg` syscalls
+/// Processing enter of `read`, `readv`, `recvfrom`, `recvmsg`, `recvmmsg`, `write`, `writev`, `sendto`, `sendmsg`, `sendmmsg` syscalls
 #[inline]
 pub fn try_enter(args: Args, direction: Direction) -> Result<u32, u32> {
 	let id = bpf_get_current_pid_tgid();
@@ -28,9 +28,9 @@ pub fn try_enter(args: Args, direction: Direction) -> Result<u32, u32> {
 		Direction::Unknown => return Err(0_u32),
 	};
 
-	if unsafe { map.get(&id) }.is_some() {
-		map.remove(&id).map_err(|e| e as u32)?;
-	}
+	// if unsafe { map.get(&id) }.is_some() {
+	// 	map.remove(&id).map_err(|e| e as u32)?;
+	// }
 	map.insert(&id, &args, 0).map_err(|e| e as u32)?;
 	Ok(0)
 }
@@ -62,6 +62,7 @@ pub fn try_exit(
 		let ptr = DATA.get_ptr_mut(0).ok_or(0_u32)?;
 		&mut *ptr
 	};
+
 	let sock = tcp_sock_from_fd(args.fd)? as *const tcp_sock;
 	let mut quintuple = quintuple_from_sock(sock);
 

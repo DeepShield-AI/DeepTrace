@@ -1,5 +1,4 @@
-use cache::{Cache, CacheEntry, SessionKey};
-use construct::construct_spans;
+use cache::Cache;
 pub use error::Error as SpanError;
 pub use module::SpanConstructor;
 use serde::Serialize;
@@ -10,7 +9,6 @@ use trace_common::{
 };
 
 mod cache;
-mod construct;
 mod error;
 mod module;
 
@@ -28,8 +26,6 @@ pub struct Span {
 	src_port: u16,
 	dst_port: u16,
 
-	req_syscall: Syscall,
-	resp_syscall: Syscall,
 	#[serde(serialize_with = "serialize_payload")]
 	req_content: Payload,
 	#[serde(serialize_with = "serialize_payload")]
@@ -67,8 +63,6 @@ impl Span {
 			dst_ip,
 			src_port,
 			dst_port,
-			req_syscall: req.syscall,
-			resp_syscall: resp.syscall,
 			req_content: req.payload,
 			resp_content: resp.payload,
 			protocol: req.protocol,

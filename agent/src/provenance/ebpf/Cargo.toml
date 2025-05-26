@@ -3,9 +3,9 @@ name = "provenance-ebpf"
 version = "0.1.0"
 build = "build.rs"
 readme = "README.md"
+edition = "2021"
 
 authors.workspace = true
-edition.workspace = true
 repository.workspace = true
 license.workspace = true
 rust-version.workspace = true

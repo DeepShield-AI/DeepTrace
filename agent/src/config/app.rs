@@ -1,15 +1,16 @@
-use super::{AgentConfig, ApiConfig, ConfigError, SenderConfig, TraceConfig};
+use super::{AgentConfig, ApiConfig, ConfigError, ProvenanceConfig, SenderConfig, TraceConfig};
 use crate::constants::DEFAULE_CONFIG_PATH;
 use config::{Config, File};
 use log::{error, warn};
 use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct AppConfig {
+pub(crate) struct AppConfig {
 	pub api: ApiConfig,
 	pub agent: AgentConfig,
 	pub sender: SenderConfig,
-	pub ebpf: TraceConfig,
+	pub trace: TraceConfig,
+	pub provenance: ProvenanceConfig,
 }
 
 impl AppConfig {

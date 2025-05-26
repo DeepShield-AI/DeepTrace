@@ -1,5 +1,5 @@
 use super::context::context;
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 use tokio::{runtime::Runtime, task::JoinHandle};
 fn runtime() -> Arc<Runtime> {
 	context().runtime.clone()
@@ -25,8 +25,4 @@ where
 	F: std::future::Future<Output = T>,
 {
 	runtime().block_on(f)
-}
-
-pub fn sleep(time: Duration) {
-	runtime().block_on(tokio::time::sleep(time));
 }

@@ -6,5 +6,5 @@ mod strategy;
 
 pub use backend::{Elastic, FlatFile};
 pub use error::SendError;
-pub use module::SenderProcess;
+pub(crate) use module::SenderProcess;
 pub use strategy::{Sendable, TransportStrategy};

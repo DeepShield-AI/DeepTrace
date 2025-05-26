@@ -31,7 +31,7 @@ impl Elastic {
 	pub async fn new() -> Result<Self, SendError> {
 		let config = elastic_config();
 		let c = config.load();
-		let url = Url::parse(&c.node_url).map_err(|e| Error::Url(e))?;
+		let url = Url::parse(&c.node_url).map_err(Error::Url)?;
 		let conn_pool = SingleNodeConnectionPool::new(url);
 
 		let transport = TransportBuilder::new(conn_pool)
@@ -44,7 +44,7 @@ impl Elastic {
 		info!("Connecting to Elasticsearch at {}", c.node_url);
 
 		let client = Elasticsearch::new(transport);
-		utils::set_refresh_interval(&client, &c.index_name, json!("-1")).await?;
+		// utils::set_refresh_interval(&client, &c.index_name, json!("-1")).await?;
 
 		Ok(Self { client, buf: Vec::with_capacity(c.bulk_size), config })
 	}

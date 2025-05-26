@@ -3,6 +3,8 @@
 #![allow(dead_code)]
 #![allow(clippy::empty_loop)]
 
+pub use provenance::{network, process};
+
 #[cfg_attr(not(test), panic_handler)]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
 	loop {}

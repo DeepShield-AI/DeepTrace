@@ -1,9 +1,8 @@
-use log::{debug, error};
-use nix::{
-	sys::signal::{self, Signal},
-	unistd::Pid,
-};
-use std::process;
+use log::debug;
+// use nix::{
+// 	sys::signal::{self, Signal},
+// 	unistd::Pid,
+// };
 
 pub fn unlock_memory() {
 	// Bump the memlock rlimit. This is needed for older kernels that don't use the
@@ -15,21 +14,21 @@ pub fn unlock_memory() {
 	}
 }
 
-pub fn exit(code: i32) {
-	#[cfg(any(target_os = "linux", target_os = "android"))]
-	{
-		if let Err(e) = signal::kill(Pid::this(), Signal::SIGTERM) {
-			error!("Failed to send SIGTERM: {e}");
-			process::exit(code);
-		}
-	}
+// pub fn exit(code: i32) {
+// 	#[cfg(any(target_os = "linux", target_os = "android"))]
+// 	{
+// 		if let Err(e) = signal::kill(Pid::this(), Signal::SIGTERM) {
+// 			error!("Failed to send SIGTERM: {e}");
+// 			process::exit(code);
+// 		}
+// 	}
 
-	process::exit(code);
-}
-pub fn wait_on_signal() {
-	use signal_hook::{consts::TERM_SIGNALS, iterator::Signals};
+// 	process::exit(code);
+// }
+// pub fn wait_on_signal() {
+// 	use signal_hook::{consts::TERM_SIGNALS, iterator::Signals};
 
-	let mut signals = Signals::new(TERM_SIGNALS).unwrap();
-	log::info!("The Process exits due to signal {:?}.", signals.forever().next());
-	signals.handle().close();
-}
+// 	let mut signals = Signals::new(TERM_SIGNALS).unwrap();
+// 	log::info!("The Process exits due to signal {:?}.", signals.forever().next());
+// 	signals.handle().close();
+// }

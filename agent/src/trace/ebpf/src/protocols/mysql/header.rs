@@ -11,7 +11,7 @@ use trace_common::{
 	protocols::{L4Protocol, L7Protocol},
 	structs::Quintuple,
 };
-/// In general, each message consists of a standard message header followed by request-specific data.
+
 #[derive(Debug)]
 pub(crate) struct MySQL {
 	pub type_: MessageType,
