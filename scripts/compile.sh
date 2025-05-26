@@ -8,6 +8,7 @@ if ! grep -q 'source "$HOME/.cargo/env"' ~/.bashrc; then
     echo 'source "$HOME/.cargo/env"' >> ~/.bashrc
 fi
 echo "source ~/.bashrc"
+cd ./agent
 cargo build --release
 echo "compile done"
 
