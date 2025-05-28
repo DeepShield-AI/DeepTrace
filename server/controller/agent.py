@@ -23,7 +23,7 @@ class Agent:
         self.ssh_client = None
         self.agent_info = agent_config['agent_info']
         self.sender = agent_config['sender']
-        self.ebpf = agent_config['ebpf']
+        self.trace = agent_config['trace']
         self.elastic_config = elastic_config
         self.api = agent_config['api']
 
@@ -32,17 +32,19 @@ class Agent:
         self.ssh_port = self.agent_info['ssh_port']
         self.host_password = self.agent_info['host_password']
         self.user_name = self.agent_info['user_name']
-        self.code_path = self.expand_path(self.agent_info['code_path'])
+        # self.code_path = self.expand_path(self.agent_info['code_path'])
+        self.code_path = self.agent_info['code_path']
         self.es_write_config()
         
 
     def es_write_config(self):
         try:
             # 准备要写入的数据
+            # print(f"{self.agent_name}: 准备写入 Elasticsearch 配置")
             agent_data = {
                 "agent_info": self.agent_info,
                 "sender": self.sender,
-                "ebpf": self.ebpf,
+                "trace": self.trace,
                 "api": self.api,
                 "elastic_config": self.elastic_config,
             }
@@ -92,6 +94,8 @@ class Agent:
             self.ssh_client.connect(
                 hostname=self.host_ip, port=self.ssh_port, username=self.user_name, password=self.host_password
             )
+        # print(f"{self.agent_name} 已连接到 {self.host_ip}:{self.ssh_port}")
+
 
     def disconnect(self):
         if self.ssh_client:
@@ -115,10 +119,14 @@ class Agent:
             output, error = self.execute_command(f"cd {path} && pwd")
         return output.strip() if output else path
 
+
+
     def sync_config(self):
         toml_content = f"""
 [agent]
+name = "{self.agent_name}"
 workers = {self.agent_info['workers']}
+state_index = "{self.elastic_config['agent_status_index']}"
 # channel_size = 4096
 
 [api]
@@ -143,8 +151,11 @@ request_timeout = {self.elastic_config['request_timeout']}
 index_name = "{self.sender['index_name']}"
 bulk_size = {self.elastic_config['bulk_size']}
 
-[ebpf]
-pids = {self.ebpf['pids']}
+[trace]
+pids = {self.trace['pids']}
+
+[provenance]
+pids = []
 """
         # 目标文件路径
         remote_file_path = f"{self.code_path}/DeepTrace/agent/config/default.toml"
@@ -177,10 +188,12 @@ pids = {self.ebpf['pids']}
             # 执行命令
             output, error = self.execute_command(command)
 
-            if error and "should have been pointers, but weren't" not in error:
+                        # 只在真正的git错误时才抛出异常
+            if error and any(x in error.lower() for x in ["fatal", "error", "failed"]):
                 raise Exception(f"克隆代码失败: {error}")
 
             print(f"代码仓库已克隆到 {self.agent_name} 的 {self.code_path}/DeepTrace")
+
         except Exception as e:
             print(f"克隆代码到 {self.agent_name} 失败: {str(e)}")
     
@@ -207,8 +220,8 @@ pids = {self.ebpf['pids']}
             raise Exception(f"{self.agent_name}: 获取进程失败 {error}")
         else:
             print(f'{self.agent_name}: 获取进程成功')
-            self.ebpf['pids'] = output.strip().split('\n')
-            print(f'{self.agent_name}: 进程列表 {self.ebpf["pids"]}')
+            self.trace['pids'] = [int(pid) for pid in output.strip().split('\n')]
+            print(f'{self.agent_name}: 进程列表 {self.trace["pids"]}')
             return output
 
     def run(self):
@@ -237,7 +250,9 @@ pids = {self.ebpf['pids']}
         # 准备要发送的 JSON 数据
         config_data = {
             "agent": {
-                "workers": self.agent_info['workers']
+                "workers": self.agent_info['workers'],
+                "state_index": self.elastic_config['agent_status_index'],
+                "name": self.agent_name
             },
             "sender": {
                 "batch_size": self.sender['batch_size'],
@@ -255,8 +270,8 @@ pids = {self.ebpf['pids']}
                     "bulk_size": self.elastic_config['bulk_size']
                 }
             },
-            "ebpf": {
-                "pids": self.ebpf['pids']
+            "trace": {
+                "pids": self.trace['pids']
             },
             "api": {
                 "address": self.api['address'],

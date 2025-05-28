@@ -5,6 +5,7 @@ from agent import Agent
 import os
 import time
 import argparse  # 用于解析命令行参数
+import threading
 
 agents = {}
 config_path = '../config/config.toml' 
@@ -18,17 +19,41 @@ def first_start_agent():
         agent.sync_config()
         agent.run()
 
-def start_agent():
+def install():
+    def install_agent(agent_name, agent):
+        agent.clone_code()
+        agent.install_dependencies()
+        # agent.compile_code()
+        agent.get_pids()
+        agent.sync_config()
+
+    threads = []
     for agent_name, agent in agents.items():
+        t = threading.Thread(target=install_agent, args=(agent_name, agent))
+        t.start()
+        threads.append(t)
+    for t in threads:
+        t.join()
+
+
+def start():
+    def start_agent(agent_name, agent):
         agent.get_pids()
         agent.sync_config()
         agent.run()
+    threads = []
+    for agent_name, agent in agents.items():
+        t = threading.Thread(target=start_agent, args=(agent_name, agent))
+        t.start()
+        threads.append(t)
+    for t in threads:
+        t.join()
 
 def update_agent_config(): # 热加载
     for agent_name, agent in agents.items():
         agent.update_config()
 
-def stop_agent():
+def stop():
     for agent_name, agent in agents.items():
         agent.stop()
 
@@ -53,7 +78,7 @@ def main():
 
     # 创建参数解析器
     parser = argparse.ArgumentParser(description="Agent Controller")
-    parser.add_argument("action", choices=["first_start", "start", "update", "stop", "test"], 
+    parser.add_argument("action", choices=["first_start", "start", "update", "stop", "test", "install"], 
                         help="Action to perform on agents")
     args = parser.parse_args()
 
@@ -61,13 +86,15 @@ def main():
     if args.action == "first_start":
         first_start_agent()
     elif args.action == "start":
-        start_agent()
+        start()
     elif args.action == "update":
         update_agent_config()
     elif args.action == "stop":
-        stop_agent()
+        stop()
     elif args.action == "test":
         test()
+    elif args.action == "install":
+        install()
 
 if __name__ == '__main__':
     main()
