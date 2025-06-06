@@ -9,6 +9,8 @@ sudo apt-get install -y curl build-essential gcc
 
 # Install Rust non-interactively
 echo "Starting Rust installation..."
+export RUSTUP_DIST_SERVER=https://mirrors.ustc.edu.cn/rust-static
+export RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=stable
 
 # Set up environment variables
