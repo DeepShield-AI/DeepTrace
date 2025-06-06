@@ -1,9 +1,10 @@
-from utils import Span, pair_acc, service_acc, e2e_acc, intra_preprocess
+
 import copy
+from trace.association.src.utils import span_grouping
 
 
 def fifo(spans):
-    spans_dict = intra_preprocess(spans)
+    spans_dict = span_grouping(spans)
     Allocated = {} # 记录入span是否分配了某个下游调用者的出span
     for tgid, tgid_spans in spans_dict.items():
         if len(tgid_spans['incoming']) == 0 or len(tgid_spans['outgoing']) == 0:

@@ -1,4 +1,4 @@
-from utils import Span, intra_preprocess
+from trace.association.src.utils import span_grouping
 import copy
 import statistics
 import scipy
@@ -52,7 +52,7 @@ def ScoreParents(in_ep, out_ep, in_spans, out_spans, largest_delay):
 def wap5(spans):
     global mean_delay
     mean_delay = {}
-    span_dict = intra_preprocess(spans)
+    span_dict = span_grouping(spans)
     for tgid, tgid_spans in span_dict.items():
         incoming_spans = tgid_spans['incoming']
         outgoing_spans = tgid_spans['outgoing']

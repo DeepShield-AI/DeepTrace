@@ -1,5 +1,4 @@
-from utils import Span, pair_acc, service_acc, e2e_acc, intra_preprocess
-import copy
+
 from collections import Counter, defaultdict
 import math
 import time
@@ -7,6 +6,7 @@ from scipy.stats import pearsonr, gaussian_kde
 from numpy import dot
 from numpy.linalg import norm
 import numpy as np
+from trace.association.src.utils import span_grouping
 
 
 
@@ -21,7 +21,7 @@ tgid_weights = {} # tgid -> weights
 def cosine_similarity(x, y):
     return dot(x, y) / (norm(x) * norm(y))
 
-def transaction_field(spans, window_size=4):
+def transaction_field(spans, window_size=7):
     """
     使用 n-gram 分割内容为字段，并基于 TF-IDF 更新字段的权重。
 
@@ -65,6 +65,22 @@ def transaction_field(spans, window_size=4):
     t2 = time.time()
     print(f"Transaction field time: {t2 - t1:.4f} seconds")
     return span_fields
+
+
+def content_similarity(span1, span2):
+    content1 = span1.req_content + span1.resp_content
+    content2 = span2.req_content + span2.resp_content
+    content1 = content1.encode('utf-8')
+    content2 = content2.encode('utf-8')
+    words1 = Counter(content1)
+    words2 = Counter(content2)
+    all_words = set(words1) | set(words2)
+    vec1 = [words1.get(word, 0) for word in all_words]
+    vec2 = [words2.get(word, 0) for word in all_words]
+    dot_product = sum(a*b for a, b in zip(vec1, vec2))
+    norm1 = math.sqrt(sum(a*a for a in vec1))
+    norm2 = math.sqrt(sum(b*b for b in vec2))
+    return dot_product / (norm1 * norm2) if norm1 and norm2 else 0
 
  
 def field_similarity(span1, span2):
@@ -237,6 +253,7 @@ def adjust_weights(span_mappings):
             if endpoint_pair in endpoint_ships[span1.tgid]:
                 maping_scores[tgid][(span1, span2)][0] = float(endpoint_ships[span1.tgid][endpoint_pair])
             maping_scores[tgid][(span1, span2)][1] = float(field_similarity(span1, span2))
+            # maping_scores[tgid][(span1, span2)][1] = float(content_similarity(span1, span2))
 
             if metrics:
                 # 遍历所有 metric
@@ -281,12 +298,14 @@ def adjust_weights(span_mappings):
             normalized_variances = np.zeros_like(variances)  # 如果方差全为 0，则权重全为 0
 
         # 将归一化后的方差作为权重
-        tgid_weights[tgid] = normalized_variances.tolist()
+        # tgid_weights[tgid] = normalized_variances.tolist()
+        tgid_weights[tgid] = [1, 8, 1, 1, 1, 1]
         # print(f"TGID: {tgid} | Weights: {tgid_weights[tgid]} | variances: {variances}")
 
 
 
 def get_candidate_mappings(spans):
+    fp = open('candidate_mappings.txt', 'w')
     tgid_spans = {}
     for span in spans:
         if span.tgid not in tgid_spans:
@@ -301,7 +320,8 @@ def get_candidate_mappings(spans):
                     if pre_span.direction == 'Ingress':
                         if tgid not in candidates:
                             candidates[tgid] = []
-                        if pre_span.start_time < span.start_time and pre_span.end_time > span.start_time:
+                        if pre_span.start_time < span.start_time and pre_span.end_time > span.end_time:
+                            fp.write(f"{pre_span.endpoint} {pre_span.trace_id} -> {span.endpoint} {span.trace_id}\n")
                             candidates[tgid].append((pre_span, span))
         if tgid in candidates:
             candidates[tgid] = sorted(candidates[tgid], key=lambda x: x[1].start_time)
@@ -318,6 +338,7 @@ def scoring(span1, span2):
         return 0
     weights = tgid_weights[span1.tgid]
     scores = maping_scores[span1.tgid][(span1, span2)]
+    # print(f"{span1.trace_id} {span1.endpoint} -> {span2.trace_id} {span2.endpoint}  Scores: {sum(w * s for w, s in zip(weights, scores))} {scores} {weights}")
     return sum(w * s for w, s in zip(weights, scores))
     
 
@@ -340,6 +361,8 @@ def iterative(span_mappings):
                 max_index = socres.index(max(socres))
                 # selected_mappings[tgid].append((list(parent_spans)[max_index], outgoing_span))
                 child2parent[outgoing_span.span_id] = list(parent_spans)[max_index].span_id
+                # if outgoing_span.trace_id != list(parent_spans)[max_index].trace_id:
+                #     print(f"Warning: {outgoing_span.trace_id} -> {list(parent_spans)[max_index].trace_id} | {outgoing_span.endpoint} -> {list(parent_spans)[max_index].endpoint}")
     t2 = time.time()
     print(f"Iterative time: {t2 - t1:.4f} seconds")
     return child2parent
@@ -353,7 +376,7 @@ def deeptrace(spans):
     adjust_weights(span_mappings)
     # print(f"Candidate Mappings: {span_mappings}")
     child2parent = iterative(span_mappings)
-    spans_dict = intra_preprocess(spans)
+    spans_dict = span_grouping(spans)
     for tgid, tgid_spans in spans_dict.items():
         for direction, span_list in tgid_spans.items():
             for ip in span_list:

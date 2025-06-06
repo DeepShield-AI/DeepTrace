@@ -1,6 +1,6 @@
            
 # traceweaver v2
-from utils import Span, intra_preprocess
+from trace.association.src.utils import span_grouping
 import copy
 import math
 import scipy.stats
@@ -215,7 +215,7 @@ def traceweaver_v2(spans, is_parallel=False):
     processed_spans = {}
     global delay_dists
     delay_dists = {}
-    span_dict = intra_preprocess(spans)
+    span_dict = span_grouping(spans)
     spanid2parentid = {}
 
     bacth_size = 100

@@ -1,5 +1,5 @@
 
-from utils import Span
+
 def search_span(span, paret_childs):
     current_spans = [span.span_id, span.parent_id]
     visited = set()
@@ -47,5 +47,25 @@ def assemble_trace(spans):
         span_list = search_span(span, paret_childs)
         for span_id in span_list:
             visited.add(span_id)
-        traces.append({'spans': [span_dict[span_id].tojson() for span_id in span_list], 'trace_id': span.trace_id})
+        traces.append({'trace_id': span.trace_id,
+                       'span_num': len(span_list),
+                        'spans': [{
+                                    'component_name': span_dict[span_id].component_name,
+                                    'endpoint': span_dict[span_id].endpoint,
+                                    'start_time': span_dict[span_id].start_time,
+                                    'end_time': span_dict[span_id].end_time,
+                                    'tgid': span_dict[span_id].tgid,
+                                    'pid': span_dict[span_id].pid,
+                                    'protocol': span_dict[span_id].protocol,
+                                    'direction': span_dict[span_id].direction,
+                                    'trace_id': span_dict[span_id].trace_id,
+                                    'span_id': span_dict[span_id].span_id,
+                                    'parent_id': span_dict[span_id].parent_id,
+                                    'duration': span_dict[span_id].duration,
+                                    'src_ip': span_dict[span_id].src_ip,
+                                    'src_port': span_dict[span_id].src_port,
+                                    'dst_ip': span_dict[span_id].dst_ip,
+                                    'dst_port': span_dict[span_id].dst_port,
+                                   } for span_id in span_list
+                      ]})
     return traces

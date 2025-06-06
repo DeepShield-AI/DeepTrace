@@ -1,4 +1,4 @@
-from utils import intra_preprocess
+from trace.association.src.utils import span_grouping
 class Event(object):
     def __init__(
         self,
@@ -35,7 +35,7 @@ class Event(object):
 
 def vpath(spans):
 
-    span_dict = intra_preprocess(spans)
+    span_dict = span_grouping(spans)
     for tgid, span_list in span_dict.items():
         if len(span_list['incoming']) == 0 or len(span_list['outgoing']) == 0:
             continue

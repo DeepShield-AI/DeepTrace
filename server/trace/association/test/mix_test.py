@@ -1,22 +1,15 @@
-
-import sys
-import os
-# 获取当前脚本所在目录
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UTILS_DIR = os.path.join(BASE_DIR, "..", "..", "association", "src")
-sys.path.append(os.path.normpath(UTILS_DIR))
-
-from utils import Span, es_read_spans, es_write_spans, pair_acc, service_acc, e2e_acc
-from fifo import fifo
-from vpath import vpath
-from deeptrace import deeptrace
-from wap5 import wap5
-from traceweaver_v1 import traceweaver_v1
-from traceweaver_v2 import traceweaver_v2
 import copy
-# from elasticsearch import Elasticsearch
-import json
 import argparse
+from database.src.utils import es_read_span_list
+from trace.association.src.fifo import fifo
+from trace.association.src.vpath import vpath
+from trace.association.src.deeptrace import deeptrace
+from trace.association.src.wap5 import wap5
+from trace.association.src.traceweaver_v1 import traceweaver_v1
+from trace.association.src.traceweaver_v2 import traceweaver_v2
+from trace.association.src.utils import pair_acc, service_acc, e2e_acc, span_merge
+from database.src.utils import es_write_span_list
+from trace.association.src.cross import inter_association
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -27,9 +20,11 @@ if __name__ == "__main__":
 
     for rps in [100, 200, 300, 400, 500]:
     # for rps in [100]:
-        index_name = f"rps-{rps}-spans"
-        spans = es_read_spans(index_name)
+        index_name = f"test-rps-{rps}-spans"
+        spans = es_read_span_list(index_name)
         # print(spans)
+
+        spans = inter_association(spans, client_ingress = None, tuple_used=True, tuple_direction=True)
         
         print("-" * 50)
         if algo == 'fifo':
@@ -58,7 +53,9 @@ if __name__ == "__main__":
             print(f"    TGID: {tgid:<8} | Accuracy: {acc2[tgid]:.2f}")
         print(f"End-to-End Accuracy: {acc3:.2f}")
 
-        # es_write_spans(f'rps-{rps}-mappings', processed_spans)
+        span_list = span_merge(processed_spans)
+        es_write_span_list(f'test-rps-{rps}-mappings', span_list)
+
 
 
         

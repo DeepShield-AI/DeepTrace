@@ -1,13 +1,15 @@
 # traceweaver_v1
 
-from utils import Span, intra_preprocess
 import copy
 import math
 import scipy.stats
 from collections import defaultdict
+from trace.association.src.utils import span_grouping
 
 delay_dists = {}
 span2used = defaultdict(lambda: False)
+
+
 
 def getOutEpsInOrder(spans):
     out_eps = []
@@ -153,7 +155,7 @@ def joint_optimization_by_dfs(in_ep, out_eps, in_span, outgoing_spans, is_parall
 def traceweaver_v1(spans, is_parallel=False):
     global delay_dists
     delay_dists = {}
-    span_dict = intra_preprocess(spans)
+    span_dict = span_grouping(spans)
 
     bacth_size = 100
     spanid2parentid = {}

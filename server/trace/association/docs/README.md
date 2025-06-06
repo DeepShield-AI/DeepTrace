@@ -5,9 +5,9 @@ Contains various span correlation algorithms:
 1. `fifo/`  
    First-In-First-Out algorithm that correlates incoming and outgoing spans within each component
 2. `vpath/`  
-   *(TODO - Algorithm under development)*
 3. `TraceWeaver/`  
-   *(TODO - Algorithm under development)*
+4. `wap5`
+5. `deeptrace`
 
 ## Test Code (`test/`)
 Contains test scripts for evaluating the accuracy of different correlation algorithms
@@ -20,5 +20,5 @@ Contains test scripts for evaluating the accuracy of different correlation algor
 ## Running Tests
 Execute the span correlation accuracy test from the `test/` directory:
 ```bash
-cd test
-python3 rps_acc.py
+python3 -m trace.association.test.intra_test --algo deeptrace|fifo|vpath|wap5|traceweaver_v1
+```
