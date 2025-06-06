@@ -1,4 +1,4 @@
-# DeepTrace Agent Configuration Guide
+# DeepTrace Configuration Guide
 
 ## Overview
 This configuration file sets up Elasticsearch integration and defines parameters for the DeepTrace agent (`agent1`) to collect and send trace data using eBPF. Key components include:
