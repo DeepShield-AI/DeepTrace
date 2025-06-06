@@ -1,14 +1,9 @@
 import json
 import paramiko
 import os
-from utils import *
-from scp import SCPClient
-import tarfile  # 用于压缩文件
 from elasticsearch import Elasticsearch
 import requests
 
-
-agents = {}
 
 # 管理agent状态：alive、处理延迟、条目、
 # 用户管理：agent属于哪个用户
@@ -62,7 +57,7 @@ class Agent:
             if not es_client.indices.exists(index=index_name):
                 # 如果索引不存在，则创建索引
                 es_client.indices.create(index=index_name)
-                print(f"{self.agent_name}: 索引 {index_name} 已创建")
+                # print(f"{self.agent_name}: 索引 {index_name} 已创建")
 
             # 查询是否存在指定 agent_name 的条目
             query = {
