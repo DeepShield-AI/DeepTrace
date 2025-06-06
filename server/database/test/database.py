@@ -5,13 +5,8 @@ import time
 import toml
 import random
 import string
-
-with open("../../config/config.toml", "r") as f:
-    config = toml.load(f)
-
-ES_USERNAME = "elastic"
-ES_PASSWORD = config.get("elastic", {}).get("elastic_password")
-SERVER_IP = "0.0.0.0"
+from database.src.utils import *
+import os
 
 
 
@@ -110,57 +105,25 @@ def parse_json(file_path):
         })
     return span_list
 
-def write_to_elasticsearch(index_name, span_list):
-    """
-    将 span_list 写入 Elasticsearch
-    """
-    es = Elasticsearch(
-        hosts=[f"http://{SERVER_IP}:9200"],
-        basic_auth=(ES_USERNAME, ES_PASSWORD)  # 添加用户名和密码
-    )
-
-    for span in span_list:
-        es.index(index=index_name, document=span)
 
 
-def bulkwrite_to_elasticsearch(index_name, span_list):
-    """
-    批量写入 span_list 到 Elasticsearch
-    """
-    es = Elasticsearch(
-        hosts=[f"http://{SERVER_IP}:9200"],
-        basic_auth=(ES_USERNAME, ES_PASSWORD)
-    )
-    actions = [
-        {
-            "_index": index_name,
-            "_source": span
-        }
-        for span in span_list
-    ]
-    helpers.bulk(es, actions)
 def write_all():
     for rps in [100, 200, 300, 400, 500]:
     # for rps in [100]:
         t1 = time.time()
-        file_path = f"./spans/rps{rps}-spans.json"
-        spans = parse_json(file_path)
-        bulkwrite_to_elasticsearch(f'rps-{rps}-spans', spans)
+        span_dir = os.path.dirname(os.path.abspath(__file__))
+        span_file = os.path.join(span_dir, f"spans/rps{rps}-spans.json")
+        spans = parse_json(span_file)
+        es_write_span_list(f'test-rps-{rps}-spans', spans)
         t2 = time.time()
         print(f"rps {rps} write done time: {t2-t1}")
 
 def clear_all():
-    t1 = time.time()
-    es = Elasticsearch(
-        hosts=[f"http://{SERVER_IP}:9200"],
-        basic_auth=(ES_USERNAME, ES_PASSWORD)  # 添加用户名和密码
-    )
-    for index in es.indices.get_alias(index="*"):
-        if index.startswith("rps-"):
-            es.indices.delete(index=index)
-    t2 = time.time()
-    print(f"clear done time: {t2-t1}")
-
+    for rps in [100, 200, 300, 400, 500]:
+        es_clear_index(f'test-rps-{rps}-spans')
+        es_clear_index(f'test-rps-{rps}-mappings')
+        es_clear_index(f'test-rps-{rps}-traces')
+        print(f"rps {rps} clear done")
 
 
 if __name__ == "__main__":
