@@ -22,19 +22,36 @@
 - `bash scripts/install_server_evn.sh`
 
 ## Step 3: Start Elastic Database on Server
-- `bash scripts/install_es.sh`
+- `cd server ; source venv/bin/activate; python3 -m cli.src.cmd db install`
 - You can access the database frontend via the web at `http://ip:5601`
   - Username: `elastic`  
   - Password: `elastic_password`
 
 ## Step 4: Remotely Start Agent on Server
-- `cd server ; source venv/bin/activate; cd controller`
-- `python3 cmd.py first_start`
+- commands
+```
+cd server ; source venv/bin/activate; 
+python3 -m cli.src.cmd agent install; 
+python3 -m cli.src.cmd agent run;
+```
   - This command will automatically connect to the remote host, clone the code, compile, and run the agent. By default, it will automatically collect spans from all Docker containers and store them in the server's Elastic database.
 
 ## Step 5: Perform Span Correlation on Server
 
+```bash
+python -m cli.src.cmd asso algo <algorithm>
+```
+
+- `<algorithm>`: Choose from `fifo`, `deeptrace`, `vpath`, `wap5`, `traceweaver_v1`, `deepflow`
+
+
 ## Step 6: Perform Trace Assembly on Server
+
+Assemble traces from the database.
+
+```bash
+python -m cli.src.cmd assemble
+```
 
 ## Step 7: Clear Agent and Server
 - `bash scripts/clear.sh`
