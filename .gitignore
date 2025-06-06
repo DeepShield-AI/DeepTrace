@@ -22,3 +22,4 @@ tests/workload/__pycache__
 tests/workload/**/__pycache__/
 tests/**.py
 resources/docker/images/**/ubuntu.*
+**/__pycache__/
