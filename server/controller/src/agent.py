@@ -46,7 +46,7 @@ class Agent:
 
             # 初始化 Elasticsearch 客户端
             es_client = Elasticsearch(
-                hosts=[f"http://0.0.0.0:{self.elastic_config['port']}"],
+                hosts=[f"http://es:{self.elastic_config['port']}"],
                 basic_auth=("elastic", self.elastic_config['elastic_password'])
             )
 
