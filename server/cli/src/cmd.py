@@ -9,6 +9,10 @@ from trace.association.src.utils import span_merge
 from database.src.utils import es_write_span_list
 from trace.assemble.src.utils import assemble_trace_from_db
 
+from database.test.database import es_init_test_data
+from trace.association.test.mix_test import perform_association
+from trace.assemble.test.test import perform_assemble
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='参数解析示例')
@@ -33,6 +37,12 @@ def parse_args():
     db_subparsers = db_parser.add_subparsers(dest='db_action', help='database操作', required=True)
     db_subparsers.add_parser('install', help='部署数据库')
     db_subparsers.add_parser('uninstall', help='卸载数据库')
+
+    # trace子命令
+    trace_parser = subparsers.add_parser('trace', help='trace相关操作')
+    trace_subparsers = trace_parser.add_subparsers(dest='action', help='trace操作', required=True)
+    asso_algo = trace_subparsers.add_parser('test', help='测试span关联和trace组装')
+    asso_algo.add_argument('algorithm', choices=['fifo', 'deeptrace', 'vpath', 'wap5', 'traceweaver_v1', 'traceweaver_v2'], help='选择算法')
 
     # assemble 子命令
     subparsers.add_parser('assemble', help='assemble操作')
@@ -82,6 +92,15 @@ def main():
             install_db()
         elif args.db_action == 'uninstall':
             uninstall_db()
+    elif args.command == 'trace':
+        if args.action == 'test':
+            es_init_test_data()
+            perform_association(args.algorithm)
+            perform_assemble()
+
+
+            
+
 
 if __name__ == '__main__':
     main()
