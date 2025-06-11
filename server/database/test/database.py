@@ -125,6 +125,9 @@ def clear_all():
         es_clear_index(f'test-rps-{rps}-traces')
         print(f"rps {rps} clear done")
 
+def es_init_test_data():
+    clear_all()
+    write_all()
 
 if __name__ == "__main__":
     clear_all()

@@ -11,7 +11,7 @@ from trace.model.span import Span
 
 ES_USERNAME = "elastic"
 ES_PASSWORD, _ = read_db_config()
-SERVER_IP = "0.0.0.0"
+SERVER_IP = "es"
 
 
 

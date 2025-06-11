@@ -305,7 +305,7 @@ def adjust_weights(span_mappings):
 
 
 def get_candidate_mappings(spans):
-    fp = open('candidate_mappings.txt', 'w')
+    # fp = open('candidate_mappings.txt', 'w')
     tgid_spans = {}
     for span in spans:
         if span.tgid not in tgid_spans:
@@ -321,7 +321,7 @@ def get_candidate_mappings(spans):
                         if tgid not in candidates:
                             candidates[tgid] = []
                         if pre_span.start_time < span.start_time and pre_span.end_time > span.end_time:
-                            fp.write(f"{pre_span.endpoint} {pre_span.trace_id} -> {span.endpoint} {span.trace_id}\n")
+                            # fp.write(f"{pre_span.endpoint} {pre_span.trace_id} -> {span.endpoint} {span.trace_id}\n")
                             candidates[tgid].append((pre_span, span))
         if tgid in candidates:
             candidates[tgid] = sorted(candidates[tgid], key=lambda x: x[1].start_time)

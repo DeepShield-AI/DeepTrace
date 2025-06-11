@@ -11,13 +11,8 @@ from trace.association.src.utils import pair_acc, service_acc, e2e_acc, span_mer
 from database.src.utils import es_write_span_list
 from trace.association.src.cross import inter_association
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--algo", type=str, choices=["traceweaver_v2", "traceweaver_v1", "fifo", "vpath", "deeptrace", "wap5"], default="fifo")
 
-    args = parser.parse_args()
-    algo = args.algo
-
+def perform_association(algo):
     for rps in [100, 200, 300, 400, 500]:
     # for rps in [100]:
         index_name = f"test-rps-{rps}-spans"
@@ -55,6 +50,15 @@ if __name__ == "__main__":
 
         span_list = span_merge(processed_spans)
         es_write_span_list(f'test-rps-{rps}-mappings', span_list)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--algo", type=str, choices=["traceweaver_v2", "traceweaver_v1", "fifo", "vpath", "deeptrace", "wap5"], default="fifo")
+
+    args = parser.parse_args()
+    algo = args.algo
+
+    perform_association(algo)
 
 
 
