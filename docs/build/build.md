@@ -36,7 +36,7 @@ sudo systemctl restart docker
 
 ### 3. Pull Images from Private Registry
 ```bash
-docker pull 47.97.67.233:5000/deeptrace:latest
+docker pull 47.97.67.233:5000/deepshield/deeptrace:latest
 ```
 > Verify with: `docker images | grep deeptrace`
 
@@ -47,13 +47,10 @@ docker pull 47.97.67.233:5000/deeptrace:latest
 ```bash
 cd DeepTrace
 
-docker run --privileged --rm -it -v $(pwd):/DeepTrace 47.97.67.233:5000/deeptrace bash -c \
-'export PATH="/root/.cargo/bin:${PATH}" &&
-cd /DeepTrace/agent &&
-aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > \
-src/trace/ebpf/src/vmlinux.rs &&
-sed -i '"'"'2i\#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code, unnecessary_transmutes)]'"'"' \
-src/trace/ebpf/src/vmlinux.rs &&
+docker run --privileged --rm -it -v $(pwd):/DeepTrace 47.97.67.233:5000/deepshield/deeptrace bash -c \
+'cd /DeepTrace/agent &&
+aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > src/trace/ebpf/src/vmlinux.rs &&
+sed -i '"'"'2i\#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code, unnecessary_transmutes)]'"'"' src/trace/ebpf/src/vmlinux.rs &&
 cargo build --release'
 
 # binary file directory: ./agent/target/release/agent

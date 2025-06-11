@@ -1,31 +1,22 @@
-FROM ubuntu:24.04
-
+FROM 47.97.67.233:5000/deepshield/ubuntu:24.04 AS builder
 ARG TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN apt-get update && apt-get install -y --no-install-suggests --no-install-recommends \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     build-essential clang llvm-18 llvm-18-dev llvm-18-tools \
-    curl ca-certificates git make libelf-dev && \
-    export LLVM_PATH="/lib/llvm-18" && export PATH="$LLVM_PATH/bin:$PATH" && \
-    rm -rf /var/lib/apt/lists/* && \
-    ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone && \
-    git clone --recurse-submodules https://github.com/libbpf/bpftool.git && \
-    cd bpftool/src && make -j$(nproc) && make install && cd / && rm -rf bpftool && \
-    mkdir -p /sys/kernel/tracing
+    curl ca-certificates git libelf-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-WORKDIR /deeptrace
-COPY . .
+ENV LLVM_PATH="/lib/llvm-18"
+ENV PATH="$LLVM_PATH/bin:$PATH"
+RUN git clone --depth=1 --recurse-submodules https://github.com/libbpf/bpftool.git && \
+    cd bpftool/src && make -j$(nproc) && make install && cd / && rm -rf bpftool
 
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=stable && \
-    . "$HOME/.cargo/env" && \
-    rustup component add rust-src && \
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=stable
+ENV PATH="/root/.cargo/bin:$PATH"
+RUN rustup component add rust-src && \
     rustup toolchain install nightly --component rust-src && \
     cargo install --features=llvm-sys/prefer-dynamic bpf-linker && \
     cargo install bindgen-cli && \
-    cargo install --git https://github.com/aya-rs/aya -- aya-tool && \
-    . "$HOME/.cargo/env" && \
-    mkdir -p agent/src/ebpf/src && \
-    aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > agent/src/ebpf/trace/src/vmlinux.rs && \
-    sed -i '2i\#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code, unnecessary_transmutes)]' agent/src/ebpf/trace/src/vmlinux.rs && \
-    cargo build --release
-
-ENV RUST_LOG=info
+    cargo install --git https://github.com/aya-rs/aya -- aya-tool
