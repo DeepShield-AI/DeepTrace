@@ -4,6 +4,7 @@
 	non_snake_case,
 	non_upper_case_globals,
 	dead_code,
+	unknown_lints,
 	clippy::useless_transmute,
 	clippy::too_many_arguments,
 	clippy::transmute_int_to_bool,

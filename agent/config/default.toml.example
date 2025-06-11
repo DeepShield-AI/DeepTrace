@@ -3,12 +3,16 @@ name = "agent1"
 workers = 32
 state_index = "state"
 
+[server]
+ip  = "0.0.0.0"
+port = 7901
+path = "deeptrace/ws"
+
 [api]
 address = "0.0.0.0"
 port = 7900
 workers = 1
 ident = "deeptrace"
-
 
 [sender]
 batch_size = 1024
@@ -20,8 +24,8 @@ file_size_limit = 1024
 
 [sender.elastic]
 node_url = "http://0.0.0.0:9200"
-username = "username"
-password = "password"
+username = "elastic"
+password = "***"
 request_timeout = 10
 index_name = "agent1"
 bulk_size = 1024

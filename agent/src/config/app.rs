@@ -1,4 +1,6 @@
-use super::{AgentConfig, ApiConfig, ConfigError, ProvenanceConfig, SenderConfig, TraceConfig};
+use super::{
+	AgentConfig, ApiConfig, ConfigError, ProvenanceConfig, SenderConfig, ServerConfig, TraceConfig,
+};
 use crate::constants::DEFAULE_CONFIG_PATH;
 use config::{Config, File};
 use log::{error, warn};
@@ -8,6 +10,7 @@ use serde::Deserialize;
 pub(crate) struct AppConfig {
 	pub api: ApiConfig,
 	pub agent: AgentConfig,
+	pub server: ServerConfig,
 	pub sender: SenderConfig,
 	pub trace: TraceConfig,
 	pub provenance: ProvenanceConfig,

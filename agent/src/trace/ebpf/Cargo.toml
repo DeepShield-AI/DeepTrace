@@ -14,9 +14,9 @@ rust-version.workspace = true
 aya-ebpf = { workspace = true }
 aya-log-ebpf = { workspace = true }
 bitflags = { workspace = true }
-nom = { workspace = true, default-features = false }
+nom = { version = "8.0.0", default-features = false }
 num_enum = { workspace = true }
-trace_common = { path = "../common" }
+trace_common = { workspace = true, default-features = false }
 
 [dev-dependencies]
 # trace-tests = { path = "../tests" }
@@ -26,7 +26,7 @@ pnet = { version = "0.35.0" }
 testcontainers = { version = "*", features = ["blocking"] }
 rand = { version = "*" }
 redis = { version = "*", features = ["tokio-comp"] }
-tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+tokio = { version = "1.45.0", features = ["macros", "rt", "rt-multi-thread"] }
 anyhow = { workspace = true }
 # bollard = { workspace = true, default-features = true}
 

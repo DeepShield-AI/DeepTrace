@@ -1,5 +1,68 @@
 # DeepTrace Agent Compilation Guide
 
+## Use Docker
+
+The easiest way is to use our docker image:
+
+### 1. Docker Installation by OS
+
+You can install Docker by following the official instructions: [Docker Installation](https://docs.docker.com/get-started/get-docker/)
+
+Check if Docker is installed correctly:
+```bash
+docker --version
+```
+
+---
+
+### 2. Docker Configuration
+
+### Edit Docker Daemon Configuration
+Modify `/etc/docker/daemon.json`:
+```json
+{
+  "insecure-registries": ["47.97.67.233:5000"]
+}
+```
+> Required for HTTP connections to private registry (https://medium.com/@dataq/membuat-docker-private-registry-6efe534df4d5) (https://gist.github.com/paulgwebster-oe/b3eab23c5c369d659bf0f66f124f2715)
+
+### Restart Docker Service
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+---
+
+### 3. Pull Images from Private Registry
+```bash
+docker pull 47.97.67.233:5000/deeptrace:latest
+```
+> Verify with: `docker images | grep deeptrace`
+
+---
+
+### 4. Compile Agent
+
+```bash
+cd DeepTrace
+
+docker run --privileged --rm -it -v $(pwd):/DeepTrace 47.97.67.233:5000/deeptrace bash -c \
+'export PATH="/root/.cargo/bin:${PATH}" &&
+cd /DeepTrace/agent &&
+aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > \
+src/trace/ebpf/src/vmlinux.rs &&
+sed -i '"'"'2i\#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code, unnecessary_transmutes)]'"'"' \
+src/trace/ebpf/src/vmlinux.rs &&
+cargo build --release'
+
+# binary file directory: ./agent/target/release/agent
+# You can also run the agent with:
+cp agent/config/default.toml.example agent/config/default.toml
+# modify the config file
+RUST_LOG=info sudo ./agent/target/release/agent -f agent/config/default.toml
+```
+
 ## Manually compilation
 
 ### Prerequisites
@@ -109,66 +172,3 @@ For more testing, check the [Testing Guide](../tests/README.md) for more details
 - [bpftool Installation from Source](https://99rdp.com/mastering-ebpf-how-to-install-bpftool-in-linux)   
 - [Aya eBPF Framework Documentation](https://github.com/aya-rs/aya)   
 - [Rust BPF Toolchain Setup](https://github.com/aya-rs/bpf-linker)   
-
-## Use Docker
-
-The easiest way is to use our docker image:
-
-### 1. Docker Installation by OS
-
-You can install Docker by following the official instructions: [Docker Installation](https://docs.docker.com/get-started/get-docker/)
-
-Check if Docker is installed correctly:
-```bash
-docker --version
-```
-
-### 2. Git lfs
-
-Git LFS is required to handle large files in Git repositories. You can install it by following the official instructions: [Git LFS Installation](https://git-lfs.com/)
-
-Then you can clone the repository:
-```bash
-git lfs install
-git lfs clone https://github.com/DeepShield-AI/DeepTrace.git
-```
-
----
-
-### 3. Image Import Operations
-
-Once Docker is installed, you can import our pre-built Docker image:
-```bash
-cd DeepTrace/
-chmod +x ./scripts/load_docker_images.sh
-./scripts/load_docker_images.sh
-
-# Check
-docker images | grep deeptrace
-```
-If you load the images, you don't need to compile the image again.
-
----  
-
-### 4. Build & Deployment (Optional)
-
-#### 1. **Compile Agent**
-```bash
-cd DeepTrace
-
-docker build \
-  --build-arg APP_NAME=deeptrace \
-  --network=host \
-  -t deeptrace \
-  -f deployment/docker/Dockerfile .
-```
-
-_Note: The Docker image build process can be time-consuming. Please be patient during this period and ensure stable network connectivity to both github.com and Docker Hub (hub.docker.com), especially if relying on remote image repositories rather than local cached images._
-
-#### 2. **Check Image**
-```bash
-docker images | grep deeptrace
-# Output:
-deeptrace            latest      04ed8cf89494   now    5.89GB
-```
-The output of `docker images | grep deeptrace` should show the image you just built. If it doesn't, you may need to check your Docker build process or network connectivity.

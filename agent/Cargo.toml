@@ -13,12 +13,13 @@ keywords = ["ebpf", "kernel", "linux", "network", "cloud"]
 categories = ["network", "cloud", "ebpf"]
 publish = false
 default-run = "agent"
+build = "build.rs"
 
 [workspace]
 resolver = "2"
-members = [".", "src/trace/ebpf", "src/provenance/ebpf", "src/trace/common", "src/provenance/common"]
+members = ["."]
 exclude = []
-default-members = [".", "src/trace/ebpf", "src/provenance/ebpf", "src/trace/common", "src/provenance/common"]
+default-members = ["."]
 package.authors = ["smore.ioki@gmail.com", "gyt22@mails.tsinghua.edu.cn"]
 package.edition = "2024"
 package.homepage = "https://github.com/DeepShield-AI/DeepTrace"
@@ -27,61 +28,31 @@ package.rust-version = "1.85.0"
 package.repository = "https://github.com/DeepShield-AI/DeepTrace"
 
 [workspace.dependencies]
-# `std` feature is currently required to build `clap`.
-#
-# See https://github.com/clap-rs/clap/blob/61f5ee5/clap_builder/src/lib.rs#L15.
-# cli
-clap = { version = "4.5.20", default-features = false }
-# config
-config = { version = "0.15.11", default-features = true }
-# concurrency
-arc-swap = { version = "1.7.1", default-features = false }
-crossbeam-channel = { version = "0.5.15", default-features = true }
-dashmap = { version = "7.0.0-rc2", default-features = false }
-tokio = { version = "1.45.0", default-features = false }
 # ebpf
 aya = { version = "0.13.1", default-features = false }
-aya-build = { version = "0.1.2", default-features = false }
 aya-ebpf = { version = "0.1.1", default-features = false }
 aya-log = { version = "0.2.1", default-features = false }
 aya-log-ebpf = { version = "0.1.1", default-features = false }
+# common
+trace_common = { path = "src/trace/common", default-features = false }
+provenance_common = { path = "src/provenance/common", default-features = false }
 # error
 anyhow = { version = "1", default-features = false }
-thiserror = { version = "2.0.11", default-features = false }
-# logging
-env_logger = { version = "0.11.5", default-features = false }
-log = { version = "0.4.22", default-features = false }
-# parser
-nom = { version = "8.0.0", default-features = false }
 # serialization
 serde = { version = "1.0.219", default-features = false }
 serde_json = { version = "1.0.140", default-features = false }
-# unix
-libc = { version = "0.2.159", default-features = false }
-# nix = { version = "0.30.1", default-features = false }
-signal-hook = { version = "0.3.18", default-features = false }
+# build
+aya-build = { version = "0.1.2", default-features = false }
 which = { version = "7.0.2", default-features = false }
 # misc
-## api
-rocket = { version = "0.5.1", default-features = false }
 ## bit
 bitflags = { version = "2.9.0", default-features = false }
-## byte
-bytes = { version = "1.9.0", default-features = false }
 ## cpu
 # core_affinity = { version = "0.8.3", default-features = false }
-## elasticsearch
-elasticsearch = { version = "8.17.0-alpha.1", default-features = false }
 ## docker
 bollard = { version = "0.17.0", default-features = false }
 ## enum
 num_enum = { version = "0.7.3", default-features = false }
-## time
-chrono = { version = "0.4.41", default-features = false }
-## url
-url = { version = "2.5.4", default-features = false}
-## zip
-flate2 = { version = "1.1.1", default-features = false }
 
 [workspace.lints.clippy]
 unused_trait_names = "warn"
@@ -91,41 +62,59 @@ unused-extern-crates = "warn"
 
 [dependencies]
 # common
-trace_common = { path = "src/trace/common", features = ["user"] }
-provenance_common = { path = "src/provenance/common", features = ["user"]}
+trace_common = { workspace = true, features = ["user"] }
+provenance_common = { workspace = true, features = ["user"] }
+# communication
+futures = { version = "0.3.31", default-features = false }
+futures-util = { version = "0.3.31", default-features = false }
+tokio-tungstenite = { version = "0.26.2", default-features = true }
 # concurrency
-arc-swap = { workspace = true }
-crossbeam-channel = { workspace = true }
-dashmap = { workspace = true, default-features = false }
-tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "net", "signal", "fs", "io-std"] }
+arc-swap = { version = "1.7.1", default-features = false }
+crossbeam-channel = { version = "0.5.15", default-features = true }
+dashmap = { version = "7.0.0-rc2", default-features = false }
+tokio = { version = "1.45.0", features = ["macros", "rt", "rt-multi-thread", "net", "signal", "fs", "io-std"], default-features = false }
 # ebpf
 aya = { workspace = true }
 aya-log = { workspace = true }
 # error
 anyhow = { workspace = true, default-features = true }
-thiserror = { workspace = true }
+thiserror = { version = "2.0.11", default-features = false }
 # serialization
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 # misc
-bollard = { workspace = true }
-bytes = { workspace = true, default-features = true }
+## api
+rocket = { version = "0.5.1", default-features = false, features = ["json"] }
+## byte
+bytes = { version = "1.9.0", default-features = true }
+# cli
+# `std` feature is currently required to build `clap`.
+#
+# See https://github.com/clap-rs/clap/blob/61f5ee5/clap_builder/src/lib.rs#L15.
+clap = { version = "4.5.20", default-features = false, features = ["derive", "std"] }
+## config
+config = { version = "0.15.11", default-features = true }
+## cpu
 # core_affinity = { version = "0.8.3", default-features = false }
-chrono = { workspace = true, features = ["clock"]}
-chrono-tz = { version = "0.10.3" }
-clap = { workspace = true, features = ["derive", "std"] }
-config = { workspace = true }
-elasticsearch = { workspace = true }
-env_logger = { workspace = true }
-flate2 = { workspace = true, features = ["zlib-rs"], default-features = false }
-libc = { workspace = true }
-log = { workspace = true }
+## docker
+bollard = { workspace = true }
+## elasticsearch
+elasticsearch = { version = "8.17.0-alpha.1", default-features = false }
+## k8s
 # kube = { version = "0.99.0", features = ["ws"] }
 # k8s-openapi = { version = "0.24.0", features = ["v1_29"] }
-# nix = { workspace = true, features = ["process", "signal"] }
-rocket = { workspace = true, features = ["json"]}
-signal-hook = { workspace = true, features = ["iterator"] }
-url = { workspace = true }
+# logging
+env_logger = { version = "0.11.5", default-features = false }
+log = { version = "0.4.22", default-features = false }
+## time
+chrono = { version = "0.4.41", default-features = false, features = ["clock"] }
+chrono-tz = { version = "0.10.3" }
+# unix
+libc = { version = "0.2.159", default-features = false }
+## url
+url = { version = "2.5.4", default-features = false }
+## zip
+flate2 = { version = "1.1.1", default-features = false, features = ["zlib-rs"] }
 
 [build-dependencies]
 anyhow = { workspace = true }
@@ -149,20 +138,20 @@ trace-ebpf = { path = "src/trace/ebpf" }
 name = "agent"
 path = "src/main.rs"
 
-[profile.dev]
-opt-level = 3
-debug = false
-debug-assertions = false
-overflow-checks = false
-lto = true
-panic = "abort"
-incremental = false
-codegen-units = 1
-rpath = false
-
-# [profile.release]
+# [profile.dev]
 # opt-level = 3
-# debug = 2
+# debug = false
+# debug-assertions = false
+# overflow-checks = false
 # lto = true
 # panic = "abort"
+# incremental = false
 # codegen-units = 1
+# rpath = false
+
+[profile.release]
+panic = "abort"
+opt-level = 3
+# debug = 2
+lto = true
+codegen-units = 1

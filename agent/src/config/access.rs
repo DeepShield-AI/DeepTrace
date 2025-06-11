@@ -1,5 +1,5 @@
 use super::{
-	AgentConfig, ApiConfig, AppConfig, ProvenanceConfig, SenderConfig, TraceConfig,
+	AgentConfig, ApiConfig, AppConfig, ProvenanceConfig, SenderConfig, ServerConfig, TraceConfig,
 	sender::{ElasticConfig, FlatFileConfig},
 };
 use crate::app::context;
@@ -15,6 +15,7 @@ pub type AgentAccess = Access<AgentConfig>;
 pub type SenderAccess = Access<SenderConfig>;
 pub type ElasticAccess = Access<ElasticConfig>;
 pub type FlatFileAccess = Access<FlatFileConfig>;
+pub type ServerAccess = Access<ServerConfig>;
 
 fn config() -> Arc<ArcSwap<AppConfig>> {
 	context().config.clone()
@@ -37,6 +38,10 @@ pub fn agent_config() -> AgentAccess {
 
 pub fn sender_config() -> SenderAccess {
 	Map::new(config(), |config: &AppConfig| -> &SenderConfig { &config.sender })
+}
+
+pub fn server_config() -> ServerAccess {
+	Map::new(config(), |config: &AppConfig| -> &ServerConfig { &config.server })
 }
 
 pub fn elastic_config() -> ElasticAccess {

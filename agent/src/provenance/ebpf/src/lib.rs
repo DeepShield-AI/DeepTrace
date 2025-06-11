@@ -1,6 +1,6 @@
 // This file exists to enable the library target.
-#![no_std]
-
+#![cfg_attr(not(test), no_std)]
+#![allow(dead_code)]
 mod maps;
 pub mod network;
 pub mod process;

@@ -11,7 +11,8 @@ use arc_swap::access::Access;
 use aya::{Ebpf, maps::AsyncPerfEventArray, util::online_cpus};
 use bytes::BytesMut;
 // use crossbeam_channel::Sender;
-use log::{info, warn};
+use log::{debug, info, warn};
+use provenance_common::{Edge, TaskPoint};
 use tokio::task::JoinHandle;
 
 pub struct Provenance {
@@ -46,40 +47,75 @@ impl Module for Provenance {
 		// attach::attach_tracepoint(&mut self.ebpf).expect("Failed to attach tracepoint");
 		utils::attach(&mut self.ebpf)?;
 		// Retrieve the perf event array from the eBPF program to read events from it.
-		// let mut perf_array = AsyncPerfEventArray::try_from(self.ebpf.take_map("events").unwrap())
-		// 	.expect("Failed to take perf array");
-
+		let mut point_array = AsyncPerfEventArray::try_from(self.ebpf.take_map("events").unwrap())
+			.expect("Failed to take perf array");
+		let mut edge_array = AsyncPerfEventArray::try_from(self.ebpf.take_map("edges").unwrap())
+			.expect("Failed to take edge array");
 		// // Calculate the size of the Data structure in bytes.
-		// let len_of_data = size_of::<Data>();
+		let len_of_data = 128;
 		let mut handlers = vec![];
 		// Iterate over each online CPU core. For eBPF applications, processing is often done per CPU core.
-		for _cpu_id in online_cpus().expect("Get CPU id error") {
+		for cpu_id in online_cpus().expect("Get CPU id error") {
 			// open a separate perf buffer for each cpu
-			// let mut buf = perf_array.open(cpu_id, Some(128)).expect("Failed to open perf buffer");
+			let mut buf = point_array.open(cpu_id, Some(128)).expect("Failed to open perf buffer");
 			// let output = self.output.clone();
 			// process each perf buffer in a separate task
 			let handle = spawn_blocking(move || {
 				block_on(async {
 					// Prepare a set of buffers to store the data read from the perf buffer.
 					// Here, 16 buffers are created, each with a capacity equal to the size of the Data structure.
-					// let mut buffers =
-					// 	(0..16).map(|_| BytesMut::with_capacity(len_of_data)).collect::<Vec<_>>();
+					let mut buffers =
+						(0..16).map(|_| BytesMut::with_capacity(len_of_data)).collect::<Vec<_>>();
 					loop {
 						// Attempt to read events from the perf buffer into the prepared buffers.
-						// let events = match buf.read_events(&mut buffers).await {
-						// 	Ok(events) => events,
-						// 	Err(e) => {
-						// 		warn!("Error reading events: {e}");
-						// 		continue;
-						// 	},
-						// };
+						let events = match buf.read_events(&mut buffers).await {
+							Ok(events) => events,
+							Err(e) => {
+								warn!("Error reading events: {e}");
+								continue;
+							},
+						};
 
 						// // Iterate over the number of events read. `events.read` indicates how many events were read.
-						// for i in 0..events.read {
-						// 	let buf = &mut buffers[i];
-						// 	let data = unsafe { *(buf.as_ptr() as *const Data) }; // Convert the buffer to a Data structure.
-						// 	output.send(data).expect("Error sending data");
-						// }
+						for i in 0..events.read {
+							let buf = &mut buffers[i];
+							let data = unsafe { *(buf.as_ptr() as *const TaskPoint) }; // Convert the buffer to a Data structure.
+							// output.send(data).expect("Error sending data");
+							debug!("Received data: {:?}", data); // For demonstration, print the received data.
+						}
+					}
+				})
+			});
+			handlers.push(handle);
+		}
+		for cpu_id in online_cpus().expect("Get CPU id error") {
+			// open a separate perf buffer for each cpu
+			let mut buf = edge_array.open(cpu_id, Some(128)).expect("Failed to open perf buffer");
+			// let output = self.output.clone();
+			// process each perf buffer in a separate task
+			let handle = spawn_blocking(move || {
+				block_on(async {
+					// Prepare a set of buffers to store the data read from the perf buffer.
+					// Here, 16 buffers are created, each with a capacity equal to the size of the Data structure.
+					let mut buffers =
+						(0..16).map(|_| BytesMut::with_capacity(len_of_data)).collect::<Vec<_>>();
+					loop {
+						// Attempt to read events from the perf buffer into the prepared buffers.
+						let events = match buf.read_events(&mut buffers).await {
+							Ok(events) => events,
+							Err(e) => {
+								warn!("Error reading events: {e}");
+								continue;
+							},
+						};
+
+						// // Iterate over the number of events read. `events.read` indicates how many events were read.
+						for i in 0..events.read {
+							let buf = &mut buffers[i];
+							let data = unsafe { *(buf.as_ptr() as *const Edge) }; // Convert the buffer to a Data structure.
+							// output.send(data).expect("Error sending data");
+							debug!("Received edge: {:?}", data); // For demonstration, print the received data.
+						}
 					}
 				})
 			});

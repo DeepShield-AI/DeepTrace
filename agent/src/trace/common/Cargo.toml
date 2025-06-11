@@ -14,8 +14,8 @@ default = []
 user = ["aya"]
 
 [dependencies]
-aya = { workspace = true, optional = true }
-num_enum = { workspace = true }
+aya = { workspace = true, optional = true, default-features = false}
+num_enum = { workspace = true, default-features = false }
 serde = { workspace = true, features = ["derive"], default-features = false }
 
 [lib]
