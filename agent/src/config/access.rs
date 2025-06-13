@@ -1,5 +1,6 @@
 use super::{
-	AgentConfig, ApiConfig, AppConfig, ProvenanceConfig, SenderConfig, ServerConfig, TraceConfig,
+	AgentConfig, ApiConfig, AppConfig, ProvenanceConfig, SenderConfig, ServerConfig, SpanConfig,
+	TraceConfig,
 	sender::{ElasticConfig, FlatFileConfig},
 };
 use crate::app::context;
@@ -9,6 +10,7 @@ use std::sync::Arc;
 type Access<C> = Map<Arc<ArcSwap<AppConfig>>, AppConfig, fn(&AppConfig) -> &C>;
 
 pub type TraceAccess = Access<TraceConfig>;
+pub type SpanAccess = Access<SpanConfig>;
 pub type ProvenanceAccess = Access<ProvenanceConfig>;
 pub type ApiAccess = Access<ApiConfig>;
 pub type AgentAccess = Access<AgentConfig>;
@@ -26,6 +28,10 @@ pub fn api_config() -> ApiAccess {
 }
 pub fn trace_config() -> TraceAccess {
 	Map::new(config(), |config: &AppConfig| -> &TraceConfig { &config.trace })
+}
+
+pub fn span_config() -> SpanAccess {
+	Map::new(config(), |config: &AppConfig| -> &SpanConfig { &config.span })
 }
 
 pub fn provenance_config() -> ProvenanceAccess {

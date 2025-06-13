@@ -14,6 +14,7 @@ use trace_common::{
 	protocols::L7Protocol,
 	structs::{Direction, Quintuple},
 };
+use aya_log_ebpf::info;
 
 pub trait Infer {
 	fn parse(
@@ -61,23 +62,22 @@ pub(crate) fn infer_protocol(
 			},
 		}
 	};
-	// if message.protocol == L7Protocol::Unknown {
-	// 	info!(ctx, "infer protocol error");
-	// 	info!(
-	// 		ctx,
-	// 		"{} {} {} {} {} {} {} {}",
-	// 		info.buf[0],
-	// 		info.buf[1],
-	// 		info.buf[2],
-	// 		info.buf[3],
-	// 		info.buf[4],
-	// 		info.buf[5],
-	// 		info.buf[6],
-	// 		info.buf[7]
-	// 	);
-	// 	// info!(ctx, "{} {} {} {}", info.buf[0], info.buf[1], info.buf[2], info.buf[3]);
-	// 	info!(ctx, "{} {}", info.count, info.len);
-	// }
+	if message.protocol == L7Protocol::Unknown && (quintuple.src_port == 9090 || quintuple.dst_port == 9090) && info.count != 4 {
+		info!(ctx, "infer protocol error");
+		info!(
+			ctx,
+			"{} {} {} {} {} {} {} {}",
+			info.buf[0],
+			info.buf[1],
+			info.buf[2],
+			info.buf[3],
+			info.buf[4],
+			info.buf[5],
+			info.buf[6],
+			info.buf[7]
+		);
+		info!(ctx, "{} {}", info.count, info.len);
+	}
 	if message.protocol == L7Protocol::Unknown && info.count <= MAX_INFER_PAYLOAD_SIZE {
 		sock_info.pre_direction = sock_info.direction;
 		sock_info.direction = info.direction;
@@ -89,9 +89,12 @@ pub(crate) fn infer_protocol(
 	} else {
 		if sock_info.l7protocol == L7Protocol::Unknown {
 			sock_info.l7protocol = message.protocol;
-			map.insert(&key, sock_info, 0).map_err(|e| e as u32)?;
 		}
+		message.seq = sock_info.seq;
 		message.uuid = sock_info.uuid;
+
+		sock_info.seq += 1;
+		map.insert(&key, sock_info, 0).map_err(|e| e as u32)?;
 		Ok(message)
 	}
 }

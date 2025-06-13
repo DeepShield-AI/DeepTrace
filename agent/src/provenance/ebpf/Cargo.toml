@@ -25,10 +25,3 @@ path = "src/main.rs"
 [lib]
 name = "provenance"
 path = "src/lib.rs"
-
-[profile.release]
-panic = "abort"
-opt-level = 3
-debug = 2
-lto = true
-codegen-units = 1

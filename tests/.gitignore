@@ -1,0 +1,8 @@
+*.py
+*.txt
+*.pcap
+*.json
+
+workload/env/
+workload/__pycache__
+workload/**/__pycache__/

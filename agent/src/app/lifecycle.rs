@@ -38,7 +38,7 @@ async fn run() -> Result<(), AgentError> {
 	// let mut ebpf_log = SenderProcess::new("ebpf", message_receiver.clone());
 	// ebpf_log.start(FlatFile::new("message.txt").await.expect("Flat file error"))?;
 	let mut span_log = SenderProcess::new("span", span_receiver);
-	// span_log.start(FlatFile::new("span.txt").await.expect("Flat file error"))?;
+	// span_log.start(FlatFile::new("spans.txt").await.expect("Flat file error"))?;
 	span_log.start(Elastic::new().await.expect("Elastic error"))?;
 
 	let mut span_constructor = SpanConstructor::new(message_receiver, span_sender);

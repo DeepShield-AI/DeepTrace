@@ -137,6 +137,7 @@ pub struct Data {
 	pub pid: u32,
 	pub enter_seq: u32,
 	pub exit_seq: u32,
+	pub seq: u32,
 	pub timestamp_ns: u64,
 	#[cfg_attr(feature = "user", serde(rename(serialize = "socket_id")))]
 	pub uuid: u32,
@@ -154,6 +155,17 @@ pub struct Data {
 	pub protocol: L7Protocol,
 	#[cfg_attr(feature = "user", serde(rename(serialize = "type")))]
 	pub type_: MessageType,
+}
+
+impl Data {
+	#[inline]
+	pub fn is_request(&self) -> bool {
+		self.type_ == MessageType::Request
+	}
+	#[inline]
+	pub fn is_response(&self) -> bool {
+		self.type_ == MessageType::Response
+	}
 }
 
 #[cfg(feature = "user")]

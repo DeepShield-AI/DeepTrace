@@ -15,15 +15,12 @@ use tokio::{
 	io::{AsyncWriteExt, BufWriter},
 };
 
-const PREFIX: &[u8] = b"[";
-const SUFFIX: &[u8] = b"]";
-const SEPARATOR: &[u8] = b",";
+const SEPARATOR: &[u8] = b"\n";
 
 pub struct FlatFile {
 	output: BufWriter<File>,
 	path: PathBuf,
 	written_size: usize,
-	first: bool,
 	buf: BytesMut,
 	config: FlatFileAccess,
 }
@@ -51,13 +48,11 @@ impl FlatFile {
 			output: writer,
 			path,
 			written_size: 0,
-			first: true,
 			buf: BytesMut::with_capacity(c.mem_buffer_size),
 			config,
 		})
 	}
 	async fn rotate_file(&mut self) -> Result<(), Error> {
-		self.buf.extend(SUFFIX);
 		self.output.write_all(&self.buf).await?;
 		self.output.flush().await?;
 
@@ -73,7 +68,6 @@ impl FlatFile {
 
 		self.path = path;
 		self.written_size = 0;
-		self.first = true;
 		Ok(())
 	}
 }
@@ -87,14 +81,9 @@ impl<S: Sendable + Serialize> TransportStrategy<S> for FlatFile {
 			<Self as TransportStrategy<S>>::flush(self).await?;
 		}
 
-		if !self.first {
-			self.buf.extend_from_slice(SEPARATOR);
-		} else {
-			self.buf.extend_from_slice(PREFIX);
-			self.first = false;
-		}
-
 		self.buf.extend_from_slice(&json);
+		self.buf.extend_from_slice(SEPARATOR);
+
 		Ok(())
 	}
 

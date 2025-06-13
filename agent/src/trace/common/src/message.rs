@@ -4,6 +4,7 @@ use serde::Serialize;
 #[derive(Default)]
 pub struct Message {
 	pub uuid: u32,
+	pub seq: u32,
 	pub protocol: L7Protocol,
 	pub type_: MessageType,
 }
@@ -14,7 +15,7 @@ impl Message {
 	}
 }
 
-#[derive(Default, Clone, Copy, Serialize, Debug)]
+#[derive(Default, Clone, Copy, Serialize, Debug, PartialEq)]
 pub enum MessageType {
 	#[default]
 	Unknown,

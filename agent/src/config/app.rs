@@ -1,5 +1,6 @@
 use super::{
-	AgentConfig, ApiConfig, ConfigError, ProvenanceConfig, SenderConfig, ServerConfig, TraceConfig,
+	AgentConfig, ApiConfig, ConfigError, ProvenanceConfig, SenderConfig, ServerConfig, SpanConfig,
+	TraceConfig,
 };
 use crate::constants::DEFAULE_CONFIG_PATH;
 use config::{Config, File};
@@ -13,6 +14,7 @@ pub(crate) struct AppConfig {
 	pub server: ServerConfig,
 	pub sender: SenderConfig,
 	pub trace: TraceConfig,
+	pub span: SpanConfig,
 	pub provenance: ProvenanceConfig,
 }
 

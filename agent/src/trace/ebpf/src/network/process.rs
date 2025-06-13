@@ -85,6 +85,7 @@ pub fn try_exit(
 	data.protocol = msg.protocol;
 	data.type_ = msg.type_;
 	data.uuid = msg.uuid;
+	data.seq = msg.seq;
 
 	let copy_size = args.extract(data.payload.buf.as_mut_ptr(), ret as u32)?;
 	data.payload.len = copy_size;

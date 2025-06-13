@@ -2,9 +2,11 @@ use super::{Cache, Span, SpanError};
 use crate::{
 	Module,
 	app::runtime::{block_on, spawn_blocking},
+	config::{SpanAccess, span_config},
 };
-use crossbeam_channel::{Receiver, Sender};
-use log::info;
+use arc_swap::access::Access;
+use crossbeam_channel::{Receiver, RecvError, Sender};
+use log::{info, warn};
 use std::{
 	sync::{
 		Arc,
@@ -19,12 +21,13 @@ pub struct SpanConstructor {
 	running: Arc<AtomicBool>,
 	input: Receiver<Data>,
 	output: Sender<Span>,
+	config: SpanAccess,
 	handle: Option<JoinHandle<()>>,
 }
 
 impl SpanConstructor {
 	pub fn new(input: Receiver<Data>, output: Sender<Span>) -> Self {
-		Self { running: Default::default(), input, output, handle: None }
+		Self { running: Default::default(), input, output, config: span_config(), handle: None }
 	}
 }
 
@@ -61,10 +64,9 @@ impl Module for SpanConstructor {
 		Ok(())
 	}
 }
-
 async fn construct_spans(message_receiver: Receiver<Data>, span_sender: Sender<Span>) {
 	let cache = Cache::new();
-	let cleanup_interval = Duration::from_secs(1);
+	let cleanup_interval = Duration::from_secs(20);
 	let mut last_cleanup = Instant::now();
 	loop {
 		let span_sender = span_sender.clone();

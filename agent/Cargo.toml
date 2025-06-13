@@ -61,6 +61,8 @@ unused_trait_names = "warn"
 unused-extern-crates = "warn"
 
 [dependencies]
+# cache
+lru = { version = "0.14.0", default-features = false}
 # common
 trace_common = { workspace = true, features = ["user"] }
 provenance_common = { workspace = true, features = ["user"] }

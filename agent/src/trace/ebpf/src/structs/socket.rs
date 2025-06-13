@@ -37,6 +37,7 @@ pub(crate) enum SocketType {
 pub(crate) struct SocketInfo {
 	pub uuid: u32,
 	pub exit_seq: u32,
+	pub seq: u32,
 	pub direction: Direction,
 	pub pre_direction: Direction,
 	pub l7protocol: L7Protocol,
@@ -50,6 +51,7 @@ impl SocketInfo {
 		Self {
 			uuid: unsafe { bpf_get_prandom_u32() },
 			exit_seq: 0,
+			seq: 0,
 			pre_direction: Direction::Unknown,
 			direction: Direction::Unknown,
 			l7protocol: L7Protocol::Unknown,

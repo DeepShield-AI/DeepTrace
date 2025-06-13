@@ -26,6 +26,9 @@ pub struct Span {
 	src_port: u16,
 	dst_port: u16,
 
+	req_seq: u32,
+	resp_seq: u32,
+
 	#[serde(serialize_with = "serialize_payload")]
 	req_content: Payload,
 	#[serde(serialize_with = "serialize_payload")]
@@ -63,6 +66,8 @@ impl Span {
 			dst_ip,
 			src_port,
 			dst_port,
+			req_seq: req.seq,
+			resp_seq: resp.seq,
 			req_content: req.payload,
 			resp_content: resp.payload,
 			protocol: req.protocol,

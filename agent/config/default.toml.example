@@ -17,6 +17,9 @@ ident = "deeptrace"
 [sender]
 batch_size = 1024
 
+[span]
+batch_size = 1024
+
 [sender.flat_file]
 mem_buffer_size = 16
 file_buffer_size = 32
