@@ -22,6 +22,13 @@ def check_finish(spans, visted):
         if span.parent_id is not None and span.span_id not in visted:
             return False
     return True
+
+def get_status_code(span):
+    if span.protocol == 'HTTP1':
+        return span.resp_content.split()[1]
+
+def num2ip(num):
+    return '.'.join([str((num >> (8 * i)) & 0xFF) for i in range(3, -1, -1)])
 def assemble_trace(spans):
     """
     根据 span_id 和 parent_id 将 spans 分组为 trace 列表
@@ -47,8 +54,24 @@ def assemble_trace(spans):
         span_list = search_span(span, paret_childs)
         for span_id in span_list:
             visited.add(span_id)
-        traces.append({'trace_id': span.trace_id,
-                       'span_num': len(span_list),
+        root_span_id = max(span_list, key=lambda sid: span_dict[sid].duration)
+        e2e_dutaion = span_dict[root_span_id].duration
+        ingress_endpoint = span_dict[root_span_id].endpoint
+        ingress_component_name = span_dict[root_span_id].component_name
+        protocol = span_dict[root_span_id].protocol
+        status_code = get_status_code(span_dict[root_span_id])
+        
+        traces.append({ 'trace_id': span.trace_id,
+                        'span_num': len(span_list),
+                        'e2e_duration': e2e_dutaion,
+                        'endpoint': ingress_endpoint,
+                        'component_name': ingress_component_name,
+                        'server_ip': num2ip(span_dict[root_span_id].src_ip),
+                        'server_port': span_dict[root_span_id].src_port,
+                        'client_ip': num2ip(span_dict[root_span_id].dst_ip),
+                        'client_port': span_dict[root_span_id].dst_port,
+                        'protocol': protocol,
+                        'status_code': status_code,
                         'spans': [{
                                     'component_name': span_dict[span_id].component_name,
                                     'endpoint': span_dict[span_id].endpoint,
@@ -61,10 +84,11 @@ def assemble_trace(spans):
                                     'trace_id': span_dict[span_id].trace_id,
                                     'span_id': span_dict[span_id].span_id,
                                     'parent_id': span_dict[span_id].parent_id,
+                                    'child_ids': paret_childs[span_id]['childs'],
                                     'duration': span_dict[span_id].duration,
-                                    'src_ip': span_dict[span_id].src_ip,
+                                    'src_ip': num2ip(span_dict[span_id].src_ip),
                                     'src_port': span_dict[span_id].src_port,
-                                    'dst_ip': span_dict[span_id].dst_ip,
+                                    'dst_ip': num2ip(span_dict[span_id].dst_ip),
                                     'dst_port': span_dict[span_id].dst_port,
                                    } for span_id in span_list
                       ]})
