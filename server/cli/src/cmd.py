@@ -1,11 +1,10 @@
 import argparse
 from controller.src.utils import *
 from config.parse_config import load_agents
-from database.src.deploy import install_db, uninstall_db
-from database.src.utils import es_read_agent_span_list
+from database.src.utils import es_read_agent_span_list, es_clear_all
 from trace.association.src.cross import inter_association
 from trace.association.src import fifo, deeptrace, traceweaver_v1, traceweaver_v2, wap5, vpath
-from trace.association.src.utils import span_merge
+from trace.association.src.utils import span_merge, print_acc
 from database.src.utils import es_write_span_list
 from trace.assemble.src.utils import assemble_trace_from_db
 
@@ -25,6 +24,7 @@ def parse_args():
     agent_subparsers.add_parser('test', help='测试连接agent')
     agent_subparsers.add_parser('stop', help='停止agent')
     agent_subparsers.add_parser('run', help='运行agent')
+    agent_subparsers.add_parser('sync', help='将配置同步到agent')
 
     # asso 子命令
     asso_parser = subparsers.add_parser('asso', help='asso相关操作')
@@ -35,8 +35,7 @@ def parse_args():
     # database 子命令
     db_parser = subparsers.add_parser('db', help='database操作')
     db_subparsers = db_parser.add_subparsers(dest='db_action', help='database操作', required=True)
-    db_subparsers.add_parser('install', help='部署数据库')
-    db_subparsers.add_parser('uninstall', help='卸载数据库')
+    db_subparsers.add_parser('clear', help='清除所有表格')
 
     # trace子命令
     trace_parser = subparsers.add_parser('trace', help='trace相关操作')
@@ -63,35 +62,41 @@ def main():
         elif args.agent_action == 'run':
             print("执行agent运行操作")
             start_agents(agents)
+        elif args.agent_action == 'sync':
+            print("执行agent配置同步操作")
+            sync_agent_config(agents)
     elif args.command == 'asso':
-        spans = es_read_agent_span_list()
+        agents = load_agents()
+        spans = es_read_agent_span_list(agents)
         spans = inter_association(spans, client_ingress='ComposePost', tuple_used=False)
+        span_dict = {}
         if args.asso_action == 'algo':
             print(f"选择asso算法: {args.algorithm}")
             if args.algorithm == 'fifo':
                 span_dict = fifo.fifo(spans)
-        elif args.algorithm == 'deeptrace':
-            span_dict = deeptrace.deeptrace(spans)
-        elif args.algorithm == 'vpath':
-            span_dict = vpath.vpath(spans)
-        elif args.algorithm == 'wap5':
-            span_dict = wap5.wap5(spans)
-        elif args.algorithm == 'traceweaver_v1':
-            span_dict = traceweaver_v1.traceweaver_v1(spans)
-        elif args.algorithm == 'traceweaver_v2':
-            span_dict = traceweaver_v2.traceweaver_v2(spans)
-        else:
-            raise ValueError(f"Unknown algorithm: {args.algorithm}")
+            elif args.algorithm == 'deeptrace':
+                span_dict = deeptrace.deeptrace(spans)
+            elif args.algorithm == 'vpath':
+                span_dict = vpath.vpath(spans)
+            elif args.algorithm == 'wap5':
+                span_dict = wap5.wap5(spans)
+            elif args.algorithm == 'traceweaver_v1':
+                span_dict = traceweaver_v1.traceweaver_v1(spans)
+            elif args.algorithm == 'traceweaver_v2':
+                span_dict = traceweaver_v2.traceweaver_v2(spans)
+            else:
+                raise ValueError(f"Unknown algorithm: {args.algorithm}")
+            print_acc(span_dict)
         span_list = span_merge(span_dict)
-        es_write_span_list(f'agent-span-mappings', span_list)
+        es_write_span_list(f'span-mappings', span_list)
     elif args.command == 'assemble':
         print("执行assemble操作")
-        assemble_trace_from_db('agent-span-mappings', 'agent-traces')
+        assemble_trace_from_db('span-mappings', 'traces')
     elif args.command == 'db':
-        if args.db_action == 'install':
-            install_db()
-        elif args.db_action == 'uninstall':
-            uninstall_db()
+        if args.db_action ==  'clear':
+            print("清除所有数据库表格")
+            es_clear_all()
+        
     elif args.command == 'trace':
         if args.action == 'test':
             es_init_test_data()

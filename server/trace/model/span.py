@@ -33,9 +33,9 @@ class Span:
         if span_json.get('trace_id'):
             return span_json['trace_id']
         content = span_json.get('req_content', '')
-        match = re.search(r'uber-trace-id.*?([0-9a-fA-F]+):', content)
+        match = re.search(r'uber-trace-id\x00{3}([0-9a-f]+:[0-9a-f]+:[0-9a-f]+:[0-9a-f]+)\x00', content)
         if match:
-            trace_id = match.group(1)
+            trace_id = match.group(1).split(":")[0][1:]
             return trace_id 
         return 'UnknownTraceID'
 

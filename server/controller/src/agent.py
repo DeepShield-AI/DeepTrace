@@ -3,6 +3,7 @@ import paramiko
 import os
 from elasticsearch import Elasticsearch
 import requests
+from database.src.utils import es_write_agent_config
 
 
 # 管理agent状态：alive、处理延迟、条目、
@@ -14,8 +15,10 @@ import requests
 # tag管理
 
 class Agent:
-    def __init__(self, agent_config, elastic_config):
+    def __init__(self, agent_config, elastic_config, server_config):
         self.ssh_client = None
+        self.server_config = server_config
+        self.agent_config = agent_config
         self.agent_info = agent_config['agent_info']
         self.sender = agent_config['sender']
         self.trace = agent_config['trace']
@@ -29,58 +32,9 @@ class Agent:
         self.user_name = self.agent_info['user_name']
         # self.code_path = self.expand_path(self.agent_info['code_path'])
         self.code_path = self.agent_info['code_path']
-        self.es_write_config()
+        es_write_agent_config(self.agent_config, self.elastic_config, self.server_config)
         
 
-    def es_write_config(self):
-        try:
-            # 准备要写入的数据
-            # print(f"{self.agent_name}: 准备写入 Elasticsearch 配置")
-            agent_data = {
-                "agent_info": self.agent_info,
-                "sender": self.sender,
-                "trace": self.trace,
-                "api": self.api,
-                "elastic_config": self.elastic_config,
-            }
-
-            # 初始化 Elasticsearch 客户端
-            es_client = Elasticsearch(
-                hosts=[f"http://es:{self.elastic_config['port']}"],
-                basic_auth=("elastic", self.elastic_config['elastic_password'])
-            )
-
-            # 索引名称
-            index_name = "agent_list"
-
-            # 检查索引是否存在
-            if not es_client.indices.exists(index=index_name):
-                # 如果索引不存在，则创建索引
-                es_client.indices.create(index=index_name)
-                # print(f"{self.agent_name}: 索引 {index_name} 已创建")
-
-            # 查询是否存在指定 agent_name 的条目
-            query = {
-                "query": {
-                    "term": {
-                        "agent_info.agent_name.keyword": self.agent_name
-                    }
-                }
-            }
-            search_response = es_client.search(index=index_name, body=query)
-
-            if search_response['hits']['total']['value'] > 0:
-                # 如果存在，获取文档 ID 并更新
-                doc_id = search_response['hits']['hits'][0]['_id']
-                response = es_client.update(index=index_name, id=doc_id, body={"doc": agent_data})
-                print(f"{self.agent_name}: 配置更新到 Elasticsearch")
-            else:
-                # 如果不存在，则插入新文档
-                response = es_client.index(index=index_name, document=agent_data)
-                print(f"{self.agent_name}: 配置插入到 Elasticsearch")
-
-        except Exception as e:
-            print(f"{self.agent_name}: 写入 Elasticsearch 失败 - {str(e)}")
 
     def connect(self):
         if not self.ssh_client:
@@ -101,7 +55,7 @@ class Agent:
         try:
             # print(f"{self.agent_name} execute: {command}")
             self.connect()
-            stdin, stdout, stderr = self.ssh_client.exec_command(command)
+            stdin, stdout, stderr = self.ssh_client.exec_command(command, get_pty=True)
             output = stdout.read().decode()
             error = stderr.read().decode()
             return output, error
@@ -124,6 +78,11 @@ workers = {self.agent_info['workers']}
 state_index = "{self.elastic_config['agent_status_index']}"
 # channel_size = 4096
 
+[server]
+ip  = "{self.server_config['ip']}"
+port = {self.server_config['port']}
+path = "{self.server_config['path']}"
+
 [api]
 address = "{self.api['address']}"
 port = {self.api['port']}
@@ -133,14 +92,17 @@ ident = "{self.api['ident']}"
 [sender]
 batch_size = {self.sender['batch_size']}
 
+[span]
+batch_size = {self.agent_config['span']['batch_size']}
+
 [sender.flat_file]
 mem_buffer_size = {self.sender['mem_buffer_size']}
 file_buffer_size = {self.sender['file_buffer_size']}
 file_size_limit = {self.sender['file_size_limit']}
 
 [sender.elastic]
-node_url = "http://{self.elastic_config['address']}:{self.elastic_config['port']}"
-username = "elastic"
+node_url = "http://{self.server_config['ip']}:{self.elastic_config['port']}"
+username = "{self.elastic_config['username']}"
 password = "{self.elastic_config['elastic_password']}"
 request_timeout = {self.elastic_config['request_timeout']}
 index_name = "{self.sender['index_name']}"
@@ -172,8 +134,15 @@ pids = []
     def clone_code(self):
         try:
             # 清除老代码
-            command = f"cd {self.code_path} && [ -d DeepTrace ] && rm -rf DeepTrace"
-            self.execute_command(command)
+            command = f"cd {self.code_path} ; ls"
+            output, err = self.execute_command(command)
+            if "DeepTrace" in output:
+                command = f"cd {self.code_path} && echo {self.host_password} | sudo -S rm -rf DeepTrace"
+                output, error = self.execute_command(command)
+                if error:
+                    raise Exception(f"清除老代码失败: {error}")
+                else:
+                    print(f"{self.agent_name}: 清除老代码成功")
 
             # 检查目标路径是否存在，不存在则创建
             repo_url = 'https://gitee.com/gytlll/DeepTrace.git'
@@ -192,17 +161,11 @@ pids = []
         except Exception as e:
             print(f"克隆代码到 {self.agent_name} 失败: {str(e)}")
     
-    def install_dependencies(self):
-        command = f"cd {self.code_path}/DeepTrace/scripts && echo {self.host_password} | sudo -S bash install.sh"
-        output, error = self.execute_command(command)
-        if error and 'Updating crates.io index' not in error:
-            raise Exception(f"{self.agent_name}: 安装依赖失败 {error}")
-        else:
-            print(f'{self.agent_name}: 安装依赖成功')
 
-    def compile_code(self):
-        command = f"cd {self.code_path}/DeepTrace/scripts && echo {self.host_password} | sudo -S bash compile.sh"
+    def install(self):
+        command = f"cd {self.code_path}/DeepTrace ; echo {self.host_password} | sudo -S bash scripts/install_agent.sh"
         output, error = self.execute_command(command)
+        print(f"{self.agent_name}: 开始安装")
         if error and 'profile [optimized] target(s)' not in error:
             raise Exception(f"{self.agent_name}: 编译失败 {error}")
         else:
@@ -215,14 +178,17 @@ pids = []
             raise Exception(f"{self.agent_name}: 获取进程失败 {error}")
         else:
             print(f'{self.agent_name}: 获取进程成功')
-            self.trace['pids'] = [int(pid) for pid in output.strip().split('\n')]
+            self.trace['pids'] = [
+                int(pid) for pid in output.strip().split('\n')
+                if pid.strip().isdigit()
+            ]
             print(f'{self.agent_name}: 进程列表 {self.trace["pids"]}')
             return output
 
     def run(self):
         # RUST_LOG=info cargo run --release --config 'target."cfg(all())".runner="sudo -E"' -- &
         # command = f"cd {self.code_path}/DeepTrace && bash scripts/run.sh"
-        command = f"cd {self.code_path}/DeepTrace && echo {self.host_password} | sudo -S bash scripts/run.sh"
+        command = f"cd {self.code_path}/DeepTrace && echo {self.host_password} | sudo -S bash scripts/run_agent.sh"
         output, error = self.execute_command(command)
         if error and 'error' in error:
             raise Exception(f"{self.agent_name}: 启动失败 {error}")
@@ -232,7 +198,7 @@ pids = []
     
     def stop(self):
         # pkill -f 'target/release/agent'
-        command = f"echo {self.host_password} | sudo -S pkill -f 'target/release/agent'"
+        command = f"cd {self.code_path}/DeepTrace && echo {self.host_password} | sudo -S bash scripts/stop_agent.sh"
         output, error = self.execute_command(command)
         if error and 'error' in error:
             raise Exception(f"{self.agent_name}: 停止失败 {error}")

@@ -5,11 +5,8 @@ import threading
 
 def install_agents(agents):
     def install_agent(agent_name, agent):
-        # agent.clone_code()
-        # agent.install_dependencies()
-        # agent.compile_code()
-        agent.get_pids()
-        agent.sync_config()
+        agent.clone_code()
+        agent.install()
 
     threads = []
     for agent_name, agent in agents.items():
@@ -36,6 +33,11 @@ def start_agents(agents):
 def update_agent_config(agents): # 热加载
     for agent_name, agent in agents.items():
         agent.update_config()
+
+def sync_agent_config(agents): # 冷加载
+    for agent_name, agent in agents.items():
+        agent.get_pids()
+        agent.sync_config()
 
 def stop_agents(agents):
     for agent_name, agent in agents.items():

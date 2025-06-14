@@ -1,24 +1,31 @@
 [elastic]  # Elasticsearch 相关配置
-elastic_password = "**"         # Elasticsearch 用户密码
-port = 9200                     # Elasticsearch 服务端口
-address = "114.215.254.187"     # Elasticsearch 服务地址
-kibana_password = "**"         # Kibana 用户密码
+elastic_password = "****"         # Elasticsearch 用户密码
+port = 9200                     # Elasticsearch 服务端口     # Elasticsearch 服务地址
+kibana_password = "****"         # Kibana 用户密码
 bulk_size = 1024                # 批量写入大小
 request_timeout = 10            # 请求超时时间（秒）
 agent_status_index = "agent_status"  # agent 状态索引名
+username = "elastic"
 
+[server]
+ip  = "****"
+port = 7901
+path = "deeptrace/ws"
 
 # ========== agent1 配置 ==========
 [[agents]]
   [agents.agent_info]  # agent 基本信息
-  agent_name = "agent1"           # agent 名称
-  user_name = "root"            # 登录用户名
-  host_ip = "**"      # agent 所在主机 IP
-  ssh_port = 22                   # SSH 端口
-  host_password = "**"           # 主机密码
+  agent_name = "****"           # agent 名称
+  user_name = "****"            # 登录用户名
+  host_ip = "****"      # agent 所在主机 IP
+  ssh_port = "****"                   # SSH 端口
+  host_password = "****"           # 主机密码
   deeptrace_port = 52001          # deeptrace 服务端口
-  code_path = "/root"        # 代码路径
+  code_path = "****"        # 代码路径
   workers = 16                    # 工作线程数
+
+  [agents.span]
+  batch_size = 1024
 
   [agents.sender]  # 数据发送相关配置
   index_name = "spans_agent1"     # Elasticsearch 索引名

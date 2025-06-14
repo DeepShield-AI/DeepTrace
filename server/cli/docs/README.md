@@ -48,14 +48,12 @@ python -m cli.src.cmd asso algo fifo
 
 ### Database Management
 
-Install or uninstall the database.
+clear data in the database.
 
 ```bash
-python -m cli.src.cmd db <install|uninstall>
+python -m cli.src.cmd db clear
 ```
 
-- `install` — Deploy the database
-- `uninstall` — Remove the database
 
 ### Assemble Traces
 

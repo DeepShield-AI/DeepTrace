@@ -282,6 +282,8 @@ def adjust_weights(span_mappings):
             tgid_weights[tgid] = [0, 0, 0, 0, 0, 0]
          
         scores = [list(score_list) for score_list in maping_scores[tgid].values()]
+        if not scores:  # 如果为空，跳过
+            continue
         scores = np.array(scores)
         min_scores = np.min(scores, axis=0)  # 计算每一列的最小值
         max_scores = np.max(scores, axis=0)
@@ -298,8 +300,8 @@ def adjust_weights(span_mappings):
             normalized_variances = np.zeros_like(variances)  # 如果方差全为 0，则权重全为 0
 
         # 将归一化后的方差作为权重
-        # tgid_weights[tgid] = normalized_variances.tolist()
-        tgid_weights[tgid] = [1, 8, 1, 1, 1, 1]
+        tgid_weights[tgid] = normalized_variances.tolist()
+        # tgid_weights[tgid] = [1, 8, 1, 1, 1, 1]
         # print(f"TGID: {tgid} | Weights: {tgid_weights[tgid]} | variances: {variances}")
 
 

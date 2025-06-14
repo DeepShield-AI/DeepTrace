@@ -53,10 +53,10 @@ services:
       - es
 
   dp_server:
-    image: 47.97.67.233:5000/deeptrace_server:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: 47.97.67.233:5000/deepshield/deeptrace_server:latest
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
     container_name: dp_server
     networks:
       - deeptrace-net

@@ -113,3 +113,16 @@ def e2e_acc(spans):
                     continue
 
     return sum(trace_acc.values()) / len(trace_acc)
+
+def print_acc(span_dict):
+    acc1 = pair_acc(span_dict)
+    acc2 = service_acc(span_dict)
+    acc3 = e2e_acc(span_dict)
+    print("Pair Accuracy:")
+    for tgid in acc1:
+        for outgoing_ip in acc1[tgid]:
+            print(f"    TGID: {tgid:<8} | IP: {outgoing_ip:<10} | Accuracy: {acc1[tgid][outgoing_ip]:.2f}")
+    print("service Accuracy:")
+    for tgid in acc2:
+        print(f"    TGID: {tgid:<8} | Accuracy: {acc2[tgid]:.2f}")
+    print(f"End-to-End Accuracy: {acc3:.2f}")
