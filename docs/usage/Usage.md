@@ -18,41 +18,46 @@
   - `agents.agent_info.host_password` # Password for logging into the agent host
   - `agents.sender.index_name` # Index name in Elasticsearch where the agent writes collected spans
 
-## Step 2: Install Python Virtual Environment on Server
-- `bash scripts/install_server_evn.sh`
 
-## Step 3: Start Elastic Database on Server
-- `cd server ; source venv/bin/activate; python3 -m cli.src.cmd db install`
-- You can access the database frontend via the web at `http://ip:5601`
-  - Username: `elastic`  
-  - Password: `elastic_password`
+## Step 3: Start Agents
+- Commands
 
-## Step 4: Remotely Start Agent on Server
-- commands
 ```
-cd server ; source venv/bin/activate; 
-python3 -m cli.src.cmd agent install; 
-python3 -m cli.src.cmd agent run;
+docker exec -it deeptrace_server /bin/bash # Enter the server container, the following commands are run within the deeptrace_server container
+python3 -m cli.src.cmd agent install # This command will automatically connect to the remote host, clone the code, and compile. 
+python3 -m cli.src.cmd agent run # Run the agent, by default it will automatically collect spans from all Docker containers and store them in the server's Elastic database. 
 ```
-  - This command will automatically connect to the remote host, clone the code, compile, and run the agent. By default, it will automatically collect spans from all Docker containers and store them in the server's Elastic database.
 
-## Step 5: Perform Span Correlation on Server
+**Note**: Traffic must be generated on the host where the agent is located to produce spans.
 
-```bash
+## Step 4: Build Traces
+
+```
+docker exec -it deeptrace_server /bin/bash 
 python -m cli.src.cmd asso algo <algorithm>
 ```
 
-- `<algorithm>`: Choose from `fifo`, `deeptrace`, `vpath`, `wap5`, `traceweaver_v1`, `deepflow`
+- `<algorithm>`: Choose from `fifo`, `deeptrace`, `vpath`, `wap5`, `traceweaver_v1`, `deepflow` to infer parent-child relationships between spans.
 
-
-## Step 6: Perform Trace Assembly on Server
-
-Assemble traces from the database.
-
-```bash
+```
 python -m cli.src.cmd assemble
 ```
 
-## Step 7: Clear Agent and Server
-- `bash scripts/clear.sh`
-  - This command will automatically stop all running agents and delete the database on the server.
+- Assemble spans from the database into traces.
+
+## Step 5: Clear Agents and Server
+Stop all running agents:
+
+```
+docker exec -it deeptrace_server /bin/bash
+python -m cli.src.cmd agent stop
+```
+
+Exit the container and then execute:
+
+```
+bash scripts/clear_server.sh
+```
+
+- This will remove all containers on the server.
+
