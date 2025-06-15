@@ -19,6 +19,12 @@
   - `agents.sender.index_name` # Index name in Elasticsearch where the agent writes collected spans
 
 
+## Step 2: Deploy Server and Database Containers
+- `bash scripts/deploy_server.sh`
+- You can access the database frontend via the web at `http://ip:5601`
+  - Username: `elastic`  
+  - Password: `elastic_password`
+
 ## Step 3: Start Agents
 - Commands
 
