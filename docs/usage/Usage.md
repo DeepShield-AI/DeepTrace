@@ -39,7 +39,7 @@ python3 -m cli.src.cmd agent run # Run the agent, by default it will automatical
 ## Step 4: Build Traces
 
 ```
-docker exec -it deeptrace_server /bin/bash 
+docker exec -it dp_server /bin/bash 
 python -m cli.src.cmd asso algo <algorithm>
 ```
 
@@ -55,7 +55,7 @@ python -m cli.src.cmd assemble
 Stop all running agents:
 
 ```
-docker exec -it deeptrace_server /bin/bash
+docker exec -it dp_server /bin/bash
 python -m cli.src.cmd agent stop
 ```
 
