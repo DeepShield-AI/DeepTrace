@@ -1,6 +1,6 @@
 use super::{
-	dns::DNS, http1::HTTP1, memcached::Memcached, mongodb::MongoDB, mysql::MySQL, redis::Redis,
-	thrift::Thrift,
+	cassandra::Cassandra, dns::DNS, http1::HTTP1, memcached::Memcached, mongodb::MongoDB,
+	mysql::MySQL, redis::Redis, thrift::Thrift,
 };
 use crate::{
 	constants::MAX_INFER_PAYLOAD_SIZE,
@@ -9,12 +9,12 @@ use crate::{
 	utils::{gen_connect_key, is_filtered_comm},
 };
 use aya_ebpf::{helpers::bpf_get_current_pid_tgid, programs::TracePointContext};
+use aya_log_ebpf::info;
 use trace_common::{
 	message::Message,
 	protocols::L7Protocol,
 	structs::{Direction, Quintuple},
 };
-use aya_log_ebpf::info;
 
 pub trait Infer {
 	fn parse(
@@ -62,7 +62,10 @@ pub(crate) fn infer_protocol(
 			},
 		}
 	};
-	if message.protocol == L7Protocol::Unknown && (quintuple.src_port == 9090 || quintuple.dst_port == 9090) && info.count != 4 {
+	if message.protocol == L7Protocol::Unknown &&
+		(quintuple.src_port == 9090 || quintuple.dst_port == 9090) &&
+		info.count != 4
+	{
 		info!(ctx, "infer protocol error");
 		info!(
 			ctx,
@@ -109,6 +112,7 @@ fn infer_protocol_impl(ctx: &TracePointContext, info: &InferInfo, quintuple: Qui
 		MongoDB::parse,
 		DNS::parse,
 		HTTP1::parse,
+		Cassandra::parse,
 		MySQL::parse,
 	]
 	.iter()

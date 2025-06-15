@@ -33,6 +33,7 @@ pub enum L7Protocol {
 	Redis = 80,
 	MongoDB = 81,
 	Memcached = 82,
+	Cassandra = 83,
 
 	// MQ
 	Kafka = 100,
@@ -74,6 +75,7 @@ impl From<&L7Protocol> for &'static str {
 			L7Protocol::Redis => "Redis",
 			L7Protocol::MongoDB => "MongoDB",
 			L7Protocol::Memcached => "Memcached",
+			L7Protocol::Cassandra => "Cassandra",
 			L7Protocol::Kafka => "Kafka",
 			L7Protocol::MQTT => "MQTT",
 			L7Protocol::AMQP => "AMQP",

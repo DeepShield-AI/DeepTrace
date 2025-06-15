@@ -2,6 +2,7 @@
 pub(crate) use infer::infer_protocol;
 use infer::Infer;
 
+mod cassandra;
 mod dns;
 mod http1;
 mod kafka;

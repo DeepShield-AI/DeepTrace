@@ -18,9 +18,9 @@ impl Message {
 #[derive(Default, Clone, Copy, Serialize, Debug, PartialEq)]
 pub enum MessageType {
 	#[default]
-	Unknown,
-	Request,
-	Response,
+	Unknown = -1,
+	Request = 0,
+	Response = 1,
 }
 
 #[cfg(feature = "user")]

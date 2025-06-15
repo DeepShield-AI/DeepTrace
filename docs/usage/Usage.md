@@ -28,7 +28,7 @@
 ## Step 3: Start Agents
 - Commands
 
-```
+```bash
 docker exec -it deeptrace_server /bin/bash # Enter the server container, the following commands are run within the deeptrace_server container
 python3 -m cli.src.cmd agent install # This command will automatically connect to the remote host, clone the code, and compile. 
 python3 -m cli.src.cmd agent run # Run the agent, by default it will automatically collect spans from all Docker containers and store them in the server's Elastic database. 
@@ -38,14 +38,19 @@ python3 -m cli.src.cmd agent run # Run the agent, by default it will automatical
 
 ## Step 4: Build Traces
 
+<<<<<<< Updated upstream
 ```
 docker exec -it dp_server /bin/bash 
+=======
+```bash
+docker exec -it deeptrace_server /bin/bash 
+>>>>>>> Stashed changes
 python -m cli.src.cmd asso algo <algorithm>
 ```
 
 - `<algorithm>`: Choose from `fifo`, `deeptrace`, `vpath`, `wap5`, `traceweaver_v1`, `deepflow` to infer parent-child relationships between spans.
 
-```
+```bash
 python -m cli.src.cmd assemble
 ```
 
@@ -54,14 +59,19 @@ python -m cli.src.cmd assemble
 ## Step 5: Clear Agents and Server
 Stop all running agents:
 
+<<<<<<< Updated upstream
 ```
 docker exec -it dp_server /bin/bash
+=======
+```bash
+docker exec -it deeptrace_server /bin/bash
+>>>>>>> Stashed changes
 python -m cli.src.cmd agent stop
 ```
 
 Exit the container and then execute:
 
-```
+```bash
 bash scripts/clear_server.sh
 ```
 

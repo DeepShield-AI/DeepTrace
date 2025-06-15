@@ -50,7 +50,7 @@ bitflags = { version = "2.9.0", default-features = false }
 ## cpu
 # core_affinity = { version = "0.8.3", default-features = false }
 ## docker
-bollard = { version = "0.17.0", default-features = false }
+bollard = { version = "0.19.1", default-features = false }
 ## enum
 num_enum = { version = "0.7.3", default-features = false }
 
@@ -69,7 +69,7 @@ provenance_common = { workspace = true, features = ["user"] }
 # communication
 futures = { version = "0.3.31", default-features = false }
 futures-util = { version = "0.3.31", default-features = false }
-tokio-tungstenite = { version = "0.26.2", default-features = true }
+tokio-tungstenite = { version = "0.27.0", default-features = true }
 # concurrency
 arc-swap = { version = "1.7.1", default-features = false }
 crossbeam-channel = { version = "0.5.15", default-features = true }
@@ -93,7 +93,7 @@ bytes = { version = "1.9.0", default-features = true }
 # `std` feature is currently required to build `clap`.
 #
 # See https://github.com/clap-rs/clap/blob/61f5ee5/clap_builder/src/lib.rs#L15.
-clap = { version = "4.5.20", default-features = false, features = ["derive", "std"] }
+clap = { version = "4.5.40", default-features = false, features = ["derive", "std"] }
 ## config
 config = { version = "0.15.11", default-features = true }
 ## cpu
