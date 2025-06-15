@@ -5,8 +5,8 @@
 - Installation: `apt install docker.io docker-compose`
 
 ## Step 1: Fill in the Configuration File
-- **Server-related configurations that must be filled in the configuration file:**
-  - `elastic.address` # The IP address of the server running the Elastic database
+- **Server-related configurations that must be filled in the [configuration file](../../server/config/config.toml):**
+  - `server.ip` # The IP address of the server running the Elastic database
   - `elastic.elastic_password` # Password for Elastic
   - `elastic.kibana_password` # Password for Kibana
 
