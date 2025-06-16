@@ -83,7 +83,7 @@ impl Cache {
 						}
 					},
 					_ => {
-						info!("Unexpected message type: {:?}", data.type_);
+						info!("Unexpected message: {:?}", json!(data));
 						return;
 					},
 				};

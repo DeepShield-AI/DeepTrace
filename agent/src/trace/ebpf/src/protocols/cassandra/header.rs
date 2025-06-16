@@ -1,4 +1,4 @@
-use super::{check_protocol, parse::cassandra_header, Flags, Infer, OpCode};
+use super::{check_protocol, parse::cassandra_header, Flags, Infer, OpCode, CASSANDRA_MIN_SIZE};
 use crate::structs::InferInfo;
 use aya_ebpf::programs::TracePointContext;
 use trace_common::{
@@ -7,7 +7,7 @@ use trace_common::{
 	structs::Quintuple,
 };
 
-/// DNS packet header structure
+/// Cassandra packet header structure
 /// ```markdown
 /// 0         8        16        24        32         40
 ///	+---------+---------+---------+---------+---------+
@@ -64,6 +64,9 @@ impl Infer for Cassandra {
 		info: &InferInfo,
 		_quintuple: Quintuple,
 	) -> Result<Message, u32> {
+		if info.count < CASSANDRA_MIN_SIZE {
+			return Err(0);
+		}
 		if !check_protocol(info.key, L7Protocol::Cassandra) {
 			return Err(0);
 		}
@@ -73,9 +76,11 @@ impl Infer for Cassandra {
 				let mut message = Message::new();
 				message.protocol = L7Protocol::Cassandra;
 				message.type_ = header.message_type();
-				Ok(message)
+				return Ok(message)
 			},
-			Err(_) => Err(0_u32),
+			Err(e) => {
+				return Err(e);
+			},
 		}
 	}
 }
