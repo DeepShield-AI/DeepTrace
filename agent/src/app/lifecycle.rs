@@ -30,19 +30,19 @@ impl App {
 
 async fn run() -> Result<(), AgentError> {
 	let (message_sender, message_receiver) = crossbeam_channel::unbounded();
-	let (span_sender, span_receiver) = crossbeam_channel::unbounded();
+	// let (span_sender, span_receiver) = crossbeam_channel::unbounded();
 
 	let mut synchronizer = Synchronizer::new();
 	synchronizer.start()?;
 
-	// let mut ebpf_log = SenderProcess::new("ebpf", message_receiver.clone());
-	// ebpf_log.start(FlatFile::new("message.txt").await.expect("Flat file error"))?;
-	let mut span_log = SenderProcess::new("span", span_receiver);
+	let mut ebpf_log = SenderProcess::new("ebpf", message_receiver.clone());
+	ebpf_log.start(FlatFile::new("message.txt").await.expect("Flat file error"))?;
+	// let mut span_log = SenderProcess::new("span", span_receiver);
 	// span_log.start(FlatFile::new("spans.txt").await.expect("Flat file error"))?;
-	span_log.start(Elastic::new().await.expect("Elastic error"))?;
+	// span_log.start(Elastic::new().await.expect("Elastic error"))?;
 
-	let mut span_constructor = SpanConstructor::new(message_receiver, span_sender);
-	span_constructor.start()?;
+	// let mut span_constructor = SpanConstructor::new(message_receiver, span_sender);
+	// span_constructor.start()?;
 	let mut trace = TraceModule::new(message_sender).expect("Failed to create eBPF module");
 	trace.start()?;
 
@@ -60,9 +60,9 @@ async fn run() -> Result<(), AgentError> {
 			synchronizer.stop().await?;
 			provenance.stop().await?;
 			trace.stop().await?;
-			span_constructor.stop().await?;
-			span_log.stop().await?;
-			// ebpf_log.stop().await?;
+			// span_constructor.stop().await?;
+			// span_log.stop().await?;
+			ebpf_log.stop().await?;
 			return Ok(());
 		}
 	}

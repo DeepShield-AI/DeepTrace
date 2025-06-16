@@ -39,9 +39,12 @@ python3 -m cli.src.cmd agent run # Run the agent, by default it will automatical
 ## Step 4: Build Traces
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 ```
 docker exec -it dp_server /bin/bash 
 =======
+=======
+>>>>>>> Stashed changes
 ```bash
 docker exec -it deeptrace_server /bin/bash 
 >>>>>>> Stashed changes
@@ -60,9 +63,12 @@ python -m cli.src.cmd assemble
 Stop all running agents:
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 ```
 docker exec -it dp_server /bin/bash
 =======
+=======
+>>>>>>> Stashed changes
 ```bash
 docker exec -it deeptrace_server /bin/bash
 >>>>>>> Stashed changes
