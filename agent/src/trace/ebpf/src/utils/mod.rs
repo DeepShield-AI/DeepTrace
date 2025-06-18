@@ -12,7 +12,7 @@ use aya_ebpf::{
 	bindings::{BPF_TCP_CLOSE_WAIT, BPF_TCP_ESTABLISHED},
 	helpers::{
 		bpf_get_current_comm, bpf_get_current_pid_tgid, bpf_probe_read as bpf_helper_read,
-		r#gen::{bpf_get_current_task, bpf_probe_read},
+		gen::{bpf_get_current_task, bpf_probe_read},
 	},
 };
 use trace_common::{

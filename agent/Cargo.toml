@@ -49,8 +49,6 @@ which = { version = "7.0.2", default-features = false }
 bitflags = { version = "2.9.0", default-features = false }
 ## cpu
 # core_affinity = { version = "0.8.3", default-features = false }
-## docker
-bollard = { version = "0.19.1", default-features = false }
 ## enum
 num_enum = { version = "0.7.3", default-features = false }
 
@@ -99,7 +97,7 @@ config = { version = "0.15.11", default-features = true }
 ## cpu
 # core_affinity = { version = "0.8.3", default-features = false }
 ## docker
-bollard = { workspace = true }
+# bollard = { workspace = true }
 ## elasticsearch
 elasticsearch = { version = "8.17.0-alpha.1", default-features = false }
 ## k8s

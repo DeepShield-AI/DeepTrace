@@ -5,7 +5,7 @@ use crate::{
 	},
 	vmlinux::{iovec, mmsghdr},
 };
-use aya_ebpf::helpers::r#gen::bpf_probe_read;
+use aya_ebpf::helpers::gen::bpf_probe_read;
 use core::{cmp::min, mem::MaybeUninit};
 use trace_common::{constants::MAX_PAYLOAD_SIZE, structs::Direction};
 
@@ -186,9 +186,10 @@ impl VectoredBuffer {
 		let max = min(ret, MAX_INFER_PAYLOAD_SIZE) as usize;
 		let round = min(self.msg_iovlen as usize, IOV_MAX);
 		let mut offset: usize = 0;
+		let mut remain_msg = max;
 		let msg_iov = self.msg_iov as *mut iovec;
 		for i in 0..round {
-			if offset >= max {
+			if offset >= max || remain_msg == 0 {
 				break;
 			}
 			let iovec = unsafe {
@@ -217,6 +218,7 @@ impl VectoredBuffer {
 					return Err(0);
 				}
 				offset += MAX_INFER_PAYLOAD_SIZE as usize;
+				remain_msg -= INFER_MASK as usize;
 			} else {
 				if unsafe {
 					bpf_probe_read(
@@ -229,6 +231,7 @@ impl VectoredBuffer {
 					return Err(0);
 				}
 				offset += (copy_size & INFER_MASK) as usize;
+				remain_msg -= (copy_size & INFER_MASK) as usize;
 			};
 		}
 		Ok(offset as u32)

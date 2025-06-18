@@ -7,7 +7,7 @@ fn log_level() -> VerifierLogLevel {
 			"debug" => VerifierLogLevel::DEBUG,
 			"verbose" => VerifierLogLevel::VERBOSE,
 			"disable" => VerifierLogLevel::DISABLE,
-			_ => VerifierLogLevel::STATS,
+			_ => VerifierLogLevel::DEBUG,
 		},
 		_ => VerifierLogLevel::STATS,
 	}
