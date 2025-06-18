@@ -10,11 +10,23 @@ RUN apt-get update && \
 
 ENV LLVM_PATH="/lib/llvm-18"
 ENV PATH="$LLVM_PATH/bin:$PATH"
+ENV RUSTUP_DIST_SERVER=https://mirrors.ustc.edu.cn/rust-static
+ENV RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup
+
 RUN git clone --depth=1 --recurse-submodules https://github.com/libbpf/bpftool.git && \
     cd bpftool/src && make -j$(nproc) && make install && cd / && rm -rf bpftool
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=stable
+
 ENV PATH="/root/.cargo/bin:$PATH"
+
+RUN mkdir -p /root/.cargo && \
+    echo "[source.crates-io]" > /root/.cargo/config.toml && \
+    echo "replace-with = 'ustc'" >> /root/.cargo/config.toml && \
+    echo "" >> /root/.cargo/config.toml && \
+    echo "[source.ustc]" >> /root/.cargo/config.toml && \
+    echo 'registry = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/"' >> /root/.cargo/config.toml
+
 RUN rustup component add rust-src && \
     rustup toolchain install nightly --component rust-src && \
     cargo install --features=llvm-sys/prefer-dynamic bpf-linker && \
