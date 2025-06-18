@@ -5,6 +5,9 @@ DOCKER_CONFIG="/etc/docker/daemon.json"
 TARGET_REGISTRY="47.97.67.233:5000"
 TEMP_FILE=$(mktemp)
 
+sudo apt-get update
+sudo apt-get install -y jq
+
 if [ ! -f "$DOCKER_CONFIG" ] || [ ! -s "$DOCKER_CONFIG" ]; then
     echo "{}" | sudo tee "$DOCKER_CONFIG" >/dev/null
     echo "Created new $DOCKER_CONFIG"
@@ -33,10 +36,10 @@ else
     echo "Docker restarted."
 fi
 
-docker pull 47.97.67.233:5000/deepshield/deeptrace:latest
+sudo docker pull 47.97.67.233:5000/deepshield/deeptrace:latest
 
-docker run --privileged --rm -it -v $(pwd):/DeepTrace 47.97.67.233:5000/deepshield/deeptrace bash -c \
+sudo docker run --privileged --rm -it -v $(pwd):/DeepTrace 47.97.67.233:5000/deepshield/deeptrace bash -c \
 'cd /DeepTrace/agent &&
 aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > src/trace/ebpf/src/vmlinux.rs &&
-sed -i '"'"'2i\#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code, unnecessary_transmutes)]'"'"' src/trace/ebpf/src/vmlinux.rs &&
+sed -i '"'"'2i\#![allow(unknown_lints, non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code, unnecessary_transmutes)]'"'"' src/trace/ebpf/src/vmlinux.rs &&
 cargo build --release'
