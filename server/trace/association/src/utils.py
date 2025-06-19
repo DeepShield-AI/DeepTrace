@@ -4,19 +4,17 @@
 def span_grouping(spans):
     span_map = {}
     for span in spans:
-        if span.protocol not in ['Thrift', 'HTTP1']:
-            continue
         # print(span_obj)
         if span.tgid not in span_map:
             span_map[span.tgid] = {"incoming": {}, "outgoing": {}}
         if span.direction == "Ingress":
-            if span.dst_ip not in span_map[span.tgid]["incoming"]:
-                span_map[span.tgid]["incoming"][span.dst_ip] = []
-            span_map[span.tgid]["incoming"][span.dst_ip].append(span)
+            if span.endpoint not in span_map[span.tgid]["incoming"]:
+                span_map[span.tgid]["incoming"][span.endpoint] = []
+            span_map[span.tgid]["incoming"][span.endpoint].append(span)
         elif span.direction == "Egress":
-            if span.dst_ip not in span_map[span.tgid]["outgoing"]:
-                span_map[span.tgid]["outgoing"][span.dst_ip] = []
-            span_map[span.tgid]["outgoing"][span.dst_ip].append(span)
+            if span.endpoint not in span_map[span.tgid]["outgoing"]:
+                span_map[span.tgid]["outgoing"][span.endpoint] = []
+            span_map[span.tgid]["outgoing"][span.endpoint].append(span)
         else:
             continue
     return span_map
@@ -37,8 +35,8 @@ def pair_acc(spans):
     pair_acc = {}
     for tgid, span_list in spans.items():
         for direction, span_list in span_list.items():
-            for ip in span_list:
-                for span in span_list[ip]:
+            for endpoint in span_list:
+                for span in span_list[endpoint]:
                     spanid2traceid[span.span_id] = span.trace_id
                     
     for tgid, tgid_spans in spans.items():
@@ -47,15 +45,15 @@ def pair_acc(spans):
         if tgid not in pair_acc:
             pair_acc[tgid] = {}
         outgoing_spans = tgid_spans['outgoing']
-        for outgoing_ip, outgoing_span_list in outgoing_spans.items():
-            if outgoing_ip not in pair_acc[tgid]:
-                pair_acc[tgid][outgoing_ip] = 0
+        for outgoing_endpoint, outgoing_span_list in outgoing_spans.items():
+            if outgoing_endpoint not in pair_acc[tgid]:
+                pair_acc[tgid][outgoing_endpoint] = 0
             for outgoing_span in outgoing_span_list:
                 if outgoing_span.parent_id is not None:
                     if outgoing_span.parent_id in spanid2traceid:
                         if spanid2traceid[outgoing_span.parent_id] == outgoing_span.trace_id:
-                            pair_acc[tgid][outgoing_ip] += 1
-            pair_acc[tgid][outgoing_ip] = pair_acc[tgid][outgoing_ip] / len(outgoing_span_list)
+                            pair_acc[tgid][outgoing_endpoint] += 1
+            pair_acc[tgid][outgoing_endpoint] = pair_acc[tgid][outgoing_endpoint] / len(outgoing_span_list)
     return pair_acc
 
 # 计算每个组件所有的父子span的关联准确率
@@ -86,7 +84,6 @@ def service_acc(spans):
 
 
 def e2e_acc(spans):
-
     trace_acc = {}
     spanid2traceid = {}
     for tgid, span_list in spans.items():
@@ -111,7 +108,7 @@ def e2e_acc(spans):
                 if spanid2traceid[outgoing_span.parent_id] != outgoing_span.trace_id:
                     trace_acc[outgoing_span.trace_id] = 0
                     continue
-
+    print(f'error num: {len(trace_acc)-sum(trace_acc.values())}')
     return sum(trace_acc.values()) / len(trace_acc)
 
 def print_acc(span_dict):
@@ -120,9 +117,10 @@ def print_acc(span_dict):
     acc3 = e2e_acc(span_dict)
     print("Pair Accuracy:")
     for tgid in acc1:
+        print(f"    TGID: {tgid:<8}")
         for outgoing_ip in acc1[tgid]:
-            print(f"    TGID: {tgid:<8} | IP: {outgoing_ip:<10} | Accuracy: {acc1[tgid][outgoing_ip]:.2f}")
+            print(f"        Endpoint: {outgoing_ip:<10} | Accuracy: {100 * acc1[tgid][outgoing_ip]:.2f}%")
     print("service Accuracy:")
     for tgid in acc2:
-        print(f"    TGID: {tgid:<8} | Accuracy: {acc2[tgid]:.2f}")
-    print(f"End-to-End Accuracy: {acc3:.2f}")
+        print(f"    TGID: {tgid:<8} | Accuracy: {100 * acc2[tgid]:.2f}%")
+    print(f"End-to-End Accuracy: {100 * acc3:.2f}%")

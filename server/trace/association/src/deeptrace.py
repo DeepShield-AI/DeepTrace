@@ -166,8 +166,14 @@ def build_pdf(samples, weights, sample_type="1d"):
             # 如果所有样本点相同，返回一个常数函数
             return lambda x: np.ones_like(x) * weights[0], 'error'
     if sample_type == "2d":
-        if len(set(map(tuple, samples))) == 1:
-            # 如果所有样本点相同，返回一个常数函数
+        samples = np.array(samples)
+        # 检查是否所有样本点都相同，或所有点在某一维上相同
+        if samples.shape[0] == 0:
+            return lambda x: np.zeros_like(x), 'error'
+        if np.all(samples == samples[0]):
+            return lambda x: np.ones_like(x) * weights[0], 'error'
+        # 检查是否在某一维上全相同
+        if np.any(np.std(samples, axis=0) < 1e-8):
             return lambda x: np.ones_like(x) * weights[0], 'error'
     # 确保权重归一化
     weights = np.array(weights)
@@ -230,7 +236,6 @@ def get_multi_metrics(candidate_mappings):
                 multi_metrics[tgid][endpoint_pair][metric] = [pdf, status]
     t2 = time.time()
     print(f"Multi metrics time: {t2 - t1:.4f} seconds")
-        
 
 def adjust_weights(span_mappings):
     global tgid_weights
@@ -287,19 +292,13 @@ def adjust_weights(span_mappings):
         scores = np.array(scores)
         min_scores = np.min(scores, axis=0)  # 计算每一列的最小值
         max_scores = np.max(scores, axis=0)
-        for mapping, m_scores in maping_scores[tgid].items():
-            maping_scores[tgid][mapping] = (np.array(m_scores) - min_scores) / (max_scores - min_scores + 1e-10)
-        scores = [list(score_list) for score_list in maping_scores[tgid].values()]
-        # 计算每一列的方差
-        variances = np.var(scores, axis=0)  # 计算每列的方差
+        scores = (scores - min_scores) / (max_scores - min_scores + 1e-10)
 
-        # 对方差进行归一化
+        variances = np.var(scores, axis=0)  # 计算每列的方差
         if np.sum(variances) > 0:
             normalized_variances = variances / np.sum(variances)  # 归一化
         else:
             normalized_variances = np.zeros_like(variances)  # 如果方差全为 0，则权重全为 0
-
-        # 将归一化后的方差作为权重
         tgid_weights[tgid] = normalized_variances.tolist()
         # tgid_weights[tgid] = [1, 8, 1, 1, 1, 1]
         # print(f"TGID: {tgid} | Weights: {tgid_weights[tgid]} | variances: {variances}")

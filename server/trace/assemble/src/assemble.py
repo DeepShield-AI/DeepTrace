@@ -27,8 +27,7 @@ def get_status_code(span):
     if span.protocol == 'HTTP1':
         return span.resp_content.split()[1]
 
-def num2ip(num):
-    return '.'.join([str((num >> (8 * i)) & 0xFF) for i in range(3, -1, -1)])
+
 def assemble_trace(spans):
     """
     根据 span_id 和 parent_id 将 spans 分组为 trace 列表
@@ -66,30 +65,12 @@ def assemble_trace(spans):
                         'e2e_duration': e2e_dutaion,
                         'endpoint': ingress_endpoint,
                         'component_name': ingress_component_name,
-                        'server_ip': num2ip(span_dict[root_span_id].src_ip),
+                        'server_ip': span_dict[root_span_id].src_ip,
                         'server_port': span_dict[root_span_id].src_port,
-                        'client_ip': num2ip(span_dict[root_span_id].dst_ip),
+                        'client_ip': span_dict[root_span_id].dst_ip,
                         'client_port': span_dict[root_span_id].dst_port,
                         'protocol': protocol,
                         'status_code': status_code,
-                        'spans': [{
-                                    'component_name': span_dict[span_id].component_name,
-                                    'endpoint': span_dict[span_id].endpoint,
-                                    'start_time': span_dict[span_id].start_time,
-                                    'end_time': span_dict[span_id].end_time,
-                                    'tgid': span_dict[span_id].tgid,
-                                    'pid': span_dict[span_id].pid,
-                                    'protocol': span_dict[span_id].protocol,
-                                    'direction': span_dict[span_id].direction,
-                                    'trace_id': span_dict[span_id].trace_id,
-                                    'span_id': span_dict[span_id].span_id,
-                                    'parent_id': span_dict[span_id].parent_id,
-                                    'child_ids': paret_childs[span_id]['childs'],
-                                    'duration': span_dict[span_id].duration,
-                                    'src_ip': num2ip(span_dict[span_id].src_ip),
-                                    'src_port': span_dict[span_id].src_port,
-                                    'dst_ip': num2ip(span_dict[span_id].dst_ip),
-                                    'dst_port': span_dict[span_id].dst_port,
-                                   } for span_id in span_list
+                        'spans': [span_dict[span_id].tojson() for span_id in span_list
                       ]})
     return traces
