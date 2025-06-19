@@ -72,7 +72,7 @@ async fn construct_spans(message_receiver: Receiver<Data>, span_sender: Sender<S
 		let span_sender = span_sender.clone();
 
 		if let Ok(data) = message_receiver.recv() {
-			cache.process(data, span_sender);
+			cache.process(data, span_sender).await;
 		}
 		if last_cleanup.elapsed() >= cleanup_interval {
 			cache.cleanup_expired();

@@ -49,7 +49,7 @@ impl Cache {
 		Self { inner: DashMap::with_capacity(10240) }
 	}
 
-	pub fn process(&self, data: Data, sender: Sender<Span>) {
+	pub async fn process(&self, data: Data, sender: Sender<Span>) {
 		let key = SessionKey::new(data.pid, data.quintuple, data.protocol, data.uuid);
 		let mut entry = self.inner.entry(key).or_insert(CacheEntry::new());
 		entry.last_accessed = SystemTime::now();
@@ -65,12 +65,12 @@ impl Cache {
 					MessageType::Request
 						if prev.is_response() && prev.timestamp_ns > data.timestamp_ns =>
 					{
-						sender.send(Span::new(data, prev)).expect("Failed to send span");
+						sender.send(Span::new(data, prev).await).expect("Failed to send span");
 					},
 					MessageType::Response
 						if prev.is_request() && prev.timestamp_ns < data.timestamp_ns =>
 					{
-						sender.send(Span::new(prev, data)).expect("Failed to send span");
+						sender.send(Span::new(prev, data).await).expect("Failed to send span");
 					},
 					_ if data.type_ != MessageType::Unknown => {
 						match data.timestamp_ns > prev.timestamp_ns {

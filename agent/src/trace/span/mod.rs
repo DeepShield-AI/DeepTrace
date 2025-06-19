@@ -11,68 +11,53 @@ use trace_common::{
 mod cache;
 mod error;
 mod module;
+mod spantag;
+
+pub use spantag::SpanTag;
 
 #[derive(Serialize)]
 pub struct Span {
-	tgid: u32,
-	pid: u32,
-	component: String,
-	direction: Direction,
-	start_time: u64,
-	end_time: u64,
-
-	src_ip: u32,
-	dst_ip: u32,
-	src_port: u16,
-	dst_port: u16,
-
-	req_seq: u32,
-	resp_seq: u32,
-
-	#[serde(serialize_with = "serialize_payload")]
-	req_content: Payload,
-	#[serde(serialize_with = "serialize_payload")]
-	resp_content: Payload,
-	protocol: L7Protocol,
+    tag: SpanTag,
+    metric: SpanMetric,
+    content: SpanContent,
 }
 
+
+#[derive(Serialize)]
+pub struct SpanMetric {
+    start_time: u64,
+    end_time: u64,
+    duration: u64,
+    req_size: usize,
+    resp_size: usize,
+}
+
+#[derive(Serialize)]
+pub struct SpanContent {
+    #[serde(serialize_with = "serialize_payload")]
+    req_content: Payload,
+    #[serde(serialize_with = "serialize_payload")]
+    resp_content: Payload,
+}
 impl Span {
-	pub fn new(req: Data, resp: Data) -> Self {
-		let (src_ip, dst_ip, src_port, dst_port) = match req.direction {
-			Direction::Egress => (
-				req.quintuple.dst_addr,
-				req.quintuple.src_addr,
-				req.quintuple.dst_port,
-				req.quintuple.src_port,
-			),
-			_ => (
-				req.quintuple.src_addr,
-				req.quintuple.dst_addr,
-				req.quintuple.src_port,
-				req.quintuple.dst_port,
-			),
-		};
-		Self {
-			tgid: req.tgid,
-			pid: req.pid,
-			component: CStr::from_bytes_until_nul(&req.comm)
-				.unwrap()
-				.to_string_lossy()
-				.into_owned(),
-			direction: req.direction,
-			start_time: req.timestamp_ns,
-			end_time: resp.timestamp_ns,
-			src_ip,
-			dst_ip,
-			src_port,
-			dst_port,
-			req_seq: req.seq,
-			resp_seq: resp.seq,
-			req_content: req.payload,
-			resp_content: resp.payload,
-			protocol: req.protocol,
-		}
-	}
+    pub async fn new(req: Data, resp: Data) -> Self {
+        let tag = SpanTag::set_tags(&req, &resp).await;
+
+        let metric = SpanMetric {
+            start_time: req.timestamp_ns,
+            end_time: resp.timestamp_ns,
+            duration: resp.timestamp_ns - req.timestamp_ns,
+            req_size: req.payload.len as usize,
+            resp_size: resp.payload.len as usize,
+        };
+
+        let content = SpanContent {
+            req_content: req.payload,
+            resp_content: resp.payload,
+        };
+
+        Self { tag, metric, content }
+    }
 }
 
 fn serialize_payload<S>(payload: &Payload, serializer: S) -> Result<S::Ok, S::Error>
