@@ -1,10 +1,12 @@
 #!/bin/bash
-
-set -e
+set -euo pipefail
 
 DOCKER_CONFIG="/etc/docker/daemon.json"
 TARGET_REGISTRY="47.97.67.233:5000"
 TEMP_FILE=$(mktemp)
+
+sudo apt-get update
+sudo apt-get install -y jq docker.io docker-compose
 
 if [ ! -f "$DOCKER_CONFIG" ] || [ ! -s "$DOCKER_CONFIG" ]; then
     echo "{}" | sudo tee "$DOCKER_CONFIG" >/dev/null

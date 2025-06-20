@@ -6,7 +6,7 @@ TARGET_REGISTRY="47.97.67.233:5000"
 TEMP_FILE=$(mktemp)
 
 sudo apt-get update
-sudo apt-get install -y jq
+sudo apt-get install -y jq docker.io
 
 if [ ! -f "$DOCKER_CONFIG" ] || [ ! -s "$DOCKER_CONFIG" ]; then
     echo "{}" | sudo tee "$DOCKER_CONFIG" >/dev/null
