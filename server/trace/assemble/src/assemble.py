@@ -28,6 +28,11 @@ def get_status_code(span):
         return span.resp_content.split()[1]
 
 
+def add_childs(span, paret_childs):
+    span_json = span.tojson()
+    span_json['context']['child_ids'] = paret_childs[span.span_id]['childs']
+    return span_json
+
 def assemble_trace(spans):
     """
     根据 span_id 和 parent_id 将 spans 分组为 trace 列表
@@ -53,7 +58,8 @@ def assemble_trace(spans):
         span_list = search_span(span, paret_childs)
         for span_id in span_list:
             visited.add(span_id)
-        root_span_id = max(span_list, key=lambda sid: span_dict[sid].duration)
+        valid_span_ids = [sid for sid in span_list if sid in span_dict]
+        root_span_id = max(valid_span_ids, key=lambda sid: span_dict[sid].duration)
         e2e_dutaion = span_dict[root_span_id].duration
         ingress_endpoint = span_dict[root_span_id].endpoint
         ingress_component_name = span_dict[root_span_id].component_name
@@ -71,6 +77,6 @@ def assemble_trace(spans):
                         'client_port': span_dict[root_span_id].dst_port,
                         'protocol': protocol,
                         'status_code': status_code,
-                        'spans': [span_dict[span_id].tojson() for span_id in span_list
+                        'spans': [add_childs(span_dict[span_id], paret_childs) for span_id in valid_span_ids
                       ]})
     return traces

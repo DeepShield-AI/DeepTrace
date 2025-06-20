@@ -40,7 +40,7 @@ class Span:
         if 'context' in span_json:
             if 'parent_id' in span_json['context']:
                 return span_json['context']['parent_id']
-        return ''
+        return None
 
     def get_traceid(self, span_json):
         if 'context' in span_json:
@@ -109,6 +109,7 @@ class Span:
         """
         将 Span 的所有成员变量动态转换为 JSON 格式
         """
+        self.ebpf_tag['endpoint'] = self.endpoint
         return {'context': self.get_context(),
                 'tag': {'docker_tag': self.docker_tag, 'ebpf_tag': self.ebpf_tag},
                 'metric': self.metric, 'content': self.content}
