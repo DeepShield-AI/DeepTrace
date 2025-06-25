@@ -129,7 +129,7 @@ def inter_association(spans, client_ingress = None, tuple_used=False, tuple_dire
             # fp.write(f'0 {sorted_spans[i].trace_id} {sorted_spans[j].trace_id} {score} {sorted_spans[i].req_content.encode("utf-8")} {sorted_spans[j].req_content.encode("utf-8")}\n')
             continue
         
-    print(f"Inter association: error count: {error_count}, sum: {cross_count}, acc: {(cross_count - error_count) / cross_count if cross_count > 0 else 0:.2f}")
+    # print(f"Inter association: error count: {error_count}, sum: {cross_count}, acc: {(cross_count - error_count) / cross_count if cross_count > 0 else 0:.2f}")
     return sorted_spans
 
 

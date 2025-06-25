@@ -8,7 +8,7 @@ from numpy.linalg import norm
 import numpy as np
 from trace.association.src.utils import span_grouping
 
-
+PRINT_TIME = False
 
 
 span_fields = {}
@@ -63,7 +63,8 @@ def transaction_field(spans, window_size=7):
             fields[field] = tf * idf[field]  # 计算 TF-IDF 权重
 
     t2 = time.time()
-    print(f"Transaction field time: {t2 - t1:.4f} seconds")
+    if PRINT_TIME:
+        print(f"Transaction field time: {t2 - t1:.4f} seconds")
     return span_fields
 
 
@@ -143,7 +144,8 @@ def get_endpoint_ship(spans, interval = 100):
                 correlation = cosine_similarity(x, y)
                 endpoint_ships[tgid][(endpoint1, endpoint2)] = correlation
     t2 = time.time()
-    print(f"Endpoint ship time: {t2 - t1:.4f} seconds")
+    if PRINT_TIME:
+        print(f"Endpoint ship time: {t2 - t1:.4f} seconds")
     # for tgid in endpoint_ships.keys():
     #     for endpoint_pair in endpoint_ships[tgid].keys():
     #         print(f"traffic: {traffic[tgid][endpoint_pair[0]]} | {traffic[tgid][endpoint_pair[1]]}")
@@ -235,7 +237,8 @@ def get_multi_metrics(candidate_mappings):
                 #     print(f"Error in building PDF for TGID: {tgid} | Endpoint Pair: {endpoint_pair} | Metric: {metric}")
                 multi_metrics[tgid][endpoint_pair][metric] = [pdf, status]
     t2 = time.time()
-    print(f"Multi metrics time: {t2 - t1:.4f} seconds")
+    if PRINT_TIME:
+        print(f"Multi metrics time: {t2 - t1:.4f} seconds")
 
 def adjust_weights(span_mappings):
     global tgid_weights
@@ -365,7 +368,8 @@ def iterative(span_mappings):
                 # if outgoing_span.trace_id != list(parent_spans)[max_index].trace_id:
                 #     print(f"Warning: {outgoing_span.trace_id} -> {list(parent_spans)[max_index].trace_id} | {outgoing_span.endpoint} -> {list(parent_spans)[max_index].endpoint}")
     t2 = time.time()
-    print(f"Iterative time: {t2 - t1:.4f} seconds")
+    if PRINT_TIME:
+        print(f"Iterative time: {t2 - t1:.4f} seconds")
     return child2parent
 
 def deeptrace(spans):
@@ -385,6 +389,7 @@ def deeptrace(spans):
                     if span.span_id in child2parent:
                         span.parent_id = child2parent[span.span_id]
     t2 = time.time()
-    print(f"DeepTrace time: {t2 - t1:.4f} seconds")
+    if PRINT_TIME:
+        print(f"DeepTrace time: {t2 - t1:.4f} seconds")
     return spans_dict
 

@@ -6,3 +6,8 @@ def assemble_trace_from_db(src_index, dest_index):
     spans = es_read_span_list(src_index)
     traces = assemble_trace(spans)
     es_write_traces(dest_index, traces)
+
+def assemble_trace_from_spans(spans, dest_index):
+    traces = assemble_trace(spans)
+    es_write_traces(dest_index, traces)
+    return len(traces)

@@ -26,7 +26,7 @@ def span_merge(all_spans):
         for direction, span_list in tgid_spans.items():
             for ip in span_list:
                 for span in span_list[ip]:
-                    spans.append(span.tojson())
+                    spans.append(span)
     return spans
 
 # 任意被调用者 A 收到的入请求与触发的A调用特定组件B的出请求之间的关联准确率

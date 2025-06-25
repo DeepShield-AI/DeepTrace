@@ -21,3 +21,9 @@ def load_agents():
     server_config = config.get('server', {})
     agent_dict = {agent_config['agent_info']['agent_name']: Agent(agent_config, elastic_config, server_config) for agent_config in config['agents']}
     return agent_dict
+
+def get_server_mode():
+    with open(config_path, 'r') as f:
+        config = toml.load(f)
+    server_config = config.get('server', {})
+    return server_config.get('mode', 'automatic')
