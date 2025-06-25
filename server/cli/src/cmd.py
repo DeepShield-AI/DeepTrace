@@ -25,6 +25,8 @@ def parse_args():
     agent_subparsers.add_parser('stop', help='停止agent')
     agent_subparsers.add_parser('run', help='运行agent')
     agent_subparsers.add_parser('sync', help='将配置同步到agent')
+    agent_subparsers.add_parser('install_app', help='安装workload')  
+    agent_subparsers.add_parser('uninstall_app', help='卸载workload')  # 
 
     # asso 子命令
     asso_parser = subparsers.add_parser('asso', help='asso相关操作')
@@ -65,6 +67,12 @@ def main():
         elif args.agent_action == 'sync':
             print("执行agent配置同步操作")
             sync_agent_config(agents)
+        elif args.agent_action == 'install_app':
+            print("执行agent工作负载安装操作")
+            install_workload(agents)
+        elif args.agent_action == 'uninstall_app':
+            print("执行agent工作负载卸载操作")
+            uninstall_workload(agents)
     elif args.command == 'asso':
         agents = load_agents()
         spans = es_read_agent_span_list(agents)
