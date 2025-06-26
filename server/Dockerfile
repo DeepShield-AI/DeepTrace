@@ -14,4 +14,4 @@ RUN pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple \
 
 
 # 默认启动命令（可根据实际情况修改）
-CMD ["python", "-m", "trace.main"]
+CMD ["tail", "-f", "/dev/null"]

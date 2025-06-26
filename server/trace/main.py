@@ -1,5 +1,5 @@
 
-from database.src.utils import poll_agents_new_spans
+from database.src.utils import poll_agents_new_spans, check_db
 from trace.association.src.cross import inter_association
 from config.parse_config import load_agents, get_server_mode
 from trace.association.src import deeptrace
@@ -9,7 +9,9 @@ import threading
 import queue
 import time
 import os
-import sys
+from log.utils import log
+
+
 
 
 def span2trace(spans):
@@ -17,7 +19,7 @@ def span2trace(spans):
     span_dict = deeptrace.deeptrace(spans)
     span_list = span_merge(span_dict)
     trace_num = assemble_trace_from_spans(span_list, 'traces')
-    print(f"Assemble: {trace_num} traces")
+    log(f"Assemble: {trace_num} traces")
 
 
 def consumer(queue):
@@ -35,14 +37,14 @@ def consumer(queue):
         queue.task_done()
 
 if __name__ == "__main__":
-    server_mode = get_server_mode()
+    # server_mode = get_server_mode()
 
-    if server_mode != 'automatic':
-        print(f"Server mode is set to {server_mode}, ...")
-        os.system('tail -f /dev/null')
+    # if server_mode != 'automatic':
+    #     log(f"Server mode is set to {server_mode}, ...")
+    #     os.system('tail -f /dev/null')
 
-        
-    print("Starting DeepTrace Analysis server...")
+    # log("Starting DeepTrace Analysis server...")
+    # check_db()  # 检查数据库连接
     agents = load_agents()
     q = queue.Queue()
 
@@ -59,10 +61,6 @@ if __name__ == "__main__":
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("Exiting...")
+        log("Exiting...")
         q.put(None)  # 通知消费者线程退出
         consumer_thread.join()
-
-
-
-

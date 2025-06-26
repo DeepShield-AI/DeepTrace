@@ -1,4 +1,4 @@
-
+from log.utils import log
 from elasticsearch import Elasticsearch, helpers
 import time
 from config.parse_config import read_db_config
@@ -229,6 +229,23 @@ def poll_agents_new_spans(agents, queue, poll_interval=5):
                     queue.put(span)
             last_timestamps[agent_name] = new_last_ts
         if count > 0:
-            print(f"Polled {count} new spans from all agents.")
+            log(f"Polled {count} new spans from all agents.")
         # 这里可以对 all_new_spans 做统一处理或写入目标表
         time.sleep(poll_interval)
+
+
+def check_db():
+
+
+    while True:
+        try:
+            es = Elasticsearch(hosts=[f"http://{SERVER_IP}:9200"], basic_auth=(ES_USERNAME, ES_PASSWORD))
+            if es.ping():
+                log("Elasticsearch connected successfully!")
+                break
+            else:
+                log("Elasticsearch not ready, retrying...")
+        except Exception:
+            # 不打印异常，不写入日志，只安静地重试
+            pass
+        time.sleep(5)
