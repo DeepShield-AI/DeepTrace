@@ -25,6 +25,11 @@
   - Username: `elastic`  
   - Password: `elastic_password`
 
+## Optional: Deploy docker swarm clusters and microservices applications on hosts
+```bash
+docker exec -it deeptrace_server python -m cli.src.cmd agent install_app
+```
+
 ## Step 3: Start Agents
 - Commands
 
@@ -38,25 +43,39 @@ python3 -m cli.src.cmd agent run # Run the agent, by default it will automatical
 
 ## Step 4: Build Traces
 
+### `automatic` mode. 
+
+```
+docker exec -it deeptrace_server python -m trace.main
+```
+
+### `manual` mode.
+
+- `<algorithm>`: Choose from `fifo`, `deeptrace`, `vpath`, `wap5`, `traceweaver_v1`, `deepflow` to infer parent-child relationships between spans.
+
 ```
 docker exec -it deeptrace_server /bin/bash 
 python -m cli.src.cmd asso algo <algorithm>
 ```
 
-- `<algorithm>`: Choose from `fifo`, `deeptrace`, `vpath`, `wap5`, `traceweaver_v1`, `deepflow` to infer parent-child relationships between spans.
+- Assemble spans from the database into traces.
 
 ```bash
 python -m cli.src.cmd assemble
 ```
 
-- Assemble spans from the database into traces.
 
 ## Step 5: Clear Agents and Server
 Stop all running agents:
 
 ```
-docker exec -it deeptrace_server /bin/bash
-python -m cli.src.cmd agent stop
+docker exec -it deeptrace_server python -m cli.src.cmd agent stop
+```
+
+Clean up the microservices application and container swarm clusters.
+
+```
+docker exec -it deeptrace_server python -m cli.src.cmd agent uninstall_app
 ```
 
 Exit the container and then execute:
