@@ -13,6 +13,8 @@ impl App {
 	pub fn new(config: impl AsRef<str>) -> Result<Self, AgentError> {
 		// Add log initialization here
 		env_logger::builder().init();
+		// console_subscriber::init();
+		
 		init(config)?;
 		Ok(Self { handle: None })
 	}

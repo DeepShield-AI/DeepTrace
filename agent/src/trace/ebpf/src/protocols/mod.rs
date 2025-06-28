@@ -10,6 +10,7 @@ mod memcached;
 mod mongodb;
 mod mysql;
 mod redis;
+mod rocketmq;
 mod thrift;
 
 mod infer;

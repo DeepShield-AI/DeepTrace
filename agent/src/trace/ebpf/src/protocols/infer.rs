@@ -1,6 +1,6 @@
 use super::{
 	cassandra::Cassandra, dns::DNS, http1::HTTP1, memcached::Memcached, mongodb::MongoDB,
-	mysql::MySQL, redis::Redis, thrift::Thrift,
+	mysql::MySQL, redis::Redis, rocketmq::RocketMQ, thrift::Thrift,
 };
 use crate::{
 	constants::MAX_INFER_PAYLOAD_SIZE,
@@ -114,6 +114,7 @@ fn infer_protocol_impl(ctx: &TracePointContext, info: &InferInfo, quintuple: Qui
 		HTTP1::parse,
 		Cassandra::parse,
 		MySQL::parse,
+		RocketMQ::parse,
 	]
 	.iter()
 	.find_map(|parser| parser(ctx, info, quintuple).ok())
