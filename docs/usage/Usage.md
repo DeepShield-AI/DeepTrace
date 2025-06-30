@@ -39,7 +39,7 @@ python3 -m cli.src.cmd agent install # This command will automatically connect t
 python3 -m cli.src.cmd agent run # Run the agent, by default it will automatically collect spans from all Docker containers and store them in the server's Elastic database. 
 ```
 
-**Note**: Traffic must be generated on the host where the agent is located to produce spans.
+**Note**: Traffic must be generated on the host where the agent is located to produce spans. You can look up the container id of the wrk2 container via `docker ps | grep wrk2`, then enter the container via `docker exec -it container_id /bin/bash` and run the command `cd root; ./wrk -D exp -t 6 -c 6 -d 3 -L -s ./wrk2/scripts/social-network/compose-post.lua http://nginx-web-server:8080/wrk2-api/post/compose -R 100` to send the package afterward.
 
 ## Step 4: Build Traces
 
