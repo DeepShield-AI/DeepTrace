@@ -33,7 +33,7 @@ impl Infer for HTTP1 {
 		_quintuple: Quintuple,
 	) -> Result<Message, u32> {
 		if info.count < HTTP1_MIN_SIZE {
-			return Err(0_u32)
+			return Err(0_u32);
 		}
 		if !check_protocol(info.key, L7Protocol::HTTP1) {
 			return Err(0);
@@ -43,7 +43,7 @@ impl Infer for HTTP1 {
 			let mut message = Message::new();
 			message.protocol = L7Protocol::HTTP1;
 			message.type_ = header.message_type();
-			return Ok(message)
+			return Ok(message);
 		}
 		// If the message is not complete, we can try to parse it again with the previous message
 		let key = info.key;
@@ -88,7 +88,7 @@ impl Infer for HTTP1 {
 					Ok(message)
 				},
 				Err(_) => Err(0),
-			}
+			};
 		}
 		Err(0)
 	}

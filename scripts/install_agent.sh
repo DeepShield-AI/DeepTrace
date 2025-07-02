@@ -13,19 +13,19 @@ if [ ! -f "$DOCKER_CONFIG" ] || [ ! -s "$DOCKER_CONFIG" ]; then
     echo "Created new $DOCKER_CONFIG"
 fi
 
-if ! jq empty "$DOCKER_CONFIG" &>/dev/null; then
+if ! sudo jq empty "$DOCKER_CONFIG" &>/dev/null; then
     echo "Error: Invalid JSON in $DOCKER_CONFIG" >&2
     exit 1
 fi
 
-if jq -e --arg registry "$TARGET_REGISTRY" '
+if sudo jq -e --arg registry "$TARGET_REGISTRY" '
     .["insecure-registries"] // [] | index($registry)
 ' "$DOCKER_CONFIG" >/dev/null; then
     echo "Registry $TARGET_REGISTRY is already configured in $DOCKER_CONFIG"
     echo "No Docker restart needed."
 else
     echo "Registry $TARGET_REGISTRY is not present, adding..."
-    jq --arg registry "$TARGET_REGISTRY" '
+    sudo jq --arg registry "$TARGET_REGISTRY" '
         .["insecure-registries"] = (
             (.["insecure-registries"] // []) + [$registry] | unique
         )
@@ -37,6 +37,9 @@ else
 fi
 
 sudo docker pull 47.97.67.233:5000/deepshield/deeptrace:latest
+
+export RUSTUP_DIST_SERVER=https://mirrors.ustc.edu.cn/rust-static
+export RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup
 
 sudo docker run --privileged --rm -it -v $(pwd):/DeepTrace 47.97.67.233:5000/deepshield/deeptrace bash -c \
 'cd /DeepTrace/agent &&

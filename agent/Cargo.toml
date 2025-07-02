@@ -43,7 +43,7 @@ serde = { version = "1.0.219", default-features = false }
 serde_json = { version = "1.0.140", default-features = false }
 # build
 aya-build = { version = "0.1.2", default-features = false }
-which = { version = "7.0.2", default-features = false }
+which = { version = "8.0.0", default-features = false, features = ["real-sys"] }
 # misc
 ## bit
 bitflags = { version = "2.9.0", default-features = false }
@@ -60,12 +60,12 @@ unused-extern-crates = "warn"
 
 [dependencies]
 # cache
-lru = { version = "0.14.0", default-features = false}
+lru = { version = "0.15.0", default-features = false}
 # common
 trace_common = { workspace = true, features = ["user"] }
 provenance_common = { workspace = true, features = ["user"] }
 # communication
-futures = { version = "0.3.31", default-features = false }
+#futures = { version = "0.3.31", default-features = false }
 futures-util = { version = "0.3.31", default-features = false }
 tokio-tungstenite = { version = "0.27.0", default-features = true }
 # concurrency
@@ -74,7 +74,7 @@ crossbeam-channel = { version = "0.5.15", default-features = true }
 dashmap = { version = "7.0.0-rc2", default-features = false }
 tokio = { version = "1.45.0", features = ["macros", "rt", "rt-multi-thread", "net", "signal", "fs", "io-std"], default-features = false }
 # ebpf
-aya = { workspace = true }
+aya = { workspace = true, default-features = false, features = ["async_tokio"] }
 aya-log = { workspace = true }
 # error
 anyhow = { workspace = true, default-features = true }
@@ -111,10 +111,11 @@ chrono = { version = "0.4.41", default-features = false, features = ["clock"] }
 chrono-tz = { version = "0.10.3" }
 # unix
 libc = { version = "0.2.159", default-features = false }
+signal-hook = { version = "0.3.18", default-features = false, features = ["iterator"] }
 ## url
 url = { version = "2.5.4", default-features = false }
 ## zip
-flate2 = { version = "1.1.1", default-features = false, features = ["zlib-rs"] }
+flate2 = { version = "1.1.2", default-features = false, features = ["zlib-rs"] }
 
 [build-dependencies]
 anyhow = { workspace = true }
@@ -149,9 +150,9 @@ path = "src/main.rs"
 # codegen-units = 1
 # rpath = false
 
-[profile.release]
-panic = "abort"
-opt-level = 3
-# debug = 2
-lto = true
-codegen-units = 1
+# [profile.release]
+# panic = "abort"
+# opt-level = 3
+# # debug = 2
+# lto = true
+# codegen-units = 1

@@ -46,11 +46,8 @@ impl Module for SpanConstructor {
 		let input = self.input.clone();
 		let output = self.output.clone();
 
-		self.handle = Some(spawn_blocking(move || {
-			block_on(async {
-				construct_spans(input, output).await;
-			})
-		}));
+		self.handle =
+			Some(spawn_blocking(move || block_on(async { construct_spans(input, output).await })));
 		Ok(())
 	}
 
@@ -69,6 +66,7 @@ async fn construct_spans(message_receiver: Receiver<Data>, span_sender: Sender<S
 	let cleanup_interval = Duration::from_secs(20);
 	let mut last_cleanup = Instant::now();
 	loop {
+		// info!("Span constructor is running");
 		let span_sender = span_sender.clone();
 
 		if let Ok(data) = message_receiver.recv() {

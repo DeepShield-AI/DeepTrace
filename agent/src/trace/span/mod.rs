@@ -17,47 +17,43 @@ pub use spantag::SpanTag;
 
 #[derive(Serialize)]
 pub struct Span {
-    tag: SpanTag,
-    metric: SpanMetric,
-    content: SpanContent,
+	tag: SpanTag,
+	metric: SpanMetric,
+	content: SpanContent,
 }
-
 
 #[derive(Serialize)]
 pub struct SpanMetric {
-    start_time: u64,
-    end_time: u64,
-    duration: u64,
-    req_size: usize,
-    resp_size: usize,
+	start_time: u64,
+	end_time: u64,
+	duration: u64,
+	req_size: usize,
+	resp_size: usize,
 }
 
 #[derive(Serialize)]
 pub struct SpanContent {
-    #[serde(serialize_with = "serialize_payload")]
-    req_content: Payload,
-    #[serde(serialize_with = "serialize_payload")]
-    resp_content: Payload,
+	#[serde(serialize_with = "serialize_payload")]
+	req_content: Payload,
+	#[serde(serialize_with = "serialize_payload")]
+	resp_content: Payload,
 }
 impl Span {
-    pub async fn new(req: Data, resp: Data) -> Self {
-        let tag = SpanTag::set_tags(&req, &resp).await;
+	pub async fn new(req: Data, resp: Data) -> Self {
+		let tag = SpanTag::set_tags(&req, &resp).await;
 
-        let metric = SpanMetric {
-            start_time: req.timestamp_ns,
-            end_time: resp.timestamp_ns,
-            duration: resp.timestamp_ns - req.timestamp_ns,
-            req_size: req.payload.len as usize,
-            resp_size: resp.payload.len as usize,
-        };
+		let metric = SpanMetric {
+			start_time: req.timestamp_ns,
+			end_time: resp.timestamp_ns,
+			duration: resp.timestamp_ns - req.timestamp_ns,
+			req_size: req.payload.len as usize,
+			resp_size: resp.payload.len as usize,
+		};
 
-        let content = SpanContent {
-            req_content: req.payload,
-            resp_content: resp.payload,
-        };
+		let content = SpanContent { req_content: req.payload, resp_content: resp.payload };
 
-        Self { tag, metric, content }
-    }
+		Self { tag, metric, content }
+	}
 }
 
 fn serialize_payload<S>(payload: &Payload, serializer: S) -> Result<S::Ok, S::Error>

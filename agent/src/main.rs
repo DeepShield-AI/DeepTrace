@@ -17,8 +17,8 @@ async fn main() -> anyhow::Result<()> {
 	deeptrace.start();
 
 	signal::ctrl_c().await?;
-	println!("ctrl-c received!");
 	// sys::wait_on_signal();
+	println!("ctrl-c received!");
 
 	deeptrace.stop();
 

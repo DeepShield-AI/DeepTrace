@@ -60,7 +60,7 @@ impl Infer for MongoDB {
 			let mut message = Message::new();
 			message.protocol = L7Protocol::MongoDB;
 			message.type_ = header.message_type();
-			return Ok(message)
+			return Ok(message);
 		}
 		// If the message is not complete, we can try to parse it again with the previous message
 		let key = info.key;
@@ -105,7 +105,7 @@ impl Infer for MongoDB {
 					Ok(message)
 				},
 				Err(_) => Err(0),
-			}
+			};
 		} else if socket_info.l7protocol == L7Protocol::MongoDB &&
 			info.direction == Direction::Egress
 		{

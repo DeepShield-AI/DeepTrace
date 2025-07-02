@@ -27,14 +27,14 @@
 
 ## Optional: Deploy docker swarm clusters and microservices applications on hosts
 ```bash
-docker exec -it deeptrace_server python -m cli.src.cmd agent install_app
+sudo docker exec -it deeptrace_server python -m cli.src.cmd agent install_app
 ```
 
 ## Step 3: Start Agents
 - Commands
 
 ```bash
-docker exec -it deeptrace_server /bin/bash # Enter the server container, the following commands are run within the deeptrace_server container
+sudo docker exec -it deeptrace_server /bin/bash # Enter the server container, the following commands are run within the deeptrace_server container
 python3 -m cli.src.cmd agent install # This command will automatically connect to the remote host, clone the code, and compile. 
 python3 -m cli.src.cmd agent run # Run the agent, by default it will automatically collect spans from all Docker containers and store them in the server's Elastic database. 
 ```
@@ -45,16 +45,16 @@ python3 -m cli.src.cmd agent run # Run the agent, by default it will automatical
 
 ### `automatic` mode. 
 
-```
-docker exec -it deeptrace_server python -m trace.main
+```bash
+sudo docker exec -it deeptrace_server python -m trace.main
 ```
 
 ### `manual` mode.
 
 - `<algorithm>`: Choose from `fifo`, `deeptrace`, `vpath`, `wap5`, `traceweaver_v1`, `deepflow` to infer parent-child relationships between spans.
 
-```
-docker exec -it deeptrace_server /bin/bash 
+```bash
+sudo docker exec -it deeptrace_server /bin/bash 
 python -m cli.src.cmd asso algo <algorithm>
 ```
 
@@ -68,14 +68,14 @@ python -m cli.src.cmd assemble
 ## Step 5: Clear Agents and Server
 Stop all running agents:
 
-```
-docker exec -it deeptrace_server python -m cli.src.cmd agent stop
+```bash
+sudo docker exec -it deeptrace_server python -m cli.src.cmd agent stop
 ```
 
 Clean up the microservices application and container swarm clusters.
 
-```
-docker exec -it deeptrace_server python -m cli.src.cmd agent uninstall_app
+```bash
+sudo docker exec -it deeptrace_server python -m cli.src.cmd agent uninstall_app
 ```
 
 Exit the container and then execute:

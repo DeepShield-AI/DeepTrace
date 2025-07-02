@@ -79,7 +79,7 @@ impl Infer for Memcached {
 		_quintuple: Quintuple,
 	) -> Result<Message, u32> {
 		if info.count < HEADER_SIZE as u32 {
-			return Err(0)
+			return Err(0);
 		}
 		if !check_protocol(info.key, L7Protocol::Memcached) {
 			return Err(0);

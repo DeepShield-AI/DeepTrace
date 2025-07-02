@@ -39,6 +39,7 @@ where
 		let mut batch = Vec::with_capacity(batch_size);
 
 		while self.running.load(Ordering::Relaxed) {
+			// info!("Sender is running");
 			match self.receiver.recv_deadline(Instant::now() + Self::RECV_TIMEOUT) {
 				Ok(item) => {
 					batch.push(item);

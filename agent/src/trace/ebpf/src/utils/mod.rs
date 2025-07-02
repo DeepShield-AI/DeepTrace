@@ -34,7 +34,7 @@ pub(crate) fn is_tcp_udp(sock: *const tcp_sock) -> Result<L4Protocol, u32> {
 		ProtocolFamily::from(unsafe { &*sock }.inet_conn.icsk_inet.sk.__sk_common.skc_family);
 	match skc_family {
 		ProtocolFamily::PF_INET if ipv6only == 0 => {},
-		// TODO: add ipv4_maped_to_ipv6 check
+		// TODO: add ipv4_mapped_to_ipv6 check
 		ProtocolFamily::PF_INET6 => {},
 		_ => return Err(0),
 	}

@@ -1,6 +1,7 @@
 use super::AgentError;
 use crate::config::AppConfig;
 use arc_swap::ArcSwap;
+use libc::unshare;
 use log::error;
 use std::sync::{Arc, atomic::AtomicBool};
 use tokio::{
@@ -30,8 +31,8 @@ pub fn init(config_path: impl AsRef<str>) -> Result<(), AgentError> {
 	let runtime = Builder::new_multi_thread()
 		.thread_name("deeptrace-worker")
 		.worker_threads(config.agent.workers)
-		.on_thread_start(|| {
-			// 	unshare(libc::CLONE_FS).expect("cannot initialize thread with unshare(CLONE_FS)")
+		.on_thread_start(|| unsafe {
+			unshare(libc::CLONE_FS);
 		})
 		.enable_all()
 		.build()?;

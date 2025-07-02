@@ -42,7 +42,7 @@ impl Infer for MySQL {
 			let mut message = Message::new();
 			message.protocol = L7Protocol::MySQL;
 			message.type_ = header.message_type();
-			return Ok(message)
+			return Ok(message);
 		}
 		// If the message is not complete, we can try to parse it again with the previous message
 		let key = info.key;
@@ -91,7 +91,7 @@ impl Infer for MySQL {
 					Ok(message)
 				},
 				Err(_) => Err(0),
-			}
+			};
 		}
 		Err(0)
 	}

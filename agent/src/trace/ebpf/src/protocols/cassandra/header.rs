@@ -76,7 +76,7 @@ impl Infer for Cassandra {
 				let mut message = Message::new();
 				message.protocol = L7Protocol::Cassandra;
 				message.type_ = header.message_type();
-				return Ok(message)
+				return Ok(message);
 			},
 			Err(e) => {
 				return Err(e);

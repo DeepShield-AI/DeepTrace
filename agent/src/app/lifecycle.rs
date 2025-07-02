@@ -1,26 +1,28 @@
 use super::{App, Module, context::init, runtime::spawn, state, terminate};
 use crate::{
 	AgentError,
-	provenance::Provenance,
+	// provenance::Provenance,
 	sender::{Elastic, FlatFile, SenderProcess},
 	synchronizer::Synchronizer,
 	trace::{SpanConstructor, TraceModule},
 };
 use log::info;
-use std::sync::atomic::Ordering;
+use rocket::yansi::Paint;
+use std::{sync::atomic::Ordering, time::Duration};
 
 impl App {
 	pub fn new(config: impl AsRef<str>) -> Result<Self, AgentError> {
 		// Add log initialization here
 		env_logger::builder().init();
 		// console_subscriber::init();
-		
+
 		init(config)?;
 		Ok(Self { handle: None })
 	}
 
 	pub fn start(&mut self) {
 		self.handle = Some(spawn(run()));
+		info!("Starting agent");
 	}
 
 	pub fn stop(&mut self) {
@@ -48,19 +50,20 @@ async fn run() -> Result<(), AgentError> {
 	let mut trace = TraceModule::new(message_sender).expect("Failed to create eBPF module");
 	trace.start()?;
 
-	let mut provenance = Provenance::new()?;
-	provenance.start()?;
+	// let mut provenance = Provenance::new()?;
+	// provenance.start()?;
 
 	// let mut components: Vec<Box<&dyn Module<Error = dyn Into<AgentError>>>> = Vec::new();
 	// components.push(Box::new(&trace));
 	// components.push(Box::new(&config));
 	loop {
+		// info!("App is running");
 		if state().load(Ordering::Relaxed) {
 			// for component in &mut components {
 			// 	component.stop().await?;
 			// }
 			synchronizer.stop().await?;
-			provenance.stop().await?;
+			// provenance.stop().await?;
 			trace.stop().await?;
 			span_constructor.stop().await?;
 			span_log.stop().await?;

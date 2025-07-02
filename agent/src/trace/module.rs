@@ -10,7 +10,11 @@ use aya::{Ebpf, maps::AsyncPerfEventArray, util::online_cpus};
 use bytes::BytesMut;
 use crossbeam_channel::Sender;
 use log::{info, warn};
-use tokio::task::JoinHandle;
+use std::time::Duration;
+use tokio::{
+	task::JoinHandle,
+	time::{self, timeout},
+};
 use trace_common::structs::Data;
 
 pub struct TraceModule {
@@ -47,7 +51,6 @@ impl Module for TraceModule {
 		// Retrieve the perf event array from the eBPF program to read events from it.
 		let mut perf_array = AsyncPerfEventArray::try_from(self.ebpf.take_map("events").unwrap())
 			.expect("Failed to take perf array");
-
 		// Calculate the size of the Data structure in bytes.
 		let len_of_data = size_of::<Data>();
 		let mut handlers = vec![];
@@ -63,20 +66,24 @@ impl Module for TraceModule {
 					// Here, 16 buffers are created, each with a capacity equal to the size of the Data structure.
 					let mut buffers =
 						(0..16).map(|_| BytesMut::with_capacity(len_of_data)).collect::<Vec<_>>();
-					loop {
-						// Attempt to read events from the perf buffer into the prepared buffers.
-						let events = match buf.read_events(&mut buffers).await {
-							Ok(events) => events,
-							Err(e) => {
-								warn!("Error reading events: {e}");
-								continue;
-							},
-						};
 
+					let timeout = Duration::from_millis(100);
+					loop {
+						// info!("Waiting for events on CPU {}", cpu_id);
+						// Attempt to read events from the perf buffer into the prepared buffers.
+						let events =
+							match time::timeout(timeout, buf.read_events(&mut buffers)).await {
+								Ok(events) => events.unwrap(),
+								Err(_e) => {
+									// warn!("Error reading events: {e}");
+									continue;
+								},
+							};
+						// info!("Read {} events from CPU {}", events.read, cpu_id);
 						// Iterate over the number of events read. `events.read` indicates how many events were read.
-						for i in 0..events.read {
-							let buf = &mut buffers[i];
+						for buf in buffers.iter_mut().take(events.read) {
 							let data = unsafe { *(buf.as_ptr() as *const Data) }; // Convert the buffer to a Data structure.
+							// info!("Recv data");
 							output.send(data).expect("Error sending data");
 						}
 					}

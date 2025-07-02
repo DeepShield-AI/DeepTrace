@@ -1,7 +1,4 @@
-use super::{
-	check_protocol, parser::rocketmq_header, Infer,
-	ROCKETMQ_HEADER_MIN_SIZE,
-};
+use super::{check_protocol, parser::rocketmq_header, Infer, ROCKETMQ_HEADER_MIN_SIZE};
 use crate::structs::InferInfo;
 use aya_ebpf::programs::TracePointContext;
 use trace_common::{
@@ -45,7 +42,7 @@ impl Infer for RocketMQ {
 		_quintuple: Quintuple,
 	) -> Result<Message, u32> {
 		if info.count < ROCKETMQ_HEADER_MIN_SIZE {
-			return Err(0_u32)
+			return Err(0_u32);
 		}
 		if !check_protocol(info.key, L7Protocol::RocketMQ) {
 			return Err(0);

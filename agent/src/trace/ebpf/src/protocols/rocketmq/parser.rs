@@ -3,7 +3,10 @@ use super::{
 	ROCKETMQ_SERIALIZE_TYPE_JSON, ROCKETMQ_SERIALIZE_TYPE_ROCKETMQ,
 };
 use nom::{
-	combinator::{map, verify}, error::ErrorKind, number::streaming::{be_i24, be_i32, be_i8}, IResult, Parser
+	combinator::{map, verify},
+	error::ErrorKind,
+	number::streaming::{be_i24, be_i32, be_i8},
+	IResult, Parser,
 };
 use trace_common::message::MessageType;
 fn length(i: &[u8]) -> IResult<&[u8], i32> {

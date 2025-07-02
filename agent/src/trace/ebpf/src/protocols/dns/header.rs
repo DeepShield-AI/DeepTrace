@@ -61,7 +61,7 @@ impl Infer for DNS {
 		quintuple: Quintuple,
 	) -> Result<Message, u32> {
 		if info.count < DNS_HEADER_SIZE || info.count > DNS_MSG_MAX_SIZE {
-			return Err(0_u32)
+			return Err(0_u32);
 		}
 		if !check_protocol(info.key, L7Protocol::DNS) {
 			return Err(0);

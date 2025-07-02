@@ -29,14 +29,13 @@ pub(crate) static mut TCP_SOCK: PerCpuArray<tcp_sock> = PerCpuArray::with_max_en
 
 /// Storage params when enter syscalls.
 #[map(name = "ingress")]
-pub(crate) static mut INGRESS: HashMap<u64, Args> = HashMap::with_max_entries((1 << 10) * 10, 0);
+pub(crate) static mut INGRESS: HashMap<u64, Args> = HashMap::with_max_entries(1 << 10, 0);
 #[map(name = "egress")]
-pub(crate) static mut EGRESS: HashMap<u64, Args> = HashMap::with_max_entries((1 << 10) * 10, 0);
+pub(crate) static mut EGRESS: HashMap<u64, Args> = HashMap::with_max_entries(1 << 10, 0);
 
 /// Storage socket info.
 #[map(name = "socket_info")]
-pub(crate) static mut SOCKET_INFO: HashMap<u64, SocketInfo> =
-	HashMap::with_max_entries((1 << 10) * 10, 0);
+pub(crate) static mut SOCKET_INFO: HashMap<u64, SocketInfo> = HashMap::with_max_entries(1 << 10, 0);
 /// Infer protocol.
 #[map(name = "protocol")]
 pub(crate) static mut INFER: PerCpuArray<InferInfo> = PerCpuArray::with_max_entries(1, 0);
