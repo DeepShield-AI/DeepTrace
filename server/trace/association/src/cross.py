@@ -69,7 +69,7 @@ def inter_association(spans, client_ingress = None, tuple_used=False, tuple_dire
     tuple_used: 是否使用四元组进行关联
     tuple_direction: 是否需要调换四元组的方向
     """
-    host_delta = 1e7 # ns = 10ms 不同主机之间的时钟偏差
+    host_delta = 20e7 # ns = 10ms 不同主机之间的时钟偏差
     sorted_spans = sorted(spans, key=lambda x: x.start_time)
     used_set = set()
     error_count = 0
@@ -85,6 +85,8 @@ def inter_association(spans, client_ingress = None, tuple_used=False, tuple_dire
             for j in range(0, i)[::-1]:
                 if span.start_time - sorted_spans[j].start_time > host_delta:
                     break
+                if sorted_spans[j].direction == 'Ingress':
+                    continue
                 if tuple_used:
                     if tuple_direction:
                         if (sorted_spans[j].dst_ip, sorted_spans[j].dst_port, sorted_spans[j].src_ip, sorted_spans[j].src_port) != \
@@ -101,6 +103,8 @@ def inter_association(spans, client_ingress = None, tuple_used=False, tuple_dire
             for j in range(i + 1, len(sorted_spans)):
                 if sorted_spans[j].start_time - span.start_time > host_delta:
                     break
+                if sorted_spans[j].direction == 'Ingress':
+                    continue
                 if tuple_used:
                     if tuple_direction:
                         if (sorted_spans[j].dst_ip, sorted_spans[j].dst_port, sorted_spans[j].src_ip, sorted_spans[j].src_port) != \
@@ -116,20 +120,20 @@ def inter_association(spans, client_ingress = None, tuple_used=False, tuple_dire
     mapping_score = sorted(mapping_score.items(), key=lambda x: x[1], reverse=True)
     # fp = open('score.txt', 'w')
     for (i, j), score in mapping_score:
-        
+        # fp.write(f'{i} {j} {score} {sorted_spans[i].trace_id} {sorted_spans[j].trace_id} {sorted_spans[i].endpoint} {sorted_spans[j].endpoint} ')
         if j not in used_set and i not in used_set:
-            # fp.write(f'1 {sorted_spans[i].trace_id} {sorted_spans[j].trace_id} {score} {sorted_spans[i].req_content.encode("utf-8")} {sorted_spans[j].req_content.encode("utf-8")}\n')
+            # fp.write(f'Select\n')
             sorted_spans[i].parent_id = sorted_spans[j].span_id
             used_set.add(j)
             used_set.add(i)
             if sorted_spans[i].trace_id != sorted_spans[j].trace_id:
                 error_count += 1
-                print(f"Warning: trace_id mismatch {sorted_spans[i].trace_id} != {sorted_spans[j].trace_id} {sorted_spans[i].endpoint} {sorted_spans[j].endpoint}")
+                # fp.write(f"Warning: trace_id mismatch \n")
         else:
-            # fp.write(f'0 {sorted_spans[i].trace_id} {sorted_spans[j].trace_id} {score} {sorted_spans[i].req_content.encode("utf-8")} {sorted_spans[j].req_content.encode("utf-8")}\n')
+            # fp.write(f'Continue\n')
             continue
         
-    # print(f"Inter association: error count: {error_count}, sum: {cross_count}, acc: {(cross_count - error_count) / cross_count if cross_count > 0 else 0:.2f}")
+    print(f"Inter association: error count: {error_count}, sum: {cross_count}, acc: {(cross_count - error_count) / cross_count if cross_count > 0 else 0:.2f}")
     return sorted_spans
 
 
