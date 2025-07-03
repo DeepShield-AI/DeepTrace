@@ -35,6 +35,14 @@ class Span:
         self.span_id = self.get_spanid(span_json) 
         self.endpoint = self.get_endpoint(span_json)
         self.parent_id = self.get_parentid(span_json)
+        self.parent_traceid = self.get_parent_traceid(span_json)
+    
+    def get_parent_traceid(self, span_json):
+        if 'context' in span_json:
+            if 'parent_trace_id' in span_json['context']:
+                return span_json['context']['parent_trace_id']
+        return None
+        
 
     def get_parentid(self, span_json):
         if 'context' in span_json:
@@ -104,7 +112,7 @@ class Span:
                 f"tgid={self.tgid}, pid={self.pid}, protocol={self.protocol}, component_name={self.component_name}), "
                 f"trace_id={self.trace_id}, duration={self.duration}, direction={self.direction}) ")
     def get_context(self):
-        return {'trace_id': self.trace_id, 'span_id': self.span_id, 'parent_id': self.parent_id}
+        return {'trace_id': self.trace_id, 'span_id': self.span_id, 'parent_id': self.parent_id, 'parent_trace_id': self.parent_traceid,}
     def tojson(self):
         """
         将 Span 的所有成员变量动态转换为 JSON 格式

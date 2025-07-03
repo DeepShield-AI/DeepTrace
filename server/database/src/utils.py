@@ -119,8 +119,8 @@ def es_read_span_list(index_name):
     for span in spans:
         span_obj = Span(span)
         
-        if span_obj.protocol not in ['Thrift', 'HTTP1']:
-            continue
+        # if span_obj.protocol not in ['Thrift', 'HTTP1']:
+        #     continue
         span_class_list.append(span_obj)
     return span_class_list
 

@@ -96,6 +96,12 @@ def main():
                 raise ValueError(f"Unknown algorithm: {args.algorithm}")
             print_acc(span_dict)
         span_list = span_merge(span_dict)
+        # fp = open('span-mappings.txt', 'w')
+        # for span in span_list:
+        #     if span.direction == 'Ingress':
+        #         continue
+        #     fp.write(f"{span.direction} {span.endpoint} {span.span_id} {span.trace_id} {span.parent_id} {span.parent_traceid}\n")
+        # fp.close()
         es_write_span_list(f'span-mappings', span_list)
     elif args.command == 'assemble':
         print("执行assemble操作")

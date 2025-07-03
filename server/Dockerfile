@@ -4,8 +4,7 @@ FROM docker.1ms.run/python:3.12-slim
 # 设置工作目录
 WORKDIR /app
 
-# 复制项目文件到容器
-COPY . /app
+COPY ./requirements.txt /app/requirements.txt
 
 # 安装依赖
 RUN pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple \

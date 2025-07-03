@@ -10,6 +10,7 @@ from trace.association.src.utils import span_grouping
 
 PRINT_TIME = False
 
+# debug = open('deeptrace.txt', 'w')
 
 span_fields = {}
 endpoint_ships = {}
@@ -325,7 +326,7 @@ def get_candidate_mappings(spans):
                         if tgid not in candidates:
                             candidates[tgid] = []
                         if pre_span.start_time < span.start_time and pre_span.end_time > span.end_time:
-                            # fp.write(f"{pre_span.endpoint} {pre_span.trace_id} -> {span.endpoint} {span.trace_id}\n")
+                            # debug.write(f"{pre_span.endpoint} {pre_span.trace_id} -> {span.endpoint} {span.trace_id}\n")
                             candidates[tgid].append((pre_span, span))
         if tgid in candidates:
             candidates[tgid] = sorted(candidates[tgid], key=lambda x: x[1].start_time)
@@ -350,6 +351,7 @@ def iterative(span_mappings):
     t1 = time.time()
     global span_fields
     child2parent = {}
+    spanid2tracied = {}
     for tgid, mappings in span_mappings.items():
         
         span_parent = {} # 存储每个 出span 的备选父 span集合
@@ -360,17 +362,19 @@ def iterative(span_mappings):
         for outgoing_span, parent_spans in span_parent.items():
             if len(parent_spans) == 1:
                 child2parent[outgoing_span.span_id] = list(parent_spans)[0].span_id
+                spanid2tracied[list(parent_spans)[0].span_id] = list(parent_spans)[0].trace_id
             else:
                 socres = [scoring(parent_span, outgoing_span) for parent_span in parent_spans]
                 max_index = socres.index(max(socres))
                 # selected_mappings[tgid].append((list(parent_spans)[max_index], outgoing_span))
                 child2parent[outgoing_span.span_id] = list(parent_spans)[max_index].span_id
+                spanid2tracied[list(parent_spans)[max_index].span_id] = list(parent_spans)[max_index].trace_id
                 # if outgoing_span.trace_id != list(parent_spans)[max_index].trace_id:
                 #     print(f"Warning: {outgoing_span.trace_id} -> {list(parent_spans)[max_index].trace_id} | {outgoing_span.endpoint} -> {list(parent_spans)[max_index].endpoint}")
     t2 = time.time()
     if PRINT_TIME:
         print(f"Iterative time: {t2 - t1:.4f} seconds")
-    return child2parent
+    return child2parent, spanid2tracied
 
 def deeptrace(spans):
     t1 = time.time()
@@ -380,7 +384,7 @@ def deeptrace(spans):
     get_multi_metrics(span_mappings)
     adjust_weights(span_mappings)
     # print(f"Candidate Mappings: {span_mappings}")
-    child2parent = iterative(span_mappings)
+    child2parent, spanid2tracied = iterative(span_mappings)
     spans_dict = span_grouping(spans)
     for tgid, tgid_spans in spans_dict.items():
         for direction, span_list in tgid_spans.items():
@@ -388,6 +392,7 @@ def deeptrace(spans):
                 for span in span_list[ip]:
                     if span.span_id in child2parent:
                         span.parent_id = child2parent[span.span_id]
+                        span.parent_traceid = spanid2tracied.get(span.parent_id)
     t2 = time.time()
     if PRINT_TIME:
         print(f"DeepTrace time: {t2 - t1:.4f} seconds")
