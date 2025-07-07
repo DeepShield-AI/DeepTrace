@@ -53,8 +53,8 @@ services:
       - es
 
   deeptrace_server:
-    # image: 47.97.67.233:5000/deepshield/deeptrace_server:latest
-    image: deeptrace_server:latest
+    image: 47.97.67.233:5000/deepshield/deeptrace_server:latest
+    # image: deeptrace_server:latest
     # build:
     #   context: .
     #   dockerfile: Dockerfile
