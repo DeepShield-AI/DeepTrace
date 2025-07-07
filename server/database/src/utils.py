@@ -249,3 +249,77 @@ def check_db():
             # 不打印异常，不写入日志，只安静地重试
             pass
         time.sleep(5)
+        
+        
+def write_service_metrics(metrics):
+    """
+    将服务指标写入 Elasticsearch
+    """
+    es = Elasticsearch(
+        # hosts=[f"http://{SERVER_IP}:9200"],
+        hosts=[f"http://114.215.254.187:9200"],
+        basic_auth=(ES_USERNAME, ES_PASSWORD)  # 添加用户名和密码
+    )
+    
+    index_name = "service_metrics"
+    
+    # 检查索引是否存在
+    if not es.indices.exists(index=index_name):
+        es.indices.create(index=index_name)
+    
+    actions = [
+        {
+            "_index": index_name,
+            "_source": {
+                "service_name": service_name,
+                "metrics": metrics[service_name]
+            }
+        }
+        for service_name in metrics
+    ]
+    
+    helpers.bulk(es, actions)
+    log("Service metrics written to Elasticsearch")
+    
+def write_callgraph(graph):
+    """
+    将调用图写入 Elasticsearch
+    """
+    es = Elasticsearch(
+        hosts=[f"http://{SERVER_IP}:9200"],
+        basic_auth=(ES_USERNAME, ES_PASSWORD)  # 添加用户名和密码
+    )
+    
+    index_name = "call_graph"
+    
+    # 检查索引是否存在
+    if not es.indices.exists(index=index_name):
+        es.indices.create(index=index_name)
+    
+    actions = []
+    
+    for node in graph.nodes.values():
+        actions.append({
+            "_index": index_name,
+            "_id": node.service_name,
+            "_source": {
+                "type": "node",
+                "service_name": node.service_name,
+                "tags": node.tags
+            }
+        })
+    
+    for edge in graph.edges.values():
+        actions.append({
+            "_index": index_name,
+            "_id": f"{edge.src}-{edge.dst}",
+            "_source": {
+                "type": "edge",
+                "src": edge.src,
+                "dst": edge.dst,
+                "metrics": edge.metrics
+            }
+        })
+    
+    helpers.bulk(es, actions)
+    log("Call graph written to Elasticsearch")
