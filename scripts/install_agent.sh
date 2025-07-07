@@ -41,6 +41,6 @@ sudo docker pull 47.97.67.233:5000/deepshield/deeptrace:latest
 export RUSTUP_DIST_SERVER=https://mirrors.ustc.edu.cn/rust-static
 export RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup
 
-sudo docker run --privileged --rm -it -v $(pwd):/DeepTrace 47.97.67.233:5000/deepshield/deeptrace bash -c \
+sudo docker run --privileged --rm -i -v $(pwd):/DeepTrace 47.97.67.233:5000/deepshield/deeptrace bash -c \
 'cd /DeepTrace/agent &&
 cargo build --release'
