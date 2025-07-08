@@ -5,7 +5,7 @@ DOCKER_CONFIG="/etc/docker/daemon.json"
 TARGET_REGISTRY="47.97.67.233:5000"
 TEMP_FILE=$(mktemp)
 
-if ! command -v docker &> /dev/null || ! command -v docker-compose &> /dev/null; then
+if ! command -v docker &> /dev/null || ! command -v docker-compose &> /dev/null || ! command -v jq &> /dev/null; then
     sudo apt-get update
     sudo apt-get install -y jq docker.io docker-compose
 fi
@@ -41,7 +41,7 @@ fi
 # 读取 elastic 和 kibana 密码
 CONFIG_FILE="./server/config/config.toml"
 ELASTIC_PWD=$(grep 'elastic_password' $CONFIG_FILE | head -n 1 | sed 's/.*= *"\(.*\)".*/\1/')
-KIBANA_PWD=$(grep 'kibana_password' $CONFIG_FILE | head -n 1 | sed 's/.*= *"\(.*\)".*/\1/')
+KIBANA_PWD=$(grep 'elastic_password' $CONFIG_FILE | head -n 1 | sed 's/.*= *"\(.*\)".*/\1/')
 
 COMPOSE_FILE="./server/docker-compose.yaml"
 
