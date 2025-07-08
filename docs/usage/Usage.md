@@ -23,7 +23,7 @@
 | `agents.agent_info.ssh_port` | SSH port of the agent host (usually 22) |
 | `agents.agent_info.host_password` | The password for logging into the host where the agent is located via SSH |
 
-- **In addition to the required fields, there are also some optional fields that will use default settings if you do not set them manually. A configuration file template that includes all the fields can be viewed under `DeepTrace/server/config/full.toml`. These parameters and their default settings are as follows:**
+- **In addition to the required fields, there are also some optional fields that will use default settings if you do not set them manually. A configuration file template that includes all the fields can be viewed under [file](../../server/config/full.toml)（DeepTrace/server/config/full.toml）. These parameters and their default settings are as follows:**
 
 | Parameter | Description | Default Value |
 |-----------|-------------|---------------|
