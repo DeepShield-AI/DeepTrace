@@ -1,0 +1,42 @@
+[elastic]  # Elasticsearch related configuration
+elastic_password = "xxx"         # Elasticsearch user password
+port = 9200                      # Elasticsearch service port
+kibana_password = "xxx"          # Kibana user password
+bulk_size = 1024                 # Bulk write size
+request_timeout = 10             # Request timeout (seconds)
+agent_status_index = "agent_status"  # Agent status index name
+username = "elastic"             # Elasticsearch username
+
+[server]
+ip  = "xxx"                      # The external IP address of the host running the DeepTrace server
+port = 7901                      # DeepTrace server port
+path = "deeptrace/ws"            # DeepTrace websocket path
+
+# ========== agent1 configuration ==========
+[[agents]]
+  [agents.agent_info]  # Basic agent information
+  agent_name = "xxx"           # Agent name (unique identifier)
+  user_name = "xxx"            # Username for SSH login
+  host_ip = "xxx"              # Agent host IP address
+  ssh_port = "xxx"             # SSH port
+  host_password = "xxx"        # Host password
+  deeptrace_port = 52001       # DeepTrace service port
+  workers = 16                 # Number of worker threads
+
+  [agents.span]
+  batch_size = 1024            # Batch size for span data
+
+  [agents.sender]  # Data sending related configuration
+  mem_buffer_size = 16         # Memory buffer size
+  file_buffer_size = 32        # File buffer size
+  file_size_limit = 1024       # File size limit
+  batch_size = 1024            # Batch sending size
+
+  [agents.trace]  # eBPF configuration
+  pids = [3056354, 3056217, 3056210]  # List of process PIDs to be traced
+
+  [agents.api]  # Agent API service configuration
+  port = 7899                   # API service port
+  address = "0.0.0.0"           # API listening address
+  workers = 1                   # Number of API service threads
+  ident = "deeptrace"           # Service identifier

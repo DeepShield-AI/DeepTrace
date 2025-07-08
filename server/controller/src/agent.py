@@ -1,9 +1,9 @@
 import json
 import paramiko
-import os
-from elasticsearch import Elasticsearch
 import requests
 from database.src.utils import es_write_agent_config
+import time
+import threading
 
 
 # 管理agent状态：alive、处理延迟、条目、
@@ -31,7 +31,7 @@ class Agent:
         self.host_password = self.agent_info['host_password']
         self.user_name = self.agent_info['user_name']
         # self.code_path = self.expand_path(self.agent_info['code_path'])
-        self.code_path = self.agent_info['code_path']
+        self.code_path = '/etc'
         es_write_agent_config(self.agent_config, self.elastic_config, self.server_config)
         
 
@@ -131,7 +131,7 @@ pids = []
         
 
 
-    def clone_code(self):
+    def clone_code(self, progress_dict):
         try:
             # 清除老代码
             command = f"cd {self.code_path} ; ls"
@@ -142,7 +142,8 @@ pids = []
                 if error:
                     raise Exception(f"清除老代码失败: {error}")
                 else:
-                    print(f"{self.agent_name}: 清除老代码成功")
+                    progress_dict[self.agent_name] = "清除老代码成功"
+                   
 
             # 检查目标路径是否存在，不存在则创建
             repo_url = 'https://gitee.com/gytlll/DeepTrace.git'
@@ -156,20 +157,46 @@ pids = []
             if error and any(x in error.lower() for x in ["fatal", "error", "failed"]):
                 raise Exception(f"克隆代码失败: {error}")
 
-            print(f"代码仓库已克隆到 {self.agent_name} 的 {self.code_path}/DeepTrace")
+            progress_dict[self.agent_name] = f"代码已克隆到 {self.code_path}/DeepTrace"
 
         except Exception as e:
             print(f"克隆代码到 {self.agent_name} 失败: {str(e)}")
     
 
-    def install(self):
-        command = f"cd {self.code_path}/DeepTrace ; echo {self.host_password} | sudo -S bash scripts/install_agent.sh"
-        output, error = self.execute_command(command)
-        print(f"{self.agent_name}: 开始安装")
-        if error and 'profile [optimized] target(s)' not in error:
-            raise Exception(f"{self.agent_name}: 编译失败 {error}")
-        else:
-            print(f'{self.agent_name}: 编译成功')
+    def install(self, progress_dict):
+        t1 = time.time()
+        check_command = f"cd {self.code_path}/DeepTrace/agent && [ -d target ] && rm -rf target"
+        self.execute_command(check_command)
+        progress_dict[self.agent_name] = "开始安装..."
+
+        stop_event = threading.Event()
+
+        def run_install():
+            command = f"cd {self.code_path}/DeepTrace ; echo {self.host_password} | sudo -S bash scripts/install_agent.sh > agent.log 2>&1"
+            self.execute_command(command)
+            stop_event.set()  # 安装完成后通知日志线程退出
+
+        def tail_log():
+            last_line = ""
+            while not stop_event.is_set():
+                tail_cmd = f"cd {self.code_path}/DeepTrace && tail -n 1 agent.log"
+                output, error = self.execute_command(tail_cmd)
+                if output and output.strip() != last_line:
+                    last_line = output.strip()
+                    progress_dict[self.agent_name] = last_line
+                time.sleep(1)
+
+        t_install = threading.Thread(target=run_install)
+        t_log = threading.Thread(target=tail_log)
+        t_log.start()
+        t_install.start()
+        t_install.join()
+        stop_event.set()
+        t_log.join()
+
+        t2 = time.time()
+        progress_dict[self.agent_name] = f"耗时 {t2 - t1:.2f} 秒"
+        
 
     def get_pids(self):
         command = f"cd {self.code_path}/DeepTrace && echo {self.host_password} | sudo -S bash scripts/docker_pids.sh"
