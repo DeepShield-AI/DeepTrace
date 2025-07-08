@@ -56,7 +56,7 @@
   - Password: `elastic.elastic_password`
 
 
-## Step 3: Start Agents
+## Step 4: Start Agents
 - **After that, enter the DeepTrace server container and use the command-line tool of the server to install and start the agent.**
 
 ```bash
@@ -66,7 +66,7 @@ python3 -m cli.src.cmd agent run # Run the agent, by default it will automatical
 ```
 
 
-## Step 4: Build Traces
+## Step 5: Build Traces
 
 ### After entering the DeepTrace server container, run the following command to perform span correlation and trace assembly. DeepTrace has two modes: *manual* and *automatic*.
 
@@ -92,7 +92,7 @@ python -m cli.src.cmd assemble
 ```
 
 
-## Step 5: Clear Agents and Server
+## Step 6: Clear Agents and Server
 Stop all running agents:
 
 ```bash
