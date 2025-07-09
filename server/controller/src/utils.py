@@ -92,6 +92,7 @@ def all_services_ready(output):
 
 def install_workload(agents):
     
+    
     clone_command = "git clone https://gitee.com/gytlll/DeathStar.git"
 
     image_list = [
@@ -120,6 +121,8 @@ def install_workload(agents):
         else:
             print(f"{agent_name} 工作负载克隆成功")
 
+        switch_source_cmd = f'cd {agent.code_path}/DeepTrace; echo {agent.host_password} | sudo -S bash scripts/switch_source.sh'
+        agent.execute_command(switch_source_cmd)
         # 检查并拉取镜像
         for image in image_list:
             check_image_cmd = f"docker images -q 47.97.67.233:5000/workload/{image}"
