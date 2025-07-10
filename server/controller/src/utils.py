@@ -9,7 +9,7 @@ import sys
 def install_agents(agents):
     progress_dict = {}
     def install_agent(agent_name, agent):
-        # agent.clone_code(progress_dict)
+        agent.clone_code(progress_dict)
         agent.install(progress_dict)
 
     threads = []
