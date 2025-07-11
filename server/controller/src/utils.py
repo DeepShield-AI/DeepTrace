@@ -121,7 +121,7 @@ def install_workload(agents):
         else:
             print(f"{agent_name} 工作负载克隆成功")
 
-        switch_source_cmd = f'cd {agent.code_path}/DeepTrace; echo {agent.host_password} | sudo -S bash scripts/switch_source.sh'
+        switch_source_cmd = f'cd {agent.code_path}/DeathStar; echo {agent.host_password} | sudo -S bash switch_source.sh'
         agent.execute_command(switch_source_cmd)
         # 检查并拉取镜像
         for image in image_list:
