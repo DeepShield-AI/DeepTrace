@@ -65,8 +65,7 @@
 sudo docker exec -it deeptrace_server python -m cli.src.cmd agent install_app
 ```
 
-- Send requests to the application.
-  - Traffic must be generated on the host where the agent is located to produce spans. You can look up the container id of the wrk2 container via `docker ps | grep wrk2`, then enter the container via `docker exec -it container_id /bin/bash` and run the command `cd root; ./wrk -D exp -t 6 -c 6 -d 3 -L -s ./wrk2/scripts/social-network/compose-post.lua http://nginx-web-server:8080/wrk2-api/post/compose -R 100` to send the package afterward.  
+
 
 ## Step 4: Start Agents
 - After that, use the command-line tool of the server to install and start the agent.**
@@ -75,6 +74,9 @@ sudo docker exec -it deeptrace_server python -m cli.src.cmd agent install_app
 sudo docker exec -it deeptrace_server python -m cli.src.cmd agent install # This command will automatically connect to the remote host, clone the code, and compile. 
 sudo docker exec -it deeptrace_server python -m cli.src.cmd agent run # Run the agent, by default it will automatically collect spans from all Docker containers and store them in the server's Elastic database. 
 ```
+
+#### Note: You need to deploy the microservices application and send customer requests for DeepTrace to collect traces.
+- Send requests to the application. You can look up the container id of the wrk2 container via `docker ps | grep wrk2`, then enter the container via `docker exec -it container_id /bin/bash` and run the command `cd root; ./wrk -D exp -t 6 -c 6 -d 3 -L -s ./wrk2/scripts/social-network/compose-post.lua http://nginx-web-server:8080/wrk2-api/post/compose -R 50` to send the package afterward.  
 
 
 ## Step 5: Build Traces
