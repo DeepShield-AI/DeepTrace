@@ -60,9 +60,8 @@
 - **After that, enter the DeepTrace server container and use the command-line tool of the server to install and start the agent.**
 
 ```bash
-sudo docker exec -it deeptrace_server /bin/bash # Enter the server container, the following commands are run within the deeptrace_server container
-python3 -m cli.src.cmd agent install # This command will automatically connect to the remote host, clone the code, and compile. 
-python3 -m cli.src.cmd agent run # Run the agent, by default it will automatically collect spans from all Docker containers and store them in the server's Elastic database. 
+sudo docker exec -it deeptrace_server python -m cli.src.cmd agent install # This command will automatically connect to the remote host, clone the code, and compile. 
+sudo docker exec -it deeptrace_server python -m cli.src.cmd agent run # Run the agent, by default it will automatically collect spans from all Docker containers and store them in the server's Elastic database. 
 ```
 
 
