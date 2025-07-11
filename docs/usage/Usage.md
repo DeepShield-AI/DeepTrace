@@ -81,32 +81,23 @@ sudo docker exec -it deeptrace_server python -m trace.main
 `<algorithm>`: Choose from `fifo`, `deeptrace`, `vpath`, `wap5`, `traceweaver_v1`, `deepflow` to infer parent-child relationships between spans.
 
 ```bash
-sudo docker exec -it deeptrace_server /bin/bash 
-python -m cli.src.cmd asso algo <algorithm>
+sudo docker exec -it deeptrace_server python -m cli.src.cmd asso algo <algorithm>
 ```
 
 - Assemble spans from the database into traces.
 
 ```bash
-python -m cli.src.cmd assemble
+sudo docker exec -it deeptrace_server python -m cli.src.cmd assemble
 ```
 
 
-## Step 6: Clear Agents and Server
-Stop all running agents:
+## Step 6: Clear 
+The following command will delete the installed microservices applications, Docker Swarm cluster, DeepTrace agents, and server:
 
 ```bash
-sudo docker exec -it deeptrace_server python -m cli.src.cmd agent stop
+sudo bash scripts/clear.sh
 ```
 
-
-Exit the container and then execute:
-
-```bash
-bash scripts/clear_server.sh
-```
-
-- This will remove all containers on the server.
 
 
 ## Optional: Deploy docker swarm clusters and microservices applications on hosts
@@ -122,8 +113,4 @@ sudo docker exec -it deeptrace_server python -m cli.src.cmd agent install_app
 - Send requests to the application.
   - Traffic must be generated on the host where the agent is located to produce spans. You can look up the container id of the wrk2 container via `docker ps | grep wrk2`, then enter the container via `docker exec -it container_id /bin/bash` and run the command `cd root; ./wrk -D exp -t 6 -c 6 -d 3 -L -s ./wrk2/scripts/social-network/compose-post.lua http://nginx-web-server:8080/wrk2-api/post/compose -R 100` to send the package afterward.  
 
-- Clean up the microservices application and container swarm clusters.
 
-```bash
-sudo docker exec -it deeptrace_server python -m cli.src.cmd agent uninstall_app
-```
