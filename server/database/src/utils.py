@@ -6,9 +6,9 @@ from trace.model.span import Span
 
 
 ES_USERNAME = "elastic"
-ES_PASSWORD, _ = read_db_config()
-SERVER_IP = "es"
-# SERVER_IP = "0.0.0.0"
+ES_PASSWORD, SERVER_IP = read_db_config()
+# SERVER_IP = "es"
+
 
 
 def es_write_agent_config(agent_config, elastic_config, server_config):

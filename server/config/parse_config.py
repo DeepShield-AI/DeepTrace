@@ -8,10 +8,11 @@ def read_db_config():
     try:
         elastic_pwd = config.get("elastic", {}).get("elastic_password")
         kibana_pwd = config.get("elastic", {}).get("elastic_password")
+        server_ip = config.get("server", {}).get("ip")
     except KeyError as e:
         raise KeyError(f"请设置elastic_password和kibana_password: {e}")
     
-    return elastic_pwd, kibana_pwd
+    return elastic_pwd, server_ip
 
 def load_agents():
     from controller.src.agent import Agent
