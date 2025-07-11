@@ -55,6 +55,18 @@
   - Username: `elastic`  
   - Password: `elastic.elastic_password`
 
+## Optional: Deploy docker swarm clusters and microservices applications on hosts
+
+- You must have a microservice application to observe the Trace built by DeepTrace. For the convenience of testing, we have provided a script that automates the deployment of a Docker Swarm distributed cluster and installs the SocialNetwork microservice application from Deathstarbench. If you do not have a microservice application in your cluster, you can follow the steps below to install it.
+
+- After filling out the configuration file (**Step1**) and starting the DeepTrace server (**Step2**), you can run the following command to install the Swarm cluster and the SocialNetwork microservice.
+
+```bash
+sudo docker exec -it deeptrace_server python -m cli.src.cmd agent install_app
+```
+
+- Send requests to the application.
+  - Traffic must be generated on the host where the agent is located to produce spans. You can look up the container id of the wrk2 container via `docker ps | grep wrk2`, then enter the container via `docker exec -it container_id /bin/bash` and run the command `cd root; ./wrk -D exp -t 6 -c 6 -d 3 -L -s ./wrk2/scripts/social-network/compose-post.lua http://nginx-web-server:8080/wrk2-api/post/compose -R 100` to send the package afterward.  
 
 ## Step 4: Start Agents
 - After that, use the command-line tool of the server to install and start the agent.**
@@ -99,17 +111,6 @@ sudo bash scripts/clear.sh
 
 
 
-## Optional: Deploy docker swarm clusters and microservices applications on hosts
 
-- You must have a microservice application to observe the Trace built by DeepTrace. For the convenience of testing, we have provided a script that automates the deployment of a Docker Swarm distributed cluster and installs the SocialNetwork microservice application from Deathstarbench. If you do not have a microservice application in your cluster, you can follow the steps below to install it.
-
-- After filling out the configuration file (**Step1**) and starting the DeepTrace server (**Step2**), you can run the following command to install the Swarm cluster and the SocialNetwork microservice.
-
-```bash
-sudo docker exec -it deeptrace_server python -m cli.src.cmd agent install_app
-```
-
-- Send requests to the application.
-  - Traffic must be generated on the host where the agent is located to produce spans. You can look up the container id of the wrk2 container via `docker ps | grep wrk2`, then enter the container via `docker exec -it container_id /bin/bash` and run the command `cd root; ./wrk -D exp -t 6 -c 6 -d 3 -L -s ./wrk2/scripts/social-network/compose-post.lua http://nginx-web-server:8080/wrk2-api/post/compose -R 100` to send the package afterward.  
 
 
