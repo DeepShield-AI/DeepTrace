@@ -11,7 +11,7 @@
 
 ## Step 2: Fill in the Configuration File
 
-- **To deploy DeepTrace, you must fill in the following fields in the [configuration file](../../server/config/config.toml)(DeepTrace/server/config/config.toml) in order to run it.** These required fields are presented in the configuration file in the format of **xxx**.
+- To deploy DeepTrace, you must fill in the following fields in the [configuration file](../../server/config/config.toml)(DeepTrace/server/config/config.toml) in order to run it.** These required fields are presented in the configuration file in the format of **xxx**.
 
 | Configuration Item | Description |
 | --- | --- |
@@ -23,7 +23,7 @@
 | `agents.agent_info.ssh_port` | SSH port of the agent host (usually 22) |
 | `agents.agent_info.host_password` | The password for logging into the host where the agent is located via SSH |
 
-- **In addition to the required fields, there are also some optional fields that will use default settings if you do not set them manually. A configuration file template that includes all the fields can be viewed under [file](../../server/config/full.toml)（DeepTrace/server/config/full.toml）. These parameters and their default settings are as follows:**
+- In addition to the required fields, there are also some optional fields that will use default settings if you do not set them manually. A configuration file template that includes all the fields can be viewed under [file](../../server/config/full.toml)（DeepTrace/server/config/full.toml）. These parameters and their default settings are as follows:
 
 | Parameter | Description | Default Value |
 |-----------|-------------|---------------|
@@ -49,7 +49,7 @@
 
 ## Step 3: Deploy Server and Database Containers
 
-- **Then, switch to the main directory of DeepTrace and run the following code on the server to deploy the DeepTrace server and the containers related to the database.**
+- Then, switch to the main directory of DeepTrace and run the following code on the server to deploy the DeepTrace server and the containers related to the database.
 - `bash scripts/deploy_server.sh`
 - You can access the database frontend via the web at `http://server.ip:5601`
   - Username: `elastic`  
@@ -57,7 +57,7 @@
 
 
 ## Step 4: Start Agents
-- **After that, enter the DeepTrace server container and use the command-line tool of the server to install and start the agent.**
+- After that, use the command-line tool of the server to install and start the agent.**
 
 ```bash
 sudo docker exec -it deeptrace_server python -m cli.src.cmd agent install # This command will automatically connect to the remote host, clone the code, and compile. 
@@ -67,7 +67,7 @@ sudo docker exec -it deeptrace_server python -m cli.src.cmd agent run # Run the 
 
 ## Step 5: Build Traces
 
-### After entering the DeepTrace server container, run the following command to perform span correlation and trace assembly. DeepTrace has two modes: *manual* and *automatic*.
+- run the following command to perform span correlation and trace assembly. DeepTrace has two modes: *manual* and *automatic*.
 
 - `automatic` mode. 
 
