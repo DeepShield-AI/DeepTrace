@@ -83,25 +83,22 @@ sudo docker exec -it deeptrace_server python -m cli.src.cmd agent run # Run the 
 
 - run the following command to perform span correlation and trace assembly. DeepTrace has two modes: *manual* and *automatic*.
 
-- `automatic` mode. 
+ #### `automatic` mode. 
 
 ```bash
 sudo docker exec -it deeptrace_server python -m trace.main
 ```
 
-- `manual` mode.
+ #### `manual` mode.
+   - Perform span correlation. `<algorithm>`: Choose from `fifo`, `deeptrace`, `vpath`, `wap5`, `traceweaver_v1`, `deepflow` to infer parent-child relationships between spans.
+  ```
+  sudo docker exec -it deeptrace_server python -m cli.src.cmd asso algo <algorithm>
+  ```
+   - Assemble spans from the database into traces.
 
-`<algorithm>`: Choose from `fifo`, `deeptrace`, `vpath`, `wap5`, `traceweaver_v1`, `deepflow` to infer parent-child relationships between spans.
-
-```bash
-sudo docker exec -it deeptrace_server python -m cli.src.cmd asso algo <algorithm>
-```
-
-- Assemble spans from the database into traces.
-
-```bash
-sudo docker exec -it deeptrace_server python -m cli.src.cmd assemble
-```
+  ```
+  sudo docker exec -it deeptrace_server python -m cli.src.cmd assemble
+  ```
 
 
 ## Step 6: Clear 
