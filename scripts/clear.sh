@@ -4,7 +4,7 @@
 
 docker exec -it deeptrace_server python -m cli.src.cmd agent stop
 
-docker exec -it deeptrace_server python -m cli.src.cmd agent uninstall_app
+# docker exec -it deeptrace_server python -m cli.src.cmd agent uninstall_app
 
 
 cd ./server
