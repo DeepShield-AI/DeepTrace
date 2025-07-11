@@ -6,12 +6,13 @@ from trace.model.span import Span
 
 
 ES_USERNAME = "elastic"
-ES_PASSWORD, SERVER_IP = read_db_config()
+# ES_PASSWORD, SERVER_IP = read_db_config()
 # SERVER_IP = "es"
 
 
 
 def es_write_agent_config(agent_config, elastic_config, server_config):
+    ES_PASSWORD, SERVER_IP = read_db_config()
     try:
         # 准备要写入的数据
         # print(f"{agent_name}: 准备写入 Elasticsearch 配置")
@@ -65,6 +66,7 @@ def es_write_span_list(index_name, span_list):
     """
     批量写入 span_list 到 Elasticsearch
     """
+    ES_PASSWORD, SERVER_IP = read_db_config()
     es = Elasticsearch(
         hosts=[f"http://{SERVER_IP}:9200"],
         basic_auth=(ES_USERNAME, ES_PASSWORD)
@@ -79,6 +81,7 @@ def es_write_span_list(index_name, span_list):
     helpers.bulk(es, actions)
 
 def es_clear_index(index_name):
+    ES_PASSWORD, SERVER_IP = read_db_config()
     t1 = time.time()
     es = Elasticsearch(
         hosts=[f"http://{SERVER_IP}:9200"],
@@ -93,6 +96,7 @@ def es_read_span_list(index_name):
     """
     从 Elasticsearch 中读取指定索引的所有 span 数据
     """
+    ES_PASSWORD, SERVER_IP = read_db_config()
     t1 = time.time()
     # 连接到 Elasticsearch
     es = Elasticsearch(hosts=[f"http://{SERVER_IP}:9200"], basic_auth=(ES_USERNAME, ES_PASSWORD))
@@ -129,6 +133,7 @@ def es_read_agent_span_list(agents):
     """
     从 Elasticsearch 中读取指定索引的所有 span 数据
     """
+    
     t1 = time.time()
     all_spans = []
     # 连接到 Elasticsearch
@@ -142,6 +147,7 @@ def es_read_agent_span_list(agents):
 
 
 def es_write_traces(index_name, traces):
+    ES_PASSWORD, SERVER_IP = read_db_config()
     es = Elasticsearch(
         hosts=[f"http://{SERVER_IP}:9200"],
         basic_auth=(ES_USERNAME, ES_PASSWORD)  # 添加用户名和密码
@@ -165,6 +171,7 @@ def es_clear_all():
     """
     清除所有 Elasticsearch 索引
     """
+    ES_PASSWORD, SERVER_IP = read_db_config()
     es = Elasticsearch(
         hosts=[f"http://{SERVER_IP}:9200"],
         basic_auth=(ES_USERNAME, ES_PASSWORD)  # 添加用户名和密码
@@ -180,6 +187,7 @@ def es_read_new_spans(index_name, last_timestamp=None):
     """
     每次只读取比 last_timestamp 更新的 span 数据
     """
+    ES_PASSWORD, SERVER_IP = read_db_config()
     es = Elasticsearch(hosts=[f"http://{SERVER_IP}:9200"], basic_auth=(ES_USERNAME, ES_PASSWORD))
     # 先判断索引是否存在
     if not es.indices.exists(index=index_name):
@@ -235,7 +243,7 @@ def poll_agents_new_spans(agents, queue, poll_interval=5):
 
 
 def check_db():
-
+    ES_PASSWORD, SERVER_IP = read_db_config()
 
     while True:
         try:
@@ -255,9 +263,9 @@ def write_service_metrics(metrics):
     """
     将服务指标写入 Elasticsearch
     """
+    ES_PASSWORD, SERVER_IP = read_db_config()
     es = Elasticsearch(
-        # hosts=[f"http://{SERVER_IP}:9200"],
-        hosts=[f"http://114.215.254.187:9200"],
+        hosts=[f"http://{SERVER_IP}:9200"],
         basic_auth=(ES_USERNAME, ES_PASSWORD)  # 添加用户名和密码
     )
     
@@ -285,6 +293,7 @@ def write_callgraph(graph):
     """
     将调用图写入 Elasticsearch
     """
+    ES_PASSWORD, SERVER_IP = read_db_config()
     es = Elasticsearch(
         hosts=[f"http://{SERVER_IP}:9200"],
         basic_auth=(ES_USERNAME, ES_PASSWORD)  # 添加用户名和密码
