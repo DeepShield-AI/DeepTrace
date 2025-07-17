@@ -17,11 +17,10 @@ pub struct SessionKey {
 	quintuple: Quintuple,
 	protocol: L7Protocol,
 	uuid: u32,
-	pid: u32,
 }
 impl SessionKey {
-	pub fn new(pid: u32, quintuple: Quintuple, protocol: L7Protocol, uuid: u32) -> Self {
-		Self { pid, quintuple, protocol, uuid }
+	pub fn new(quintuple: Quintuple, protocol: L7Protocol, uuid: u32) -> Self {
+		Self { quintuple, protocol, uuid }
 	}
 }
 #[derive(Debug)]
@@ -50,7 +49,7 @@ impl Cache {
 	}
 
 	pub async fn process(&self, data: Data, sender: Sender<Span>) {
-		let key = SessionKey::new(data.pid, data.quintuple, data.protocol, data.uuid);
+		let key = SessionKey::new(data.quintuple, data.protocol, data.uuid);
 		let mut entry = self.inner.entry(key).or_insert(CacheEntry::new());
 		entry.last_accessed = SystemTime::now();
 

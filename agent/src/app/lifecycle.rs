@@ -7,8 +7,8 @@ use crate::{
 	trace::{SpanConstructor, TraceModule},
 };
 use log::info;
-use rocket::yansi::Paint;
 use std::{sync::atomic::Ordering, time::Duration};
+use tokio::time::sleep;
 
 impl App {
 	pub fn new(config: impl AsRef<str>) -> Result<Self, AgentError> {
@@ -70,5 +70,6 @@ async fn run() -> Result<(), AgentError> {
 			// ebpf_log.stop().await?;
 			return Ok(());
 		}
+		sleep(Duration::from_micros(100)).await;
 	}
 }
