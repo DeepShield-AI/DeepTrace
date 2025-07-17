@@ -8,7 +8,7 @@ from numpy.linalg import norm
 import numpy as np
 from trace.association.src.utils import span_grouping
 
-PRINT_TIME = False
+PRINT_TIME = True
 
 # debug = open('deeptrace.txt', 'w')
 
@@ -164,12 +164,14 @@ def build_pdf(samples, weights, sample_type="1d"):
     :param sample_type: 样本类型，"1d" 表示一元，"2d" 表示二元。
     :return: PDF 函数，可用于计算任意点的密度。
     """
+    samples = np.array(samples)
     if sample_type == "1d":
         if len(set(samples)) == 1:
             # 如果所有样本点相同，返回一个常数函数
             return lambda x: np.ones_like(x) * weights[0], 'error'
     if sample_type == "2d":
-        samples = np.array(samples)
+        if len(set(samples[:, 0])) <= 5 or len(set(samples[:, 1])) <= 5:
+            return lambda x: np.ones_like(x) * weights[0], 'error'
         # 检查是否所有样本点都相同，或所有点在某一维上相同
         if samples.shape[0] == 0:
             return lambda x: np.zeros_like(x), 'error'
