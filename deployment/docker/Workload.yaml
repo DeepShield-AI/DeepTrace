@@ -3,19 +3,19 @@ version: '3.8'
 
 services:
   redis:
-    image: redis:6.2.4
+    image: 47.97.67.233:5000/workload/redis
     container_name: redis-workload
     ports:
       - "6379:6379"
 
   memcached:
-    image: memcached:1.6.7
+    image: 47.97.67.233:5000/workload/memcached
     container_name: memcached-workload
     ports:
       - "11211:11211"
 
   mongodb:
-    image: mongo:5.0.15
+    image: 47.97.67.233:5000/workload/mongo:4.4.6
     container_name: mongo-workload
     environment:
       MONGO_INITDB_ROOT_USERNAME: test
@@ -23,11 +23,3 @@ services:
       MONGO_INITDB_DATABASE: admin
     ports:
       - "27017:27017"
-  mysql:
-    image: mysql:9.3.0
-    container_name: mysql-workload
-    environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: test
-    ports:
-      - "3306:3306"
