@@ -50,7 +50,7 @@
 ## Step 3: Deploy Server and Database Containers
 
 - Then, switch to the main directory of DeepTrace and run the following code on the server to deploy the DeepTrace server and the containers related to the database.
-- `bash scripts/deploy_server.sh`
+- `sudo bash scripts/deploy_server.sh`
 - You can access the database frontend via the web at `http://server.ip:5601`
   - Username: `elastic`  
   - Password: `elastic.elastic_password`
@@ -76,7 +76,7 @@ sudo docker exec -it deeptrace_server python -m cli.src.cmd agent run # Run the 
 ```
 
 #### Note: You need to deploy the microservices application and send customer requests for DeepTrace to collect traces.
-- Send requests to the application. You can look up the container id of the wrk2 container via `docker ps | grep wrk2`, then enter the container via `docker exec -it container_id /bin/bash` and run the command `cd root; ./wrk -D exp -t 6 -c 6 -d 3 -L -s ./wrk2/scripts/social-network/compose-post.lua http://nginx-web-server:8080/wrk2-api/post/compose -R 50` to send the package afterward.  
+- Send requests to the application. You can look up the container id of the wrk2 container via `sudo docker ps | grep wrk2`, then enter the container via `sudo docker exec -it container_id /bin/bash` and run the command `cd root; ./wrk -D exp -t 6 -c 6 -d 3 -L -s ./wrk2/scripts/social-network/compose-post.lua http://nginx-web-server:8080/wrk2-api/post/compose -R 50` to send the package afterward.  
 
 
 ## Step 5: Build Traces
