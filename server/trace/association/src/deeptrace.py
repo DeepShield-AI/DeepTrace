@@ -8,7 +8,7 @@ from numpy.linalg import norm
 import numpy as np
 from trace.association.src.utils import span_grouping
 
-PRINT_TIME = False
+PRINT_TIME = True
 
 # debug = open('deeptrace.txt', 'w')
 
@@ -169,6 +169,8 @@ def build_pdf(samples, weights, sample_type="1d"):
             # 如果所有样本点相同，返回一个常数函数
             return lambda x: np.ones_like(x) * weights[0], 'error'
     if sample_type == "2d":
+        if len(set(samples[:, 0])) <= 5 or len(set(samples[:, 1])) <= 5:
+            return lambda x: np.ones_like(x) * weights[0], 'error'
         samples = np.array(samples)
         # 检查是否所有样本点都相同，或所有点在某一维上相同
         if samples.shape[0] == 0:
