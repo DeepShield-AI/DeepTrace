@@ -57,7 +57,8 @@ impl Module for Synchronizer {
 			for handle in handles {
 				if !handle.is_finished() {
 					info!("Waiting for {} module to stop...", self.name());
-					handle.await.unwrap();
+					handle.abort();
+					// handle.await.unwrap();
 				}
 			}
 		}

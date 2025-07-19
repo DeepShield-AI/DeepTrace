@@ -99,7 +99,8 @@ impl Module for TraceModule {
 			for handle in handles {
 				if !handle.is_finished() {
 					info!("Waiting for {} module to stop...", self.name());
-					handle.await.expect("Failed to stop trace module");
+					handle.abort();
+					// handle.await.expect("Failed to stop trace module");
 				}
 			}
 		}

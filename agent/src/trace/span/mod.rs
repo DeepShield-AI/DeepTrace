@@ -2,6 +2,7 @@ use cache::Cache;
 pub use error::Error as SpanError;
 pub use module::SpanConstructor;
 use serde::Serialize;
+pub use spantag::SpanTag;
 use std::ffi::CStr;
 use trace_common::{
 	protocols::L7Protocol,
@@ -12,8 +13,6 @@ mod cache;
 mod error;
 mod module;
 mod spantag;
-
-pub use spantag::SpanTag;
 
 #[derive(Serialize)]
 pub struct Span {

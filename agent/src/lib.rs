@@ -7,6 +7,7 @@ mod app;
 mod config;
 mod constants;
 mod error;
+mod metric;
 mod provenance;
 mod sender;
 mod synchronizer;

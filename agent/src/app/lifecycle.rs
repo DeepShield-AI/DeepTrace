@@ -1,6 +1,7 @@
 use super::{App, Module, context::init, runtime::spawn, state, terminate};
 use crate::{
 	AgentError,
+	metric::MetricCollector,
 	// provenance::Provenance,
 	sender::{Elastic, FlatFile, SenderProcess},
 	synchronizer::Synchronizer,
@@ -25,9 +26,20 @@ impl App {
 		info!("Starting agent");
 	}
 
-	pub fn stop(&mut self) {
+	pub async fn stop(&mut self) {
 		terminate();
-		self.handle.take().expect("Failed to stop app").abort();
+
+		if let Some(handle) = self.handle.take() {
+			if !handle.is_finished() {
+				info!("Waiting for task to finish...");
+				if let Err(e) = handle.await {
+					info!("Task failed or was aborted: {:?}", e);
+				}
+			}
+		} else {
+			info!("No handle found, task may have already been stopped");
+		}
+
 		info!("App stopped");
 	}
 }
@@ -41,6 +53,8 @@ async fn run() -> Result<(), AgentError> {
 
 	// let mut ebpf_log = SenderProcess::new("ebpf", message_receiver.clone());
 	// ebpf_log.start(FlatFile::new("message.txt").await.expect("Flat file error"))?;
+	let mut metric = MetricCollector::new().expect("Failed to create metric module");
+	metric.start()?;
 	let mut span_log = SenderProcess::new("span", span_receiver);
 	// span_log.start(FlatFile::new("spans.txt").await.expect("Flat file error"))?;
 	span_log.start(Elastic::new().await.expect("Elastic error"))?;
@@ -67,9 +81,9 @@ async fn run() -> Result<(), AgentError> {
 			trace.stop().await?;
 			span_constructor.stop().await?;
 			span_log.stop().await?;
+			metric.stop().await?;
 			// ebpf_log.stop().await?;
 			return Ok(());
 		}
-		sleep(Duration::from_micros(100)).await;
 	}
 }
