@@ -52,6 +52,7 @@ impl CpuCollector {
 	// TODO: can this be async?
 	/// Collect CPU usage
 	pub fn collect(&self) -> Vec<CpuMetric> {
+		println!("Collecting CPU usage...");
 		let file = match File::open("/proc/stat") {
 			Ok(f) => f,
 			Err(e) => {

@@ -12,3 +12,4 @@ mod sender;
 mod synchronizer;
 mod trace;
 pub mod utils;
+mod metric;

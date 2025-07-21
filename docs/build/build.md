@@ -93,7 +93,10 @@ git clone --recurse-submodules https://github.com/libbpf/bpftool.git
 cd bpftool/src
 make -j$(nproc) && sudo make install  # Build with parallelism 
 cd ../../ && rm -rf bpftool  # Cleanup
-
+# Alternatively, you can use the package manager
+sudo apt-get install bpftool
+#  choose 6.5.0-45.45.1~22.04.1 linux-hwe-6.5-tools-common
+sudo apt-get install linux-hwe-6.5-tools-common
 # Verify installation
 bpftool version  # Should display version info 
 
@@ -129,43 +132,30 @@ cargo install --git https://github.com/aya-rs/aya -- aya-tool
 git clone https://github.com/DeepShield-AI/DeepTrace.git
 cd DeepTrace
 ```
-
+#
 ---
 
 ### Step 5: Generate Kernel Bindings
 ```bash
-mkdir -p agent/src/ebpf/trace/src
-aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > agent/src/ebpf/trace/src/vmlinux.rs
+mkdir -p agent/src/trace/ebpf/src
+aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > agent/src/trace/ebpf/src/vmlinux.rs
 
 # Allow non-standard naming in generated code
-sed -i '2i\#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code, unnecessary_transmutes)]' agent/src/ebpf/trace/src/vmlinux.rs
+sed -i '2i\#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code, unnecessary_transmutes)]' agent/src/trace/ebpf/src/vmlinux.rs
 
 # Build the project
 cargo build --release  # Compile with optimizations 
 ```
 
-### Step 6: Load the Workload Images
-Import our pre-built Docker image (memcached, redis, and mongo):
-```bash
-cd DeepTrace/
-chmod +x ./scripts/load_docker_images.sh
-./scripts/load_docker_images.sh
-```
----
-
-### Step 7: Output
-
-The compiled agent will be located at `target/release/deeptrace`. You can run it with:
-```bash
-RUST_LOG=info cargo run --release \
-  --config 'target."cfg(all())".runner="sudo -E"' \
-  -- --pids <pid>
-```
-
-For more testing, check the [Testing Guide](../tests/README.md) for more details.
+#
 
 ### References
 - [Ubuntu 24.04 Installation Guide](https://ubuntu.com/download/desktop)   
 - [bpftool Installation from Source](https://99rdp.com/mastering-ebpf-how-to-install-bpftool-in-linux)   
 - [Aya eBPF Framework Documentation](https://github.com/aya-rs/aya)   
 - [Rust BPF Toolchain Setup](https://github.com/aya-rs/bpf-linker)   
+Protocol: Redis, Count: 4032
+Protocol: Memcached, Count: 3990
+Syscall: Read, Count: 4012
+Syscall: Write, Count: 2016
+Syscall: SendMsg, Count: 1994

@@ -65,8 +65,7 @@ def assemble_trace(spans):
         ingress_component_name = span_dict[root_span_id].component_name
         protocol = span_dict[root_span_id].protocol
         status_code = get_status_code(span_dict[root_span_id])
-        if len(span_list) < 5:
-            continue
+        
         traces.append({ 'trace_id': span.trace_id,
                         'span_num': len(span_list),
                         'e2e_duration': e2e_dutaion,

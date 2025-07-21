@@ -39,6 +39,7 @@ impl CpuLogger {
 	}
 
 	pub fn write(&self, detail: &CpuMetric) {
+		println!("CPU  write");
 		let mut writer = self.detail_writer.lock().unwrap();
 		let _ = writeln!(
 			writer,

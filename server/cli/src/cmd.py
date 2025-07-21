@@ -7,13 +7,10 @@ from trace.association.src import fifo, deeptrace, traceweaver_v1, traceweaver_v
 from trace.association.src.utils import span_merge, print_acc
 from database.src.utils import es_write_span_list
 from trace.assemble.src.utils import assemble_trace_from_db
-from service.src.metric import service_metrics
-from callgraph.src.graph import construct_graph
 
 from database.test.database import es_init_test_data
 from trace.association.test.mix_test import perform_association
 from trace.assemble.test.test import perform_assemble
-
 
 
 def parse_args():
@@ -50,17 +47,6 @@ def parse_args():
 
     # assemble 子命令
     subparsers.add_parser('assemble', help='assemble操作')
-    
-    # service 子命令
-    service_parser = subparsers.add_parser('service', help='service相关操作')
-    service_subparsers = service_parser.add_subparsers(dest='service_action', help='service操作', required=True)
-    service_subparsers.add_parser('metrics', help='获取服务指标')
-    
-    # 添加构建图的命令
-    graph_parser = subparsers.add_parser('graph', help='构建调用图')
-    graph_subparsers = graph_parser.add_subparsers(dest='graph_action', help='图操作', required=True)
-    graph_subparsers.add_parser('construct', help='构建调用图')
-    
 
     return parser.parse_args()
 
@@ -110,12 +96,6 @@ def main():
                 raise ValueError(f"Unknown algorithm: {args.algorithm}")
             print_acc(span_dict)
         span_list = span_merge(span_dict)
-        # fp = open('span-mappings.txt', 'w')
-        # for span in span_list:
-        #     if span.direction == 'Ingress':
-        #         continue
-        #     fp.write(f"{span.direction} {span.endpoint} {span.span_id} {span.trace_id} {span.parent_id} {span.parent_traceid}\n")
-        # fp.close()
         es_write_span_list(f'span-mappings', span_list)
     elif args.command == 'assemble':
         print("执行assemble操作")
@@ -130,19 +110,10 @@ def main():
             es_init_test_data()
             perform_association(args.algorithm)
             perform_assemble()
-    
-    elif args.command == 'service':
-        if args.service_action == 'metrics':
-            print("获取服务指标")
-            service_metrics()
-            
-    elif args.command == 'graph':
-        if args.graph_action == 'construct':
-            print("构建调用图")
-            construct_graph()
 
 
             
+
 
 if __name__ == '__main__':
     main()

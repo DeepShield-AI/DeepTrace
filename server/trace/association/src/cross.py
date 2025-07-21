@@ -1,9 +1,6 @@
 # 跨组件的span关联
 import math
 from collections import Counter
-import sys
-
-# debug = open('cross.txt', 'w')
 
 def jaccard_similarity(str1, str2):
     str1 = str1.encode('utf-8')
@@ -72,15 +69,8 @@ def inter_association(spans, client_ingress = None, tuple_used=False, tuple_dire
     tuple_used: 是否使用四元组进行关联
     tuple_direction: 是否需要调换四元组的方向
     """
-    host_delta = 100e7 # ns = 10ms 不同主机之间的时钟偏差
-    host_delta = sys.maxsize
+    host_delta = 20e7 # ns = 10ms 不同主机之间的时钟偏差
     sorted_spans = sorted(spans, key=lambda x: x.start_time)
-    # traceid_count = Counter([span.trace_id for span in sorted_spans])
-    # for trace_id, count in traceid_count.items():
-    #     debug.write(f'Trace ID: {trace_id}, Count: {count}\n')
-    # for span in sorted_spans:
-    #     five_tuple = f"{span.src_ip}:{span.src_port} -> {span.dst_ip}:{span.dst_port}"
-    #     debug.write(f'{span.direction} {span.endpoint} {span.span_id} {span.trace_id} {five_tuple}\n')
     used_set = set()
     error_count = 0
     mapping_score = {}
@@ -106,8 +96,7 @@ def inter_association(spans, client_ingress = None, tuple_used=False, tuple_dire
                         if (sorted_spans[j].src_ip, sorted_spans[j].src_port, sorted_spans[j].dst_ip, sorted_spans[j].dst_port) != \
                                 (span.src_ip, span.src_port, span.dst_ip, span.dst_port):
                             continue
-                if span.endpoint == sorted_spans[j].endpoint and span.src_port == sorted_spans[j].src_port \
-                        and span.dst_port == sorted_spans[j].dst_port:
+                if span.endpoint == sorted_spans[j].endpoint:
                     mapping_score[(i, j)] = cosine_similarity(span.req_content, sorted_spans[j].req_content)
 
 
@@ -125,27 +114,23 @@ def inter_association(spans, client_ingress = None, tuple_used=False, tuple_dire
                         if (sorted_spans[j].src_ip, sorted_spans[j].src_port, sorted_spans[j].dst_ip, sorted_spans[j].dst_port) != \
                                 (span.src_ip, span.src_port, span.dst_ip, span.dst_port):
                             continue
-                # if span.endpoint == "ComposeCreatorWithUserId":
-                #     print(sorted_spans[j].endpoint)
-                if span.endpoint == sorted_spans[j].endpoint and span.src_port == sorted_spans[j].src_port \
-                        and span.dst_port == sorted_spans[j].dst_port:
+                if span.endpoint == sorted_spans[j].endpoint:
                     mapping_score[(i, j)] = cosine_similarity(span.req_content, sorted_spans[j].req_content)
 
     mapping_score = sorted(mapping_score.items(), key=lambda x: x[1], reverse=True)
     # fp = open('score.txt', 'w')
     for (i, j), score in mapping_score:
-        # debug.write(f'{i} {j} {score} {sorted_spans[i].trace_id} {sorted_spans[j].trace_id} {sorted_spans[i].endpoint} {sorted_spans[j].endpoint} ')
+        # fp.write(f'{i} {j} {score} {sorted_spans[i].trace_id} {sorted_spans[j].trace_id} {sorted_spans[i].endpoint} {sorted_spans[j].endpoint} ')
         if j not in used_set and i not in used_set:
-            # debug.write(f'Select\n')
+            # fp.write(f'Select\n')
             sorted_spans[i].parent_id = sorted_spans[j].span_id
-            sorted_spans[i].parent_traceid = sorted_spans[j].trace_id
             used_set.add(j)
             used_set.add(i)
             if sorted_spans[i].trace_id != sorted_spans[j].trace_id:
                 error_count += 1
-                # debug.write(f"Warning: trace_id mismatch \n")
+                # fp.write(f"Warning: trace_id mismatch \n")
         else:
-            # debug.write(f'Continue\n')
+            # fp.write(f'Continue\n')
             continue
         
     print(f"Inter association: error count: {error_count}, sum: {cross_count}, acc: {(cross_count - error_count) / cross_count if cross_count > 0 else 0:.2f}")

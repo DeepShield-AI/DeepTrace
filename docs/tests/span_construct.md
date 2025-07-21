@@ -12,21 +12,30 @@ In this guide, we need to set up a test environment, initiate a DeepTrace contai
 
 ```bash
 cd DeepTrace
+#Add user to docker group,replace $USER with your username
+#sudo usermod -aG docker $USER    
+#newgrp docker
 docker-compose -f deployment/docker/Workload.yaml up -d
 # Verify:
+#bash scripts/docker_pids.sh  根目录下指示
+
 docker ps
+
 # Example output:
 # a69c7abafa85   memcached:1.6.7   "docker-entrypoint.s…"   7 hours ago   Up 7 hours   0.0.0.0:11211->11211/tcp   memcached-workload
 # a27b67cd869a   mongo:5.0.15      "docker-entrypoint.s…"   7 hours ago   Up 7 hours   0.0.0.0:27017->27017/tcp   mongo-workload
 # 631c9e145055   redis:6.2.4       "docker-entrypoint.s…"   7 hours ago   Up 7 hours   0.0.0.0:6379->6379/tcp     redis-workload
+#获取三个docker容器的pID，
+chmod +x scripts/docker_pids.sh
+./scripts/docker_pids.sh
+#之后写入default.toml的trace下的pids数组中
 ```
 
 This launches memcached, redis, and mongo server containers in background.
 ### Initiate DeepTrace
 
 ```bash
-chmod +x ./scripts/run.sh
-./scripts/run.sh
+RUST_BACKTRACE=1 RUST_LOG=info sudo ./agent/target/release/agent -f agent/config/default.toml
 ```
 
 ### Generate Test Spans
