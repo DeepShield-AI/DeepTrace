@@ -114,6 +114,7 @@ pids = {self.trace['pids']}
 [provenance]
 pids = []
 """
+        print(toml_content)
         # 目标文件路径
         remote_file_path = f"{self.code_path}/DeepTrace/agent/config/default.toml"
 
@@ -147,7 +148,7 @@ pids = []
 
             # 检查目标路径是否存在，不存在则创建
             repo_url = 'https://gitee.com/gytlll/DeepTrace.git'
-            command = f"mkdir -p {self.code_path} && cd {self.code_path} && GIT_LFS_SKIP_SMUDGE=1 git clone {repo_url}"
+            command = f"mkdir -p {self.code_path} && cd {self.code_path} && echo {self.host_password} | sudo -S GIT_LFS_SKIP_SMUDGE=1 git clone {repo_url}"
             # print(f"在远程主机执行命令: {command}")
             
             # 执行命令
@@ -179,7 +180,8 @@ pids = []
         def tail_log():
             last_line = ""
             while not stop_event.is_set():
-                tail_cmd = f"cd {self.code_path}/DeepTrace && tail -n 1 agent.log"
+                self.execute_command(f"echo {self.host_password} | sudo touch {self.code_path}/DeepTrace/agent/agent.log")
+                tail_cmd = f"cd {self.code_path}/DeepTrace && echo {self.host_password} | sudo -S tail -n 1 agent.log"
                 output, error = self.execute_command(tail_cmd)
                 if output and output.strip() != last_line:
                     last_line = output.strip()
@@ -204,6 +206,10 @@ pids = []
         if error and 'error' in error:
             raise Exception(f"{self.agent_name}: 获取进程失败 {error}")
         else:
+            if output is None:
+                print(f'{self.agent_name}: 没有找到相关进程')
+                self.trace['pids'] = []
+                return 
             print(f'{self.agent_name}: 获取进程成功')
             self.trace['pids'] = [
                 int(pid) for pid in output.strip().split('\n')
