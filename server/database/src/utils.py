@@ -123,8 +123,8 @@ def es_read_span_list(index_name):
     for span in spans:
         span_obj = Span(span)
         
-        # if span_obj.protocol not in ['Thrift', 'HTTP1']:
-        #     continue
+        if span_obj.protocol not in ['Redis', 'HTTP1']:
+            continue
         span_class_list.append(span_obj)
     return span_class_list
 
@@ -147,6 +147,7 @@ def es_read_agent_span_list(agents):
 
 
 def es_write_traces(index_name, traces):
+    traces = sorted(traces, key=lambda trace: trace['start_time'])
     ES_PASSWORD, SERVER_IP = read_db_config()
     es = Elasticsearch(
         hosts=[f"http://{SERVER_IP}:9200"],

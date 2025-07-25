@@ -3,7 +3,7 @@ import math
 from collections import Counter
 import sys
 
-# debug = open('cross.txt', 'w')
+debug = open('./trace/logs/cross.txt', 'w')
 
 def jaccard_similarity(str1, str2):
     str1 = str1.encode('utf-8')
@@ -134,18 +134,19 @@ def inter_association(spans, client_ingress = None, tuple_used=False, tuple_dire
     mapping_score = sorted(mapping_score.items(), key=lambda x: x[1], reverse=True)
     # fp = open('score.txt', 'w')
     for (i, j), score in mapping_score:
-        # debug.write(f'{i} {j} {score} {sorted_spans[i].trace_id} {sorted_spans[j].trace_id} {sorted_spans[i].endpoint} {sorted_spans[j].endpoint} ')
+        debug.write(f'{i} {j} {score} {sorted_spans[i].trace_id} {sorted_spans[j].trace_id} {sorted_spans[i].endpoint} {sorted_spans[j].endpoint} ')
         if j not in used_set and i not in used_set:
-            # debug.write(f'Select\n')
             sorted_spans[i].parent_id = sorted_spans[j].span_id
             sorted_spans[i].parent_traceid = sorted_spans[j].trace_id
             used_set.add(j)
             used_set.add(i)
             if sorted_spans[i].trace_id != sorted_spans[j].trace_id:
                 error_count += 1
-                # debug.write(f"Warning: trace_id mismatch \n")
+                debug.write(f"Error\n")
+            else:
+                debug.write(f'Right\n')
         else:
-            # debug.write(f'Continue\n')
+            debug.write(f'Continue\n')
             continue
         
     print(f"Inter association: error count: {error_count}, sum: {cross_count}, acc: {(cross_count - error_count) / cross_count if cross_count > 0 else 0:.2f}")

@@ -10,7 +10,7 @@ from trace.association.src.utils import span_grouping
 
 PRINT_TIME = True
 
-# debug = open('deeptrace.txt', 'w')
+debug = open('./trace/logs/deeptrace.txt', 'w')
 
 span_fields = {}
 endpoint_ships = {}
@@ -327,8 +327,9 @@ def get_candidate_mappings(spans):
                     if pre_span.direction == 'Ingress':
                         if tgid not in candidates:
                             candidates[tgid] = []
+                        # debug.write(f"{pre_span.trace_id} {pre_span.start_time} {pre_span.end_time} -> {span.trace_id} {span.start_time} {span.end_time}\n")
                         if pre_span.start_time < span.start_time and pre_span.end_time > span.end_time:
-                            # debug.write(f"{pre_span.endpoint} {pre_span.trace_id} -> {span.endpoint} {span.trace_id}\n")
+                            debug.write(f"{pre_span.endpoint} {pre_span.trace_id} -> {span.endpoint} {span.trace_id}\n")
                             candidates[tgid].append((pre_span, span))
         if tgid in candidates:
             candidates[tgid] = sorted(candidates[tgid], key=lambda x: x[1].start_time)
@@ -371,8 +372,8 @@ def iterative(span_mappings):
                 # selected_mappings[tgid].append((list(parent_spans)[max_index], outgoing_span))
                 child2parent[outgoing_span.span_id] = list(parent_spans)[max_index].span_id
                 spanid2tracied[list(parent_spans)[max_index].span_id] = list(parent_spans)[max_index].trace_id
-                # if outgoing_span.trace_id != list(parent_spans)[max_index].trace_id:
-                #     print(f"Warning: {outgoing_span.trace_id} -> {list(parent_spans)[max_index].trace_id} | {outgoing_span.endpoint} -> {list(parent_spans)[max_index].endpoint}")
+                if outgoing_span.trace_id != list(parent_spans)[max_index].trace_id:
+                    debug.write(f"Warning: {outgoing_span.trace_id} -> {list(parent_spans)[max_index].trace_id} | {outgoing_span.endpoint} -> {list(parent_spans)[max_index].endpoint}")
     t2 = time.time()
     if PRINT_TIME:
         print(f"Iterative time: {t2 - t1:.4f} seconds")

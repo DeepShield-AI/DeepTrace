@@ -55,10 +55,18 @@ class Span:
             if 'trace_id' in span_json['context']:
                 return span_json['context']['trace_id']
         content = self.req_content
-        match = re.search(r'uber-trace-id\x00{3}([0-9a-f]+:[0-9a-f]+:[0-9a-f]+:[0-9a-f]+)\x00', content)
-        if match:
-            trace_id = match.group(1).split(":")[0][1:]
-            return trace_id 
+        if self.protocol == 'Thrift':
+            match = re.search(r'uber-trace-id\x00{3}([0-9a-f]+:[0-9a-f]+:[0-9a-f]+:[0-9a-f]+)\x00', content)
+            if match:
+                trace_id = match.group(1).split(":")[0][1:]
+                return trace_id 
+        if self.protocol == "HTTP1":
+            match = re.search(r'Request-ID:\s*(\d+)', content)
+            if match:
+                return match.group(1)
+            match = re.search(r'Request-Id:\s*(\d+)', content)
+            if match:
+                return match.group(1)
         return 'UnknownTraceID'
 
     def get_spanid(self, span_json):
@@ -101,6 +109,22 @@ class Span:
             # else:
             #     print(f"DNS protocol but no domain found in content: {content}")
         # print(f"{self.protocol}: {content}")
+        elif self.protocol == "HTTP1":
+            match = re.search(r'GET\s+([^\s]+)', content)
+            if match:
+                return match.group(1)
+            match = re.search(r'ET\s+([^\s]+)', content)
+            if match:
+                return match.group(1)
+            match = re.search(r'POST\s+([^\s]+)', content)
+            if match:
+                return match.group(1)
+            match = re.search(r'PUT\s+([^\s]+)', content)
+            if match:
+                return match.group(1)
+            match = re.search(r'DELETE\s+([^\s]+)', content)
+            if match:
+                return match.group(1)
 
         return 'UnknownEndpoint'
 

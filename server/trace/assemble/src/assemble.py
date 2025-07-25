@@ -67,6 +67,8 @@ def assemble_trace(spans):
         status_code = get_status_code(span_dict[root_span_id])
         if len(span_list) < 5:
             continue
+        trace_start_time = min(span_dict[span_id].start_time for span_id in valid_span_ids)
+        trace_end_time = max(span_dict[span_id].end_time for span_id in valid_span_ids)
         traces.append({ 'trace_id': span.trace_id,
                         'span_num': len(span_list),
                         'e2e_duration': e2e_dutaion,
@@ -78,6 +80,8 @@ def assemble_trace(spans):
                         'client_port': span_dict[root_span_id].dst_port,
                         'protocol': protocol,
                         'status_code': status_code,
+                        'start_time': trace_start_time,
+                        'end_time': trace_end_time,
                         'spans': [add_childs(span_dict[span_id], paret_childs) for span_id in valid_span_ids
                       ]})
     return traces

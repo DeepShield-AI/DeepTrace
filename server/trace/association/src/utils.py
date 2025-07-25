@@ -1,9 +1,18 @@
 
 # 将span列表按照tgid、方向和IP进行分组，转化为字典形式
 # 例如：{tgid: {direction: {ip: [span1, span2, ...]}}}
+
+debug = open('./trace/logs/acc.txt', 'w')
+spans_fp = open('./trace/logs/spans.txt', 'w')
+
 def span_grouping(spans):
     span_map = {}
+    traceid_stats = {}
     for span in spans:
+        spans_fp.write(f"{span.trace_id} {span.span_id} {span.direction}  {span.protocol} {span.endpoint}\n")
+        if span.trace_id not in traceid_stats:
+            traceid_stats[span.trace_id] = 0
+        traceid_stats[span.trace_id] += 1
         # print(span_obj)
         if span.tgid not in span_map:
             span_map[span.tgid] = {"incoming": {}, "outgoing": {}}
@@ -17,6 +26,9 @@ def span_grouping(spans):
             span_map[span.tgid]["outgoing"][span.endpoint].append(span)
         else:
             continue
+    spans_fp.write(f"Total trace IDs: {len(traceid_stats)}\n")
+    for trace_id, count in traceid_stats.items():
+        spans_fp.write(f"Trace ID: {trace_id}, Count: {count}\n")
     return span_map
 
 # 将所有的span合并成一个列表
@@ -45,14 +57,27 @@ def pair_acc(spans):
         if tgid not in pair_acc:
             pair_acc[tgid] = {}
         outgoing_spans = tgid_spans['outgoing']
+        ingress_trace_ids = []
+        for incoming_endpoint, incoming_span_list in tgid_spans['incoming'].items():
+            for incoming_span in incoming_span_list:
+                ingress_trace_ids.append(incoming_span.trace_id)
         for outgoing_endpoint, outgoing_span_list in outgoing_spans.items():
             if outgoing_endpoint not in pair_acc[tgid]:
                 pair_acc[tgid][outgoing_endpoint] = 0
             for outgoing_span in outgoing_span_list:
+                if outgoing_span.trace_id not in ingress_trace_ids:
+                    debug.write(f"Warning: {outgoing_span.trace_id} {outgoing_span.endpoint} has no available inspan\n")
+                    pair_acc[tgid][outgoing_endpoint] += 1
+                    continue
                 if outgoing_span.parent_id is not None:
                     if outgoing_span.parent_id in spanid2traceid:
                         if spanid2traceid[outgoing_span.parent_id] == outgoing_span.trace_id:
                             pair_acc[tgid][outgoing_endpoint] += 1
+                        else:
+                            debug.write(f"Error: {outgoing_span.trace_id} -> {spanid2traceid[outgoing_span.parent_id]} | {outgoing_span.endpoint}\n")
+                else:
+                    debug.write(f"Error: {outgoing_span.trace_id} has no parent_id | {outgoing_span.endpoint}\n")
+                    
             pair_acc[tgid][outgoing_endpoint] = pair_acc[tgid][outgoing_endpoint] / len(outgoing_span_list)
     return pair_acc
 
@@ -70,11 +95,20 @@ def service_acc(spans):
             continue
         if tgid not in svc_acc:
             svc_acc[tgid] = 0
+        ingress_trace_ids = []
+        for incoming_endpoint, incoming_span_list in tgid_spans['incoming'].items():
+            for incoming_span in incoming_span_list:
+                ingress_trace_ids.append(incoming_span.trace_id)
+
         outgoing_spans = tgid_spans['outgoing']
         count = 0
         for outgoing_ip, outgoing_span_list in outgoing_spans.items():
             count += len(outgoing_span_list)
             for outgoing_span in outgoing_span_list:
+                if outgoing_span.trace_id not in ingress_trace_ids:
+                    debug.write(f"Warning: {outgoing_span.trace_id} {outgoing_span.endpoint} has no available inspan\n")
+                    svc_acc[tgid] += 1
+                    continue
                 if outgoing_span.parent_id is not None:
                     if outgoing_span.parent_id in spanid2traceid:
                         if spanid2traceid[outgoing_span.parent_id] == outgoing_span.trace_id:
@@ -95,18 +129,24 @@ def e2e_acc(spans):
         if len(tgid_spans['incoming']) == 0 or len(tgid_spans['outgoing']) == 0:
             continue
         outgoing_spans = tgid_spans['outgoing']
+        ingress_trace_ids = []
+        for incoming_endpoint, incoming_span_list in tgid_spans['incoming'].items():
+            for incoming_span in incoming_span_list:
+                ingress_trace_ids.append(incoming_span.trace_id)
         for outgoing_ip, outgoing_spans in tgid_spans['outgoing'].items():
             for outgoing_span in outgoing_spans:
                 if outgoing_span.trace_id not in trace_acc:
                     trace_acc[outgoing_span.trace_id] = 1
-                if outgoing_span.parent_id is None:
+                if outgoing_span.parent_id is None and outgoing_span.trace_id in ingress_trace_ids:
+                    debug.write(f"e2e Error1: {outgoing_span.trace_id} {outgoing_span.endpoint} has no parent_id\n")
                     trace_acc[outgoing_span.trace_id] = 0
                     continue
                 if outgoing_span.parent_id not in spanid2traceid:
-                    trace_acc[outgoing_span.trace_id] = 0
+                    debug.write(f"e2e Warning: {outgoing_span.trace_id} -> {outgoing_span.parent_id} | {outgoing_span.endpoint}\n")
                     continue
                 if spanid2traceid[outgoing_span.parent_id] != outgoing_span.trace_id:
                     trace_acc[outgoing_span.trace_id] = 0
+                    debug.write(f"e2e Error3: {outgoing_span.trace_id} -> {spanid2traceid[outgoing_span.parent_id]} | {outgoing_span.endpoint}\n")
                     continue
     print(f'error num: {len(trace_acc)-sum(trace_acc.values())}')
     return sum(trace_acc.values()) / len(trace_acc)
