@@ -62,7 +62,7 @@ def load_agents():
         if 'trace' not in agent_config:
             agent_config['trace'] = {'pids': []}
         if 'api' not in agent_config:
-            agent_config['api'] = {'port': 7899, 'address': '0.0.0', 'workers': 1, 'ident': 'deeptrace'}
+            agent_config['api'] = {'port': 7899, 'address': '0.0.0.0', 'workers': 1, 'ident': 'deeptrace'}
         else:
             if 'port' not in agent_config['api']:
                 agent_config['api']['port'] = 7899
