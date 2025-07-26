@@ -1,30 +1,33 @@
 use super::{TraceError, attach, loader, utils};
-use std::fs::OpenOptions;
-use std::io::Write;
 use crate::{
 	Module,
 	app::runtime::{block_on, spawn_blocking},
 	config::{TraceAccess, trace_config},
 	utils::sys,
-
-};
-use trace_common::{
-    protocols::l7::L7Protocol,
-    structs::{Syscall,Data},
 };
 use arc_swap::access::Access;
 use aya::{Ebpf, maps::AsyncPerfEventArray, util::online_cpus};
 use bytes::BytesMut;
 use crossbeam_channel::Sender;
 use log::{info, warn};
-use std::time::Duration;
+use std::{
+	collections::HashMap,
+	fs::OpenOptions,
+	io::Write,
+	sync::{
+		Arc, Mutex,
+		atomic::{AtomicBool, Ordering},
+	},
+	time::Duration,
+};
 use tokio::{
 	task::JoinHandle,
 	time::{self, timeout},
 };
-use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::collections::HashMap;
+use trace_common::{
+	protocols::l7::L7Protocol,
+	structs::{Data, Syscall},
+};
 pub struct TraceModule {
 	config: TraceAccess,
 	handles: Option<Vec<JoinHandle<()>>>,
@@ -42,7 +45,7 @@ impl TraceModule {
 			// This can happen if you remove all log statements from your eBPF program.
 			warn!("Failed to initialize eBPF logger: {}", e);
 		}
-		Ok(Self { config, handles: None, output, ebpf , running: Arc::new(AtomicBool::new(false)),})
+		Ok(Self { config, handles: None, output, ebpf, running: Arc::new(AtomicBool::new(false)) })
 	}
 }
 
@@ -52,14 +55,14 @@ impl Module for TraceModule {
 		"Trace"
 	}
 	fn start(&mut self) -> Result<(), Self::Error> {
-		 if self.running.swap(true, Ordering::Relaxed) {
-        return Ok(());
-    }
+		if self.running.swap(true, Ordering::Relaxed) {
+			return Ok(());
+		}
 		info!("Starting {} module...", self.name());
 		let config = self.config.load();
 		utils::config_pids(&mut self.ebpf, config.pids.clone())?;
 		attach::attach_tracepoint(&mut self.ebpf).expect("Failed to attach tracepoint");
-//channel (tx,rx,) 发送端接收端，
+		//channel (tx,rx,) 发送端接收端，
 		// Retrieve the perf event array from the eBPF program to read events from it.
 		let mut perf_array = AsyncPerfEventArray::try_from(self.ebpf.take_map("events").unwrap())
 			.expect("Failed to take perf array");
@@ -75,7 +78,7 @@ impl Module for TraceModule {
 			let output = self.output.clone();
 			let running = running.clone();
 			// process each perf buffer in a separate task
-//新线程必须有发送端的所有权，才能往通道中发消息			
+			//新线程必须有发送端的所有权，才能往通道中发消息
 			let handle = spawn_blocking(move || {
 				block_on(async {
 					// Prepare a set of buffers to store the data read from the perf buffer.
@@ -84,7 +87,7 @@ impl Module for TraceModule {
 						(0..16).map(|_| BytesMut::with_capacity(len_of_data)).collect::<Vec<_>>();
 
 					let timeout = Duration::from_millis(100);
-					while running.load(Ordering::Relaxed){
+					while running.load(Ordering::Relaxed) {
 						// info!("Waiting for events on CPU {}", cpu_id);
 						// Attempt to read events from the perf buffer into the prepared buffers.
 						let events =
@@ -113,21 +116,18 @@ impl Module for TraceModule {
 	async fn stop(&mut self) -> Result<(), Self::Error> {
 		println!("stop before threads collcected");
 		if !self.running.swap(false, Ordering::SeqCst) {
-        return Ok(());
-    }
+			return Ok(());
+		}
 		if let Some(handles) = self.handles.take() {
-		
 			for handle in handles {
-			
 				if !handle.is_finished() {
-					
 					info!("Waiting for {} module to stop...", self.name());
 					handle.await.expect("Failed to stop trace module");
 				}
-			}	
+			}
 		}
-	
+
 		println!("{} module stopped.", self.name());
-			Ok(())
-		}
+		Ok(())
+	}
 }

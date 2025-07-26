@@ -1,17 +1,16 @@
 use super::{App, Module, context::init, runtime::spawn, state, terminate};
 use crate::{
 	AgentError,
+	metric::MetricCollector,
 	// provenance::Provenance,
 	sender::{Elastic, FlatFile, SenderProcess},
 	synchronizer::Synchronizer,
 	trace::{SpanConstructor, TraceModule},
-	metric::{MetricCollector},
 };
+use crossbeam_channel::unbounded;
 use log::info;
 use rocket::yansi::Paint;
 use std::{sync::atomic::Ordering, time::Duration};
-
-use crossbeam_channel::unbounded;
 impl App {
 	pub fn new(config: impl AsRef<str>) -> Result<Self, AgentError> {
 		// Add log initialization here
@@ -24,32 +23,32 @@ impl App {
 
 	pub fn start(&mut self) {
 		self.handle = Some(spawn(run()));
-		
+
 		info!("Starting agent");
 		println!("{}", Paint::green("Agent started"));
 	}
 
 	pub async fn stop(&mut self) {
-    terminate();
+		terminate();
 
-    if let Some(handle) = self.handle.take() {
-        if !handle.is_finished()  {
-            info!("Waiting for task to finish...");
-            if let Err(e) = handle.await {
-                info!("Task failed or was aborted: {:?}", e);
-            }
-        }
-    } else {
-        info!("No handle found, task may have already been stopped");
-    }
+		if let Some(handle) = self.handle.take() {
+			if !handle.is_finished() {
+				info!("Waiting for task to finish...");
+				if let Err(e) = handle.await {
+					info!("Task failed or was aborted: {:?}", e);
+				}
+			}
+		} else {
+			info!("No handle found, task may have already been stopped");
+		}
 
-    info!("App stopped");
-}
+		info!("App stopped");
+	}
 }
 
 async fn run() -> Result<(), AgentError> {
 	println!("{}", Paint::green("Agent run started"));
-	info!("Starting agent run");	
+	info!("Starting agent run");
 	let (message_sender, message_receiver) = crossbeam_channel::unbounded();
 	let (span_sender, span_receiver) = crossbeam_channel::unbounded();
 
@@ -85,7 +84,7 @@ async fn run() -> Result<(), AgentError> {
 			//synchronizer.stop().await?;
 			// provenance.stop().await?;
 			println!("{}", Paint::red("Agent trace catch"));
-			trace.stop().await?;//停止tracemodule时程序异常结束，没有执行后续代码
+			trace.stop().await?; //停止tracemodule时程序异常结束，没有执行后续代码
 			println!("{}", Paint::red("Agent trace catch"));
 			span_constructor.stop().await?;
 			println!("{}", Paint::red("Agent span constructor catch"));

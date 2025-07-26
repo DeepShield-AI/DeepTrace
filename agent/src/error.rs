@@ -1,4 +1,4 @@
-use crate::{app::Context, config, provenance, sender, synchronizer, trace,metric};
+use crate::{app::Context, config, metric, provenance, sender, synchronizer, trace};
 use std::io;
 use thiserror::Error;
 use tokio::sync::SetError;
@@ -21,6 +21,6 @@ pub enum AgentError {
 	Provenance(#[from] provenance::ProvenanceError),
 	#[error("Synchronizer error: {0}")]
 	Synchronizer(#[from] synchronizer::SynchronizerError),
-	#[error("Metric error: {0}")] 
+	#[error("Metric error: {0}")]
 	Metric(#[from] metric::MetricError),
 }

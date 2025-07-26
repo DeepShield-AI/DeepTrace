@@ -15,6 +15,7 @@ impl CpuLogger {
 		let detail_file_path = format!("{}_detail.csv", file_path.trim_end_matches(".csv"));
 		let detail_file = BufWriter::new(File::create(detail_file_path)?);
 		let detail_writer = Arc::new(Mutex::new(detail_file));
+		// 在初始化 writer 时，更新列标题
 		{
 			let mut dw = detail_writer.lock().unwrap();
 			writeln!(dw, "# timestamp: seconds since UNIX epoch")?;
@@ -29,21 +30,29 @@ impl CpuLogger {
 			writeln!(dw, "# system_usage: 内核态CPU使用率")?;
 			writeln!(dw, "# idle: 空闲CPU时间")?;
 			writeln!(dw, "# idle_usage: 空闲CPU使用率")?;
-			// writeln!(dw, "# total_time: 总CPU时间")?;
+			writeln!(dw, "# iowait_usage: I/O等待使用率")?;
+			writeln!(dw, "# irq_usage: 硬中断使用率")?;
+			writeln!(dw, "# softirq_usage: 软中断使用率")?;
+			writeln!(dw, "# steal_usage: 虚拟机偷取时间使用率")?;
+			writeln!(dw, "# guest_usage: 虚拟CPU运行时间使用率")?;
+			writeln!(dw, "# guest_nice_usage: 低优先级虚拟CPU运行时间使用率")?;
+			writeln!(dw, "# bt_usage: ???")?; // 需要确认这个字段的含义
+			writeln!(dw, "# context_switches: 上下文切换次数")?;
+			writeln!(dw, "# page_faults: 页错误次数")?;
 			writeln!(
 				dw,
-				"timestamp,cpu_id,cpu_load,cpu_usage,user,user_usage,nice,nice_usage,system,system_usage,idle,idle_usage"
+				"timestamp,cpu_id,cpu_load,cpu_usage,user,user_usage,nice,nice_usage,system,system_usage,idle,idle_usage,iowait_usage,irq_usage,softirq_usage,steal_usage,guest_usage,guest_nice_usage,bt_usage,context_switches,page_faults"
 			)?;
 		}
 		Ok(Self { detail_writer })
 	}
 
+	// 在 write 方法中，更新写入的数据
 	pub fn write(&self, detail: &CpuMetric) {
-		println!("CPU  write");
 		let mut writer = self.detail_writer.lock().unwrap();
 		let _ = writeln!(
 			writer,
-			"{},{},{},{},{},{},{},{},{},{},{},{}",
+			"{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
 			detail.timestamp,
 			detail.cpu_id,
 			detail.cpu_load,
@@ -56,7 +65,15 @@ impl CpuLogger {
 			detail.system_usage,
 			detail.idle,
 			detail.idle_usage,
-			// detail.total_time,
+			detail.iowait_usage,
+			detail.irq_usage,
+			detail.softirq_usage,
+			detail.steal_usage,
+			detail.guest_usage,
+			detail.guest_nice_usage,
+			detail.bt_usage,
+			detail.context_switches,
+			detail.page_faults
 		);
 	}
 	pub fn flush(&self) {

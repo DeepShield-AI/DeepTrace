@@ -1,7 +1,12 @@
 pub mod cpu;
+pub mod disk_io;
 pub mod error;
+pub mod mem;
 pub mod module;
-
-use cpu::{CpuCollector, CpuLogger,CpuCollectorManager};
+pub mod net;
+use cpu::{CpuCollector, CpuCollectorManager, CpuLogger};
+use disk_io::{DiskCollector, DiskCollectorManager, DiskLogger};
 pub use error::Error as MetricError;
+use mem::{MemCollector, MemCollectorManager, MemLogger};
 pub use module::MetricCollector;
+use net::{NetCollector, NetCollectorManager, NetLogger};

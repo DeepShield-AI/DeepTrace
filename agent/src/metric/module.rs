@@ -1,66 +1,98 @@
-// module.rs
-use super::{CpuCollectorManager, MetricError};
-use crate::{Module, app::runtime::spawn};
-use std::sync::{Arc, Mutex}; 
-use crate::metric::CpuLogger; 
-use std::sync::atomic::{AtomicBool, Ordering};
+use super::{
+	CpuCollectorManager, DiskCollectorManager, MemCollectorManager, MetricError,
+	NetCollectorManager,
+};
+use crate::{
+	Module,
+	app::runtime::spawn,
+	metric::{CpuLogger, DiskLogger, MemLogger, NetLogger},
+};
 use log::{info, warn};
-
+use std::sync::{
+	Arc, Mutex,
+	atomic::{AtomicBool, Ordering},
+};
 pub struct MetricCollector {
-    cpu_collector: Option<CpuCollectorManager>,
+	cpu_collector: Option<CpuCollectorManager>,
+	disk_collector: Option<DiskCollectorManager>,
+	mem_collector: Option<MemCollectorManager>,
+	net_collector: Option<NetCollectorManager>, // Add NetCollectorManager
 }
-
 impl MetricCollector {
-    pub fn new() -> Result<Self, MetricError> {
-        let cpu_collector: Option<CpuCollectorManager> = match CpuCollectorManager::new(Some(Arc::new(Mutex::new(CpuLogger::new("cpu_usage.csv")?)))) {
-            manager => Some(manager),
-        };
+	pub fn new() -> Result<Self, MetricError> {
+		let cpu_collector: Option<CpuCollectorManager> = match CpuCollectorManager::new(Some(
+			Arc::new(Mutex::new(CpuLogger::new("cpu_usage.csv")?)),
+		)) {
+			manager => Some(manager),
+		};
+		let disk_logger = Some(Arc::new(Mutex::new(DiskLogger::new("disk")?)));
+		let disk_collector = Some(DiskCollectorManager::new(disk_logger));
 
-        Ok(Self {
-            cpu_collector,
-        })
-    }
-
-    fn start_cpu_collector(&mut self) {
-        if let Some(ref mut manager) = self.cpu_collector {
-            manager.start_collector();
-        } else {
-            warn!("CPU collector not initialized");
-        }
-    }
+		let mem_logger = Some(Arc::new(Mutex::new(MemLogger::new("mem_usage.csv")?)));
+		let mem_collector = Some(MemCollectorManager::new(mem_logger));
+		let net_logger = Some(Arc::new(Mutex::new(NetLogger::new("net_usage.csv")?)));
+		let net_collector = Some(NetCollectorManager::new(net_logger));
+		Ok(Self { cpu_collector, disk_collector, mem_collector, net_collector })
+	}
 }
 
 impl Module for MetricCollector {
-    type Error = MetricError;
+	type Error = MetricError; // 定义 Error 类型
 
-    fn name(&self) -> &str {
-        "Metric Collector"
-    }
+	fn name(&self) -> &str {
+		// 实现 name 方法
+		"Metric Collector"
+	}
+	fn start(&mut self) -> Result<(), Self::Error> {
+		info!("Starting Metric Collector");
 
-    fn start(&mut self) -> Result<(), Self::Error> {
-        println!("Starting {}", self.name());
+		if let Some(ref mut manager) = self.cpu_collector {
+			manager.start_collector();
+		} else {
+			warn!("CPU collector not initialized");
+		}
 
-        if self.cpu_collector.is_none() {
-            warn!("CPU collector is not initialized");
-            return Ok(());
-        }
+		if let Some(ref mut manager) = self.disk_collector {
+			manager.start_collector();
+		} else {
+			warn!("Disk collector not initialized");
+		}
 
-        self.start_cpu_collector();
+		if let Some(ref mut manager) = self.mem_collector {
+			manager.start_collector();
+		} else {
+			warn!("Mem collector not initialized");
+		}
 
-        info!("{} started", self.name());
-        Ok(())
-    }
+		if let Some(ref mut manager) = self.net_collector {
+			manager.start_collector();
+		} else {
+			warn!("Net collector not initialized");
+		}
+		info!("Metric Collector started");
+		Ok(())
+	}
 
-    async fn stop(&mut self) -> Result<(), Self::Error> {
-        info!("Stopping {}", self.name());
+	async fn stop(&mut self) -> Result<(), Self::Error> {
+		info!("Stopping Metric Collector");
 
-        if let Some(ref mut manager) = self.cpu_collector {
-            manager.stop_collector().await;
-        } else {
-            warn!("CPU collector is not running");
-        }
+		if let Some(ref mut manager) = self.cpu_collector {
+			manager.stop_collector().await;
+		}
 
-        println!("{} stopped", self.name());
-        Ok(())
-    }
+		if let Some(ref mut manager) = self.disk_collector {
+			manager.stop_collector().await;
+		}
+
+		if let Some(ref mut manager) = self.mem_collector {
+			manager.stop_collector().await;
+		}
+
+		if let Some(ref mut manager) = self.net_collector {
+			manager.stop_collector().await;
+		}
+
+		info!("Metric Collector stopped");
+		Ok(())
+	}
 }

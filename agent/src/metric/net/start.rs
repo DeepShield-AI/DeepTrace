@@ -1,8 +1,8 @@
-// cpu/start.rs
+// net/start.rs
 use crate::{
 	Module,
 	app::runtime::{block_on, spawn, spawn_blocking},
-	metric::{CpuCollector, CpuLogger},
+	metric::{NetCollector, NetLogger},
 };
 use log::{info, warn};
 use std::{
@@ -14,14 +14,14 @@ use std::{
 };
 use tokio::task::JoinHandle;
 
-pub struct CpuCollectorManager {
+pub struct NetCollectorManager {
 	handle: Option<JoinHandle<()>>,
 	running: Arc<AtomicBool>,
-	logger: Option<Arc<Mutex<CpuLogger>>>,
+	logger: Option<Arc<Mutex<NetLogger>>>,
 }
 
-impl CpuCollectorManager {
-	pub fn new(logger: Option<Arc<Mutex<CpuLogger>>>) -> Self {
+impl NetCollectorManager {
+	pub fn new(logger: Option<Arc<Mutex<NetLogger>>>) -> Self {
 		Self { handle: None, running: Arc::new(AtomicBool::new(false)), logger }
 	}
 
@@ -29,6 +29,7 @@ impl CpuCollectorManager {
 		if self.running.swap(true, Ordering::Relaxed) {
 			return;
 		}
+
 		let running = Arc::clone(&self.running);
 		let logger = match self.logger.as_ref() {
 			Some(logger) => Arc::clone(logger),
@@ -40,33 +41,33 @@ impl CpuCollectorManager {
 
 		self.handle = Some(spawn_blocking(move || {
 			block_on(async move {
-				let collector = CpuCollector::new();
+				let collector = NetCollector::new(Duration::from_secs(1));
 				while running.load(Ordering::Relaxed) {
-					let usages = collector.collect();
-					for usage in &usages {
-						let logger = logger.lock().unwrap();
-						logger.write(usage); // 同步 I/O，现在在阻塞线程中执行
+					let metrics = collector.collect();
+					if let Ok(mut logger) = logger.lock() {
+						logger.write(&metrics);
 					}
 					collector.sleep_duration().await;
 				}
 
-				let logger = logger.lock().unwrap();
-				logger.flush();
-				info!("CPU usage collector stopped");
+				if let Ok(mut logger) = logger.lock() {
+					logger.flush();
+				}
+				info!("Network usage collector stopped");
 			})
 		}));
 	}
 
 	pub async fn stop_collector(&mut self) {
 		if !self.running.swap(false, Ordering::Relaxed) {
-			warn!("CPU collector is not running");
+			warn!("Network collector is not running");
 			return;
 		}
 
 		if let Some(handle) = self.handle.take() {
 			if !handle.is_finished() {
-				info!("Waiting for CPU collector to finish...");
-				handle.await.expect("Failed to stop CPU collector");
+				info!("Waiting for Network collector to finish...");
+				handle.await.expect("Failed to stop Network collector");
 			}
 		}
 	}

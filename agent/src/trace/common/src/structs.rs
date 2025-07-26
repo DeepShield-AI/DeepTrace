@@ -5,7 +5,7 @@ use crate::{
 };
 use serde::Serialize;
 
-#[derive(Copy, Clone, Serialize, Debug,PartialEq,Eq,Hash)]
+#[derive(Copy, Clone, Serialize, Debug, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum Syscall {
 	Read,
@@ -132,7 +132,6 @@ pub struct Payload {
 #[cfg_attr(feature = "user", derive(Serialize))]
 #[derive(Copy, Clone, Debug)]
 #[repr(C)]
-
 pub struct Data {
 	pub tgid: u32,
 	pub pid: u32,

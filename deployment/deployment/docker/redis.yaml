@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:6.2.4
+    container_name: redis-workload
+    ports:
+      - "6379:6379"

@@ -24,7 +24,7 @@ impl AppConfig {
 			.inspect_err(|e| {
 				warn!("Failed to load config from {}: {}, using default", path.as_ref(), e)
 			})
-			.or_else(|_| Self::load_from_file("agent/config/default.toml"))
+			.or_else(|_| Self::load_default_config())
 	}
 
 	fn load_from_file(path: impl AsRef<str>) -> Result<Self, ConfigError> {
