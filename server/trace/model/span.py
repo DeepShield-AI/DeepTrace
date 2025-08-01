@@ -67,6 +67,14 @@ class Span:
             match = re.search(r'Request-Id:\s*(\d+)', content)
             if match:
                 return match.group(1)
+        if 'x-b3-traceid' in content:
+            match = re.search(r"x-b3-traceid:\s*([0-9a-fA-F]+)", content)
+            if match:
+                return match.group(1)
+        if "X-B3-TraceId" in content:
+            match = re.search(r"X-B3-TraceId:\s*([0-9a-fA-F]+)", content)
+            if match:
+                return match.group(1)
         return 'UnknownTraceID'
 
     def get_spanid(self, span_json):

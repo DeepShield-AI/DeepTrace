@@ -67,7 +67,7 @@ def load_agents():
             if 'port' not in agent_config['api']:
                 agent_config['api']['port'] = 7899
             if 'address' not in agent_config['api']:
-                agent_config['api']['address'] = '0.0.0'
+                agent_config['api']['address'] = '0.0.0.0'
             if 'workers' not in agent_config['api']:
                 agent_config['api']['workers'] = 1
             if 'ident' not in agent_config['api']:

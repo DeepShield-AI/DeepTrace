@@ -33,6 +33,45 @@ def add_childs(span, paret_childs):
     span_json['context']['child_ids'] = paret_childs[span.span_id]['childs']
     return span_json
 
+def construct_topology(spans):
+    """
+    构建拓扑结构
+    """
+    def dict_to_tree(edges):
+        all_children = {c for v in edges.values() for c in v}
+        roots = [k for k in edges if k not in all_children]
+        def build(node):
+            children = edges.get(node, [])
+            if not children:
+                return None
+            return {child: build(child) for child in children}
+        return {roots[0]: build(roots[0])}
+
+    tgid_edges = {}
+    for span in spans:
+        # print(span)
+        if span['tag']['ebpf_tag']['direction'] == "Ingress" and span['context']['parent_id'] is not None:
+            parent_id = span['context']['parent_id']
+            parent_span = next((s for s in spans if s['context']['span_id'] == parent_id), None)
+            parent_tgid = parent_span['tag']['ebpf_tag']['tgid']
+            if parent_tgid not in tgid_edges:
+                tgid_edges[parent_tgid] = []
+            tgid_edges[parent_tgid].append(span['tag']['ebpf_tag']['tgid'])
+    topo = dict_to_tree(tgid_edges)
+    components = {}
+    for span in spans:
+        if span['tag']['ebpf_tag']['tgid'] not in components:
+            if span['tag']['docker_tag'] is None:
+                continue
+            components[span['tag']['ebpf_tag']['tgid']] = {
+                'name': span['tag']['docker_tag']['container_name'],
+                'ip': span['tag']['docker_tag']['ip'],
+                'endpoint': span['tag']['ebpf_tag']['endpoint'],
+                'protocol': span['tag']['ebpf_tag']['protocol']
+            }
+    return topo, components
+    
+
 def assemble_trace(spans):
     """
     根据 span_id 和 parent_id 将 spans 分组为 trace 列表
@@ -69,6 +108,8 @@ def assemble_trace(spans):
             continue
         trace_start_time = min(span_dict[span_id].start_time for span_id in valid_span_ids)
         trace_end_time = max(span_dict[span_id].end_time for span_id in valid_span_ids)
+        span_list = [add_childs(span_dict[span_id], paret_childs) for span_id in valid_span_ids]
+        topo, components = construct_topology(span_list)
         traces.append({ 'trace_id': span.trace_id,
                         'span_num': len(span_list),
                         'e2e_duration': e2e_dutaion,
@@ -82,6 +123,7 @@ def assemble_trace(spans):
                         'status_code': status_code,
                         'start_time': trace_start_time,
                         'end_time': trace_end_time,
-                        'spans': [add_childs(span_dict[span_id], paret_childs) for span_id in valid_span_ids
-                      ]})
+                        'topology': topo,
+                        'components': components,
+                        'spans': span_list})
     return traces
