@@ -20,10 +20,13 @@ for container_id in $container_ids; do
     # 获取容器名称
     name=$(docker inspect --format '{{.Name}}' "$container_id" | sed 's|/||')
     # 如果名称包含 wrk、jaeger、deeptrace、elastic、kibana，则跳过
-    if [[ "$name" == *wrk* ]] || [[ "$name" == *jaeger* ]] || [[ "$name" == *deeptrace* ]] || [[ "$name" == *elastic* ]] || [[ "$name" == *kibana* ]]; then
+    if [[ "$name" == *wrk* ]] || [[ "$name" == *jaeger* ]] || [[ "$name" == *deeptrace* ]] || [[ "$name" == *es* ]] || [[ "$name" == *kibana* ]]; then
         continue
     fi
-    # 获取容器的 PID
-    pid=$(docker inspect --format '{{.State.Pid}}' "$container_id")
-    echo "$pid"
+    # echo "容器: $name ($container_id)"
+    # 获取所有主机PID
+    docker top $container_id | awk 'NR>1 {print $2}' | while read pid; do
+        echo "$pid"
+    done
 done
+
