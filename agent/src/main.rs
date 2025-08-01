@@ -12,7 +12,7 @@ struct Opts {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
 	let opt = Opts::parse();
-	let mut deeptrace = App::new(opt.config).expect("Failed to create app");
+	let mut deeptrace = App::new(opt.config).await.expect("Failed to create app");
 
 	deeptrace.start();
 

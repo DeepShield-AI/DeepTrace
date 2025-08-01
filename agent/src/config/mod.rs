@@ -5,7 +5,7 @@ pub(crate) use access::{
 };
 use agent::Config as AgentConfig;
 use api::Config as ApiConfig;
-pub(crate) use app::AppConfig;
+pub(crate) use app::{AppConfig, sync_config};
 pub(crate) use change::update_config;
 pub use error::Error as ConfigError;
 use provenance::Config as ProvenanceConfig;

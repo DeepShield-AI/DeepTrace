@@ -1,4 +1,4 @@
-use super::{App, Module, context::init, runtime::spawn, state, terminate};
+use super::{App, Module, context::init, runtime::spawn, state, terminate, statistic::{Statistic, init_statistic, LogStore, add_log}};
 use crate::{
 	AgentError,
 	metric::MetricCollector,
@@ -6,18 +6,40 @@ use crate::{
 	sender::{Elastic, FlatFile, SenderProcess},
 	synchronizer::Synchronizer,
 	trace::{SpanConstructor, TraceModule},
+	config::{agent_config}
 };
+use arc_swap::access::Access;
 use log::info;
 use std::{sync::atomic::Ordering, time::Duration};
 use tokio::time::sleep;
+use sha2::{Sha256, Digest};
 
 impl App {
-	pub fn new(config: impl AsRef<str>) -> Result<Self, AgentError> {
+	pub async fn new(config: impl AsRef<str>) -> Result<Self, AgentError> {
 		// Add log initialization here
 		env_logger::builder().init();
 		// console_subscriber::init();
 
 		init(config)?;
+		let name = agent_config().load().name.clone();
+        let mut hasher = Sha256::new();
+        hasher.update(name.as_bytes());
+        let lcuuid = format!("{:x}", hasher.finalize());
+		let initial_stat = Statistic {
+			cpu_usage: 0.0,
+			memory_usage: 0.0,
+			name: name.clone(),
+			lcuuid: lcuuid.clone(),
+			span_num: 0,
+			timestamp: chrono::Utc::now().to_rfc3339(),
+			log_store: LogStore {
+				agent_name: name.clone(),
+				lcuuid,
+				logs: Vec::new(),
+			},
+		};
+		init_statistic(initial_stat);
+		add_log("info", &format!("App initialized with name: {}", name)).await;
 		Ok(Self { handle: None })
 	}
 
