@@ -1,6 +1,7 @@
 use bollard::{Docker, container::ListContainersOptions};
 use serde::Serialize;
 use std::{cell::RefCell, collections::HashMap, ffi::CStr};
+use std::process::Command;
 use trace_common::{
 	protocols::L7Protocol,
 	structs::{Data, Direction},
@@ -44,7 +45,7 @@ impl DockerTag {
 		for container in containers {
 			let id = container.id.clone().unwrap_or_default();
 			let inspect = docker.inspect_container(&id, None).await.ok()?;
-			let docker_tgid = inspect.state.as_ref().and_then(|s| s.pid).unwrap_or(0) as u32;
+			// let docker_tgid = inspect.state.as_ref().and_then(|s| s.pid).unwrap_or(0) as u32;
 			// 获取 IPAddress
 			let ip_address = inspect
 				.network_settings
@@ -65,8 +66,26 @@ impl DockerTag {
 			// 获取 Created 时间
 			let created = inspect.created.clone().unwrap_or_default();
 
+
+			// 获取所有主机PID
+			let output = Command::new("docker")
+				.arg("top")
+				.arg(&id)
+				.output()
+				.expect("failed to execute docker top");
+			let stdout = String::from_utf8_lossy(&output.stdout);
+			let mut pids = Vec::new();
+			for line in stdout.lines().skip(1) {
+				let fields: Vec<&str> = line.split_whitespace().collect();
+				if fields.len() > 1 {
+					if let Ok(pid) = fields[1].parse::<i64>() {
+						pids.push(pid);
+					}
+				}
+			}
+
 			let tag = DockerTag {
-				tgid: docker_tgid,
+				tgid,
 				container_id: id,
 				container_name: container.names.unwrap_or_default(),
 				image: container.image.unwrap_or_default(),
@@ -87,10 +106,15 @@ impl DockerTag {
 				network_mode,
 				created,
 			};
-			TGID_DOCKER_MAP.with(|map_cell| {
-				map_cell.borrow_mut().insert(docker_tgid, tag.clone());
-			});
+
+			// 以每个进程PID为key映射到tag
+			for pid in pids {
+				TGID_DOCKER_MAP.with(|map_cell| {
+					map_cell.borrow_mut().insert(pid as u32, tag.clone());
+				});
+			}
 		}
+
 
 		// 插入后再查一次缓存
 		if let Some(tag) = TGID_DOCKER_MAP.with(|map_cell| map_cell.borrow().get(&tgid).cloned()) {
