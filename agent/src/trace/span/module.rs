@@ -47,9 +47,8 @@ impl Module for SpanConstructor {
 		let output = self.output.clone();
 		let running = self.running.clone();
 
-		self.handle = Some(spawn_blocking(move || {
-			block_on(async { construct_spans(input, output, running).await })
-		}));
+		self.handle =
+			Some(spawn_blocking(move || block_on(async { construct_spans(input, output,running).await })));
 		Ok(())
 	}
 
@@ -64,16 +63,13 @@ impl Module for SpanConstructor {
 		Ok(())
 	}
 }
-async fn construct_spans(
-	message_receiver: Receiver<Data>,
-	span_sender: Sender<Span>,
-	running: Arc<AtomicBool>,
-) {
+async fn construct_spans(message_receiver: Receiver<Data>, span_sender: Sender<Span>,running:Arc<AtomicBool>) {
 	let cache = Cache::new();
 	let cleanup_interval = Duration::from_secs(20);
 	let mut last_cleanup = Instant::now();
 	while running.load(Ordering::Relaxed) {
 		// info!("Span constructor is running");
+	
 
 		if let Ok(data) = message_receiver.try_recv() {
 			let span_sender = span_sender.clone();
@@ -83,5 +79,6 @@ async fn construct_spans(
 			cache.cleanup_expired();
 			last_cleanup = Instant::now();
 		}
+
 	}
 }

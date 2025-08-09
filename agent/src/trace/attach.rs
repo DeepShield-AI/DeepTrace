@@ -1,12 +1,101 @@
 use aya::{Ebpf, programs::TracePoint};
 
+use crate::trace::attach;
+
 pub fn attach_tracepoint(ebpf: &mut Ebpf) -> anyhow::Result<()> {
 	attach_socket(ebpf)?;
 	attach_ingress(ebpf)?;
 	attach_egress(ebpf)?;
+	attach_cpu_metrics(ebpf)?;
+	attach_mem_metrics(ebpf)?;
+	attach_io_metrics(ebpf)?;
+	println!("Attach tracepoint done");
 	Ok(())
 }
+fn attach_io_metrics(ebpf: &mut Ebpf) -> anyhow::Result<()> {
+	let block_rq_insert: &mut TracePoint = ebpf
+        .program_mut("block_rq_insert")
+        .unwrap()
+        .try_into()?;
+    block_rq_insert.load()?;
+    block_rq_insert.attach("block", "block_rq_insert")?;
+    let block_rq_issue: &mut TracePoint = ebpf
+        .program_mut("block_rq_issue")
+        .unwrap()
+        .try_into()?;
+    block_rq_issue.load()?;
+    block_rq_issue.attach("block", "block_rq_issue")?;
 
+    // 附加 block_rq_complete 程序
+    let block_rq_complete: &mut TracePoint = ebpf
+        .program_mut("block_rq_complete")
+        .unwrap()
+        .try_into()?;
+    block_rq_complete.load()?;
+    block_rq_complete.attach("block", "block_rq_complete")?;
+
+    // 附加 block_rq_merge 程序
+    let block_rq_merge: &mut TracePoint = ebpf
+        .program_mut("block_rq_merge")
+        .unwrap()
+        .try_into()?;
+    block_rq_merge.load()?;
+    block_rq_merge.attach("block", "block_rq_merge")?;
+
+    Ok(())
+}
+fn attach_mem_metrics(ebpf: &mut Ebpf) -> anyhow::Result<()> {
+    // 追踪 mm_vmscan_wakeup_kswapd
+    let vmscan_wakeup_kswapd: &mut TracePoint = ebpf
+        .program_mut("vmscan_kswapd_wake")
+        .unwrap()
+        .try_into()?;
+    vmscan_wakeup_kswapd.load()?;
+    vmscan_wakeup_kswapd.attach("vmscan", "mm_vmscan_wakeup_kswapd")?;
+
+    // 追踪 mm_page_alloc_extfrag
+    let page_alloc_extfrag: &mut TracePoint = ebpf
+        .program_mut("page_alloc_extfrag")
+        .unwrap()
+        .try_into()?;
+    page_alloc_extfrag.load()?;
+    page_alloc_extfrag.attach("kmem", "mm_page_alloc_extfrag")?;
+
+    Ok(())
+}
+ fn attach_cpu_metrics(ebpf: &mut Ebpf) -> anyhow::Result<()> {
+	
+    // 追踪软中断入口和出口以计算 ksoftirqd 延迟
+    let softirq_entry: &mut TracePoint = ebpf
+        .program_mut("softirq_entry")
+        .unwrap()
+        .try_into()?;
+    softirq_entry.load()?;
+    softirq_entry.attach("irq", "softirq_entry")?;
+
+    let softirq_exit: &mut TracePoint = ebpf
+        .program_mut("softirq_exit")
+        .unwrap()
+        .try_into()?;
+    softirq_exit.load()?;
+    softirq_exit.attach("irq", "softirq_exit")?;
+
+    // 追踪 CPU 迁移
+    let sched_migrate_task: &mut TracePoint = ebpf
+        .program_mut("sched_migrate_task")
+        .unwrap()
+        .try_into()?;
+    sched_migrate_task.load()?;
+    sched_migrate_task.attach("sched", "sched_migrate_task")?;
+
+    // 追踪上下文切换
+    let sched_switch: &mut TracePoint = 
+	ebpf.program_mut("sched_switch").unwrap().try_into()?;
+    sched_switch.load()?;
+    sched_switch.attach("sched", "sched_switch")?;
+	println!("attach finished");
+    Ok(())
+}
 fn attach_socket(ebpf: &mut Ebpf) -> anyhow::Result<()> {
 	let sys_exit_socket: &mut TracePoint =
 		ebpf.program_mut("sys_exit_socket").unwrap().try_into()?;

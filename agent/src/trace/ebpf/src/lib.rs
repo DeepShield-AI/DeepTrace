@@ -8,3 +8,4 @@ mod protocols;
 mod structs;
 mod utils;
 mod vmlinux;
+pub mod metric;

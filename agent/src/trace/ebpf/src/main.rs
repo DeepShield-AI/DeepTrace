@@ -3,7 +3,7 @@
 #![allow(dead_code)]
 #![allow(clippy::empty_loop)]
 
-pub use trace::network;
+pub use trace::{network,metric};
 
 #[cfg_attr(not(test), panic_handler)]
 fn panic(_info: &core::panic::PanicInfo) -> ! {

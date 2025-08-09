@@ -1,10 +1,11 @@
 use super::{CpuCollectorManager, MetricError, DiskCollectorManager, MemCollectorManager,NetCollectorManager};
-use crate::{Module, app::runtime::spawn};
+use crate::{app::runtime::spawn, metric::mem, Module};
 use std::sync::{Arc, Mutex}; 
 use crate::metric::{CpuLogger, DiskLogger, MemLogger,NetLogger}; 
 use std::sync::atomic::{AtomicBool, Ordering};
 use log::{info, warn};
 use std::fs;
+use aya::Ebpf; 
 pub struct MetricCollector {
     cpu_collector: Option<CpuCollectorManager>,
     disk_collector: Option<DiskCollectorManager>,
@@ -12,18 +13,46 @@ pub struct MetricCollector {
     net_collector: Option<NetCollectorManager>, // Add NetCollectorManager
 }
 impl MetricCollector {
-    pub fn new() -> Result<Self, MetricError> {
+      pub fn new(ebpf: Option<Arc<Mutex<Ebpf>>>) -> Result<Self, MetricError> {
         fs::create_dir_all("output")?;
-        let cpu_collector: Option<CpuCollectorManager> = match CpuCollectorManager::new(Some(Arc::new(Mutex::new(CpuLogger::new("output/cpu_usage.csv")?)))) {
-            manager => Some(manager),
-        };
         let disk_logger = Some(Arc::new(Mutex::new(DiskLogger::new("output/disk")?)));
-        let disk_collector = Some(DiskCollectorManager::new(disk_logger));
-
+        let disk_collector = match &ebpf {
+            Some( ebpf_ref) => {
+                Some(DiskCollectorManager::new(disk_logger).with_ebpf(ebpf_ref.clone()))
+            },
+            None => {
+                Some(DiskCollectorManager::new(disk_logger))
+            }
+        };
+        // 创建 CPU 收集器，如果有 ebpf 实例则使用它
+        let cpu_collector = match &ebpf {
+            Some( ebpf_ref) => {
+                Some(CpuCollectorManager::new(
+                    Some(Arc::new(Mutex::new(CpuLogger::new("output/cpu_usage.csv")?)))
+                ).with_ebpf(ebpf_ref.clone()))
+            },
+            None => {
+                Some(CpuCollectorManager::new(
+                    Some(Arc::new(Mutex::new(CpuLogger::new("output/cpu_usage.csv")?)))
+                ))
+            }
+        };
+        
+        
+        
         let mem_logger = Some(Arc::new(Mutex::new(MemLogger::new("output/mem_usage.csv")?)));
-        let mem_collector = Some(MemCollectorManager::new(mem_logger));
+        let mem_collector = match &ebpf {
+            Some( ebpf_ref) => {
+                Some(MemCollectorManager::new(mem_logger).with_ebpf(ebpf_ref.clone()))
+            },
+            None => {
+                Some(MemCollectorManager::new(mem_logger))
+            }
+        };
+        
         let net_logger = Some(Arc::new(Mutex::new(NetLogger::new("output/net_usage.csv")?)));
-        let net_collector=Some(NetCollectorManager::new(net_logger));
+        let net_collector = Some(NetCollectorManager::new(net_logger));
+        
         Ok(Self {
             cpu_collector,
             disk_collector,

@@ -4,6 +4,7 @@ use std::{
 	io::{BufWriter, Write},
 	sync::{Arc, Mutex},
 };
+
 // TODO: Temporary logger for detailed CPU metrics, need to change to new compress module input
 // TODO: Change to be async
 pub struct CpuLogger {
@@ -39,20 +40,24 @@ impl CpuLogger {
 			writeln!(dw, "# bt_usage: ???")?; // 需要确认这个字段的含义
 			writeln!(dw, "# context_switches: 上下文切换次数")?;
 			writeln!(dw, "# page_faults: 页错误次数")?;
+			// 新增eBPF指标说明
+			writeln!(dw, "# ksoftirqd_delay: 软中断处理延迟")?;
+			writeln!(dw, "# cpu_migrations: CPU迁移次数")?;
+			writeln!(dw, "# nr_csw: 上下文切换次数")?;
 			writeln!(
 				dw,
-				"timestamp,cpu_id,cpu_load,cpu_usage,user,user_usage,nice,nice_usage,system,system_usage,idle,idle_usage,iowait_usage,irq_usage,softirq_usage,steal_usage,guest_usage,guest_nice_usage,bt_usage,context_switches,page_faults"
+				"timestamp,cpu_id,cpu_load,cpu_usage,user,user_usage,nice,nice_usage,system,system_usage,idle,idle_usage,iowait_usage,irq_usage,softirq_usage,steal_usage,guest_usage,guest_nice_usage,bt_usage,context_switches,page_faults,ksoftirqd_delay,cpu_migrations,nr_csw"
 			)?;
 		}
 		Ok(Self { detail_writer })
 	}
 
-	// 在 write 方法中，更新写入的数据
+	// 在 write 方法中，更新写入的数据，包含新增的eBPF指标
 	pub fn write(&self, detail: &CpuMetric) {
 		let mut writer = self.detail_writer.lock().unwrap();
 		let _ = writeln!(
 			writer,
-			"{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+			"{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
 			detail.timestamp,
 			detail.cpu_id,
 			detail.cpu_load,
@@ -73,9 +78,13 @@ impl CpuLogger {
 			detail.guest_nice_usage,
 			detail.bt_usage,
 			detail.context_switches,
-			detail.page_faults
+			detail.page_faults,
+			detail.ksoftirqd_delay,  // 新增eBPF指标
+			detail.cpu_migrations,   // 新增eBPF指标
+			detail.nr_csw            // 新增eBPF指标
 		);
 	}
+	
 	pub fn flush(&self) {
 		let _ = self.detail_writer.lock().unwrap().flush();
 	}
