@@ -9,6 +9,8 @@ use tokio::time::sleep;
 use nix::sys::statvfs::statvfs;
 use aya::Ebpf;
 use crate::metric::disk_io::collect_ebpf::collect_ebpf_metrics;
+use libc::{major, minor};
+use std::os::unix::fs::MetadataExt;
 pub struct DiskCollector {
     devices: Vec<String>,
 }
@@ -82,9 +84,9 @@ impl DiskCollector {
         }
     }
     fn get_device_name(&self, device_id: u32) -> String {
-    // 设备ID的高20位是主设备号，低12位是次设备号
-    let major = (device_id >> 8) as u32;
-    let minor = (device_id & 0xff) as u32;
+    // 设备ID的高12位是主设备号，低20位是次设备号
+    let ebpf_major = ((device_id >> 20) & 0xfff) as u32;  // 高12位为主设备号
+    let ebpf_minor = (device_id & 0xfffff) as u32;  // 低20位为次设备号 
     
     // 遍历已知的设备列表查找匹配的设备
     for device in &self.devices {
@@ -93,10 +95,10 @@ impl DiskCollector {
             
             use std::os::unix::fs::MetadataExt;
             let rdev = metadata.rdev();
-            let dev_major = (rdev >> 8) as u32;
-            let dev_minor = (rdev & 0xff) as u32;
-            println!("major {},minor {}",major,minor);
-            if dev_major == major && dev_minor == minor {
+            let rdev_major = unsafe { major(rdev) };
+            let rdev_minor = unsafe { minor(rdev) };
+
+            if rdev_major == ebpf_major && rdev_minor == ebpf_minor {
                 return device.clone();
             }
         }
