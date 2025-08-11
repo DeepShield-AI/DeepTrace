@@ -66,25 +66,25 @@ services:
     volumes:
       - ./:/app/
   
-  # deeptrace_backend:
-  #   image: deeptrace-ui-backend:latest
-  #   container_name: deeptrace-ui-backend
-  #   ports:
-  #     - "8080:8080"
-  #   depends_on:
-  #     - es
-  #   volumes:
-  #     - ./config/config.toml:/app/config.toml
+  deeptrace_backend:
+    image: deeptrace-ui-backend:latest
+    container_name: deeptrace-ui-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - es
+    volumes:
+      - ./config/config.toml:/app/config.toml
 
-  # deeptrace_frontend:
-  #   image: deeptrace-ui-frontend:latest
-  #   container_name: deeptrace-ui-frontend
-  #   ports:
-  #     - "8000:8000"
-  #   depends_on:
-  #     - es
-  #   volumes:
-  #     - ../frontend/src/services/server.js:/app/src/services/server.js
+  deeptrace_frontend:
+    image: deeptrace-ui-frontend:latest
+    container_name: deeptrace-ui-frontend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - es
+    volumes:
+      - ./frontend/server.js:/app/src/services/server.js
 
 # 定义网络
 networks:

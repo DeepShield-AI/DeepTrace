@@ -5,6 +5,7 @@ DOCKER_CONFIG="/etc/docker/daemon.json"
 TARGET_REGISTRY="47.97.67.233:5000"
 TEMP_FILE=$(mktemp)
 
+
 if ! command -v docker &> /dev/null || ! command -v docker-compose &> /dev/null || ! command -v jq &> /dev/null; then
     sudo apt-get update
     sudo apt-get install -y jq docker.io docker-compose
@@ -42,6 +43,21 @@ fi
 CONFIG_FILE="./server/config/config.toml"
 ELASTIC_PWD=$(grep 'elastic_password' $CONFIG_FILE | head -n 1 | sed 's/.*= *"\(.*\)".*/\1/')
 KIBANA_PWD=$(grep 'elastic_password' $CONFIG_FILE | head -n 1 | sed 's/.*= *"\(.*\)".*/\1/')
+SERVER_IP=$(grep 'ip' $CONFIG_FILE | head -n 1 | sed 's/.*= *"\(.*\)".*/\1/')
+
+echo $SERVER_IP
+
+FRONT_FILE="./server/frontend/server.js"
+
+if [ ! -f "$FRONT_FILE" ]; then
+  echo "Error: Target file $FRONT_FILE does not exist."
+  exit 1
+fi
+
+# 使用正则表达式替换 backendip
+sed -i -E "s#const serverIp = \"http://localhost:8080\"#const serverIp = \"http://$SERVER_IP:8080\"#g" $FRONT_FILE
+
+
 
 COMPOSE_FILE="./server/docker-compose.yaml"
 
