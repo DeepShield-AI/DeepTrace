@@ -90,7 +90,7 @@ def main():
     elif args.command == 'asso':
         agents = load_agents()
         spans = es_read_agent_span_list(agents)
-        spans = inter_association(spans, client_ingress='ComposePost', tuple_used=False)
+        spans = inter_association(spans, client_ingress='ComposePost', tuple_used=True, clock_skew=False)
         span_dict = {}
         if args.asso_action == 'algo':
             print(f"选择asso算法: {args.algorithm}")
