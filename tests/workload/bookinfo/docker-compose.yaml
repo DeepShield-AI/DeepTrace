@@ -40,6 +40,16 @@ services:
     networks:
       - bookinfo-net
 
+  client:
+    build:
+      context: .
+      dockerfile: client.Dockerfile
+    depends_on:
+      - productpage
+    networks:
+      - bookinfo-net
+    container_name: bookinfo-client
+
 networks:
   bookinfo-net:
     driver: bridge

@@ -1,7 +1,7 @@
 import requests
 
 # Bookinfo productpage 服务地址
-url = "http://localhost:19080/productpage?u=normal"
+url = "http://productpage:9080/productpage?u=normal"
 
 for index in range(100):
     try:
