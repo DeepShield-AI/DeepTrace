@@ -26,7 +26,7 @@ def load_agents():
     if 'request_timeout' not in elastic_config:
         elastic_config['request_timeout'] = 10
     if 'bulk_size' not in elastic_config:
-        elastic_config['bulk_size'] = 1024
+        elastic_config['bulk_size'] = 10
     if 'agent_status_index' not in elastic_config:
         elastic_config['agent_status_index'] = 'agent_status'
     server_config = config.get('server', {})
@@ -41,18 +41,18 @@ def load_agents():
         if 'workers' not in agent_config['agent_info']:
             agent_config['agent_info']['workers'] = 16
         if 'span' not in agent_config:
-            agent_config['span'] = {'batch_size': 1024}
+            agent_config['span'] = {'batch_size': 10}
         if 'sender' not in agent_config:
             agent_config['sender'] = {'index_name': f"spans_{agent_config['agent_info']['agent_name']}",
-                                      'mem_buffer_size': 16,
+                                      'mem_buffer_size': 1,
                                       'file_buffer_size': 32,
                                       'file_size_limit': 1024,
-                                      'batch_size': 1024}
+                                      'batch_size': 10}
         else:
             if 'index_name' not in agent_config['sender']:
                 agent_config['sender']['index_name'] = f"spans_{agent_config['agent_info']['agent_name']}"
             if 'mem_buffer_size' not in agent_config['sender']:
-                agent_config['sender']['mem_buffer_size'] = 16
+                agent_config['sender']['mem_buffer_size'] = 1
             if 'file_buffer_size' not in agent_config['sender']:
                 agent_config['sender']['file_buffer_size'] = 32
             if 'file_size_limit' not in agent_config['sender']:
