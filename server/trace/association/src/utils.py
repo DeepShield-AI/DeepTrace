@@ -135,6 +135,8 @@ def e2e_acc(spans):
                 ingress_trace_ids.append(incoming_span.trace_id)
         for outgoing_ip, outgoing_spans in tgid_spans['outgoing'].items():
             for outgoing_span in outgoing_spans:
+                if outgoing_span.trace_id == "UnknownTraceID":
+                    continue
                 if outgoing_span.trace_id not in trace_acc:
                     trace_acc[outgoing_span.trace_id] = 1
                 if outgoing_span.parent_id is None and outgoing_span.trace_id in ingress_trace_ids:

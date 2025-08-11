@@ -66,7 +66,7 @@ def cosine_similarity(str1, str2):
 #     return sorted_spans
 
 
-def inter_association(spans, client_ingress = None, tuple_used=False, tuple_direction=False):
+def inter_association(spans, client_ingress = None, tuple_used=False, tuple_direction=False, clock_skew = True):
     """
     client_ingress: 如果指定了client_ingress，则跳过该endpoint的Ingress span
     tuple_used: 是否使用四元组进行关联
@@ -74,6 +74,7 @@ def inter_association(spans, client_ingress = None, tuple_used=False, tuple_dire
     """
     host_delta = 100e7 # ns = 10ms 不同主机之间的时钟偏差
     host_delta = sys.maxsize
+    # host_delta = 1e3 # 单主机模式下没有时钟偏移
     sorted_spans = sorted(spans, key=lambda x: x.start_time)
     # traceid_count = Counter([span.trace_id for span in sorted_spans])
     # for trace_id, count in traceid_count.items():
@@ -81,6 +82,7 @@ def inter_association(spans, client_ingress = None, tuple_used=False, tuple_dire
     # for span in sorted_spans:
     #     five_tuple = f"{span.src_ip}:{span.src_port} -> {span.dst_ip}:{span.dst_port}"
     #     debug.write(f'{span.direction} {span.endpoint} {span.span_id} {span.trace_id} {five_tuple}\n')
+
     used_set = set()
     error_count = 0
     mapping_score = {}
@@ -91,45 +93,65 @@ def inter_association(spans, client_ingress = None, tuple_used=False, tuple_dire
                 continue
         if span.direction == 'Ingress':
             cross_count += 1
-            index2score = {}
-            for j in range(0, i)[::-1]:
-                if span.start_time - sorted_spans[j].start_time > host_delta:
-                    break
-                if sorted_spans[j].direction == 'Ingress':
-                    continue
-                if tuple_used:
-                    if tuple_direction:
-                        if (sorted_spans[j].dst_ip, sorted_spans[j].dst_port, sorted_spans[j].src_ip, sorted_spans[j].src_port) != \
-                            (span.src_ip, span.src_port, span.dst_ip, span.dst_port):
-                            continue
-                    else:
-                        if (sorted_spans[j].src_ip, sorted_spans[j].src_port, sorted_spans[j].dst_ip, sorted_spans[j].dst_port) != \
+            if clock_skew == False:
+                for j in range(0, i)[::-1]:
+                    if span.end_time < sorted_spans[j].start_time:
+                        break
+                    if sorted_spans[j].direction == 'Ingress':
+                        continue
+                    if span.end_time - sorted_spans[j].end_time > 20e3 or sorted_spans[j].start_time - span.start_time > 20e3:
+                        continue
+                    if tuple_used:
+                        if tuple_direction:
+                            if (sorted_spans[j].dst_ip, sorted_spans[j].dst_port, sorted_spans[j].src_ip, sorted_spans[j].src_port) != \
                                 (span.src_ip, span.src_port, span.dst_ip, span.dst_port):
-                            continue
-                if span.endpoint == sorted_spans[j].endpoint and span.src_port == sorted_spans[j].src_port \
-                        and span.dst_port == sorted_spans[j].dst_port:
-                    mapping_score[(i, j)] = cosine_similarity(span.req_content, sorted_spans[j].req_content)
-
-
-            for j in range(i + 1, len(sorted_spans)):
-                if sorted_spans[j].start_time - span.start_time > host_delta:
-                    break
-                if sorted_spans[j].direction == 'Ingress':
-                    continue
-                if tuple_used:
-                    if tuple_direction:
-                        if (sorted_spans[j].dst_ip, sorted_spans[j].dst_port, sorted_spans[j].src_ip, sorted_spans[j].src_port) != \
-                            (span.src_ip, span.src_port, span.dst_ip, span.dst_port):
-                            continue
-                    else:
-                        if (sorted_spans[j].src_ip, sorted_spans[j].src_port, sorted_spans[j].dst_ip, sorted_spans[j].dst_port) != \
+                                continue
+                        else:
+                            if (sorted_spans[j].src_ip, sorted_spans[j].src_port, sorted_spans[j].dst_ip, sorted_spans[j].dst_port) != \
+                                    (span.src_ip, span.src_port, span.dst_ip, span.dst_port):
+                                continue
+                    if span.endpoint == sorted_spans[j].endpoint and span.src_port == sorted_spans[j].src_port \
+                            and span.dst_port == sorted_spans[j].dst_port:
+                        mapping_score[(i, j)] = cosine_similarity(span.req_content, sorted_spans[j].req_content)
+            else:
+                for j in range(0, i)[::-1]:
+                    if span.start_time - sorted_spans[j].start_time > host_delta:
+                        break
+                    if sorted_spans[j].direction == 'Ingress':
+                        continue
+                    if tuple_used:
+                        if tuple_direction:
+                            if (sorted_spans[j].dst_ip, sorted_spans[j].dst_port, sorted_spans[j].src_ip, sorted_spans[j].src_port) != \
                                 (span.src_ip, span.src_port, span.dst_ip, span.dst_port):
-                            continue
-                # if span.endpoint == "ComposeCreatorWithUserId":
-                #     print(sorted_spans[j].endpoint)
-                if span.endpoint == sorted_spans[j].endpoint and span.src_port == sorted_spans[j].src_port \
-                        and span.dst_port == sorted_spans[j].dst_port:
-                    mapping_score[(i, j)] = cosine_similarity(span.req_content, sorted_spans[j].req_content)
+                                continue
+                        else:
+                            if (sorted_spans[j].src_ip, sorted_spans[j].src_port, sorted_spans[j].dst_ip, sorted_spans[j].dst_port) != \
+                                    (span.src_ip, span.src_port, span.dst_ip, span.dst_port):
+                                continue
+                    if span.endpoint == sorted_spans[j].endpoint and span.src_port == sorted_spans[j].src_port \
+                            and span.dst_port == sorted_spans[j].dst_port:
+                        mapping_score[(i, j)] = cosine_similarity(span.req_content, sorted_spans[j].req_content)
+
+            if clock_skew:
+                for j in range(i + 1, len(sorted_spans)):
+                    if sorted_spans[j].start_time - span.start_time > host_delta:
+                        break
+                    if sorted_spans[j].direction == 'Ingress':
+                        continue
+                    if tuple_used:
+                        if tuple_direction:
+                            if (sorted_spans[j].dst_ip, sorted_spans[j].dst_port, sorted_spans[j].src_ip, sorted_spans[j].src_port) != \
+                                (span.src_ip, span.src_port, span.dst_ip, span.dst_port):
+                                continue
+                        else:
+                            if (sorted_spans[j].src_ip, sorted_spans[j].src_port, sorted_spans[j].dst_ip, sorted_spans[j].dst_port) != \
+                                    (span.src_ip, span.src_port, span.dst_ip, span.dst_port):
+                                continue
+                    # if span.endpoint == "ComposeCreatorWithUserId":
+                    #     print(sorted_spans[j].endpoint)
+                    if span.endpoint == sorted_spans[j].endpoint and span.src_port == sorted_spans[j].src_port \
+                            and span.dst_port == sorted_spans[j].dst_port:
+                        mapping_score[(i, j)] = cosine_similarity(span.req_content, sorted_spans[j].req_content)
 
     mapping_score = sorted(mapping_score.items(), key=lambda x: x[1], reverse=True)
     # fp = open('score.txt', 'w')

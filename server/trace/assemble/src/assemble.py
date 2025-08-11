@@ -37,6 +37,7 @@ def construct_topology(spans):
     """
     构建拓扑结构
     """
+
     def dict_to_tree(edges):
         all_children = {c for v in edges.values() for c in v}
         roots = [k for k in edges if k not in all_children]
@@ -58,10 +59,12 @@ def construct_topology(spans):
                 tgid_edges[parent_tgid] = []
             tgid_edges[parent_tgid].append(span['tag']['ebpf_tag']['tgid'])
     topo = dict_to_tree(tgid_edges)
+    # topo = {}
     components = {}
     for span in spans:
         if span['tag']['ebpf_tag']['tgid'] not in components:
             if span['tag']['docker_tag'] is None:
+                print(f"Warning: span {span['context']['span_id']} has no docker_tag")
                 continue
             components[span['tag']['ebpf_tag']['tgid']] = {
                 'name': span['tag']['docker_tag']['container_name'],
