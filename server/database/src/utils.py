@@ -123,8 +123,8 @@ def es_read_span_list(index_name):
     for span in spans:
         span_obj = Span(span)
         
-        if span_obj.protocol not in ['Redis', 'HTTP1']:
-            continue
+        # if span_obj.protocol not in ['Thrift', 'HTTP1']:
+        #     continue
         span_class_list.append(span_obj)
     return span_class_list
 
@@ -146,9 +146,31 @@ def es_read_agent_span_list(agents):
     return all_spans
 
 
+def create_trace_index_with_nested(index_name):
+    ES_PASSWORD, SERVER_IP = read_db_config()
+    # SERVER_IP = "114.215.254.187"
+    es = Elasticsearch(
+        hosts=[f"http://{SERVER_IP}:9200"],
+        basic_auth=(ES_USERNAME, ES_PASSWORD)
+    )
+    mapping = {
+        "mappings": {
+            "properties": {
+                "spans": {
+                    "type": "nested"
+                }
+            }
+        }
+    }
+    if not es.indices.exists(index=index_name):
+        es.indices.create(index=index_name, body=mapping)
+
+
 def es_write_traces(index_name, traces):
+    create_trace_index_with_nested(index_name)
     traces = sorted(traces, key=lambda trace: trace['start_time'])
     ES_PASSWORD, SERVER_IP = read_db_config()
+    # SERVER_IP = "114.215.254.187"
     es = Elasticsearch(
         hosts=[f"http://{SERVER_IP}:9200"],
         basic_auth=(ES_USERNAME, ES_PASSWORD)  # 添加用户名和密码
@@ -165,7 +187,7 @@ def es_write_traces(index_name, traces):
 
     # 执行批量写入
     success, _ = helpers.bulk(es, actions)
-    # print(f"Successfully wrote {success} traces to index {index_name}")
+    print(f"Successfully wrote {success} traces to index {index_name}")
 
 
 def es_clear_all():
