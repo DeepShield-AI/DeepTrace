@@ -23,7 +23,7 @@ You can get more information in our comprehensive [documentation](docs/README.md
 
 # Getting Started with DeepTrace
 
-Welcome to DeepTrace! You can refer to [Usage.md](docs/usage/Usage.md) to deploy DeepTrace.
+Welcome to DeepTrace! You can refer to [All-in-One.md](docs/usage/All-in-One.md) to deploy DeepTrace.
 
 
 # Software Architecture
