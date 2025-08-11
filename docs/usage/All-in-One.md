@@ -41,7 +41,7 @@ To generate traces, deploy a microservice application on the host:
 - Social Network — see [documentation 2](../../tests/workload/socialnetwork/README.md)
 
 
-# Step 5: Deploy Agents
+## Step 5: Deploy Agents
 
 - **After that, use the command-line tool of the server to install and start the agent**
 
