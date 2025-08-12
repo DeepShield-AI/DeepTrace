@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ubuntu-client
+  labels:
+    death-star-project: social-network
+    app: ubuntu-client
+  namespace: social-network
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      death-star-project: social-network
+      app: ubuntu-client
+  template:
+    metadata:
+      labels:
+        death-star-project: social-network
+        app: ubuntu-client
+      name: ubuntu-client
+    spec:
+      containers:
+      - name: ubuntu-client
+        image: deathstarbench/wrk2-client
+        command:  ["/bin/sh"]
+        args:
+          - -c
+          - sleep 365d
+        imagePullPolicy: Always
+      restartPolicy: Always
