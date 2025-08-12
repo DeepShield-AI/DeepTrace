@@ -146,7 +146,7 @@ def e2e_acc(spans):
                 if outgoing_span.parent_id not in spanid2traceid:
                     debug.write(f"e2e Warning: {outgoing_span.trace_id} -> {outgoing_span.parent_id} | {outgoing_span.endpoint}\n")
                     continue
-                if spanid2traceid[outgoing_span.parent_id] != outgoing_span.trace_id:
+                if spanid2traceid[outgoing_span.parent_id] != outgoing_span.trace_id and spanid2traceid[outgoing_span.parent_id] != "UnknownTraceID":
                     trace_acc[outgoing_span.trace_id] = 0
                     debug.write(f"e2e Error3: {outgoing_span.trace_id} -> {spanid2traceid[outgoing_span.parent_id]} | {outgoing_span.endpoint}\n")
                     continue
