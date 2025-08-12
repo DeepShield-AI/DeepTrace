@@ -31,7 +31,7 @@ class Agent:
         self.host_password = self.agent_info['host_password']
         self.user_name = self.agent_info['user_name']
         # self.code_path = self.expand_path(self.agent_info['code_path'])
-        self.code_path = '/etc'
+        self.code_path = '/tmp'
         es_write_agent_config(self.agent_config, self.elastic_config, self.server_config)
         
 
@@ -122,14 +122,18 @@ pids = []
             # 将 toml_content 写入到远程主机的目标文件
             self.connect()
             sftp = self.ssh_client.open_sftp()
-            with sftp.file(remote_file_path, 'w') as remote_file:
+            
+            tmp_file = f"/tmp/default.toml"
+            with sftp.file(tmp_file, 'w') as remote_file:
                 remote_file.write(toml_content.strip())
             sftp.close()
+            
+            move_cmd = f"echo {self.host_password} | sudo -S mv {tmp_file} {remote_file_path}"
+            self.execute_command(move_cmd)
 
-            print(f"{self.agent_name}: 配置文件已同步 {remote_file_path}")
+            print(f"{self.agent_name}: Configuration file has been synchronized to {remote_file_path}")
         except Exception as e:
-            print(f"{self.agent_name}: 同步配置文件失败 - {str(e)}")
-        
+            print(f"{self.agent_name}: Failed to synchronize configuration file - {str(e)}")
 
 
     def clone_code(self, progress_dict):
@@ -141,14 +145,14 @@ pids = []
                 command = f"cd {self.code_path} && echo {self.host_password} | sudo -S rm -rf DeepTrace"
                 output, error = self.execute_command(command)
                 if error:
-                    raise Exception(f"清除老代码失败: {error}")
+                    raise Exception(f"Failed to clear old code: {error}")
                 else:
-                    progress_dict[self.agent_name] = "清除老代码成功"
+                    progress_dict[self.agent_name] = "Successfully cleared old code"
                    
 
             # 检查目标路径是否存在，不存在则创建
             repo_url = 'https://gitee.com/gytlll/DeepTrace.git'
-            command = f"mkdir -p {self.code_path} && cd {self.code_path} && echo {self.host_password} | sudo -S GIT_LFS_SKIP_SMUDGE=1 git clone {repo_url}"
+            command = f" cd {self.code_path} && echo {self.host_password} | sudo -S GIT_LFS_SKIP_SMUDGE=1 git clone {repo_url}"
             # print(f"在远程主机执行命令: {command}")
             
             # 执行命令
@@ -158,7 +162,7 @@ pids = []
             if error and any(x in error.lower() for x in ["fatal", "error", "failed"]):
                 raise Exception(f"克隆代码失败: {error}")
 
-            progress_dict[self.agent_name] = f"代码已克隆到 {self.code_path}/DeepTrace"
+            progress_dict[self.agent_name] = f"Code has been cloned to {self.code_path}/DeepTrace"
 
         except Exception as e:
             print(f"克隆代码到 {self.agent_name} 失败: {str(e)}")
@@ -166,9 +170,11 @@ pids = []
 
     def install(self, progress_dict):
         t1 = time.time()
-        check_command = f"cd {self.code_path}/DeepTrace/agent && [ -d target ] && rm -rf target"
-        self.execute_command(check_command)
-        progress_dict[self.agent_name] = "开始安装..."
+        # check_command = f"cd {self.code_path}/DeepTrace/agent && echo {self.host_password} | sudo -S [ -d target ] && sudo -S rm -rf target"
+        # self.execute_command(check_command)
+        self.execute_command(f"echo {self.host_password} | sudo -S touch {self.code_path}/DeepTrace/agent.log")
+        self.execute_command(f"echo {self.host_password} | sudo -S chmod 666 {self.code_path}/DeepTrace/agent.log")
+        progress_dict[self.agent_name] = "start to install agent..."
 
         stop_event = threading.Event()
 
@@ -180,8 +186,7 @@ pids = []
         def tail_log():
             last_line = ""
             while not stop_event.is_set():
-                self.execute_command(f"echo {self.host_password} | sudo touch {self.code_path}/DeepTrace/agent/agent.log")
-                tail_cmd = f"cd {self.code_path}/DeepTrace && echo {self.host_password} | sudo -S tail -n 1 agent.log"
+                tail_cmd = f"cd {self.code_path}/DeepTrace/ && echo {self.host_password} | sudo -S tail -n 1 agent.log"
                 output, error = self.execute_command(tail_cmd)
                 if output and output.strip() != last_line:
                     last_line = output.strip()
