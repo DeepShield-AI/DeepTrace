@@ -1,5 +1,9 @@
 # DeepTrace All-in-One Mode Usage Guide
 
+## Equipment Requirements
+
+A host with Ubuntu 24.04, kernel version 6.8.0, over 40G of disk space, and internet connectivity is required.
+
 ## Step 1: Clone the Code
 
 In **all-in-one** mode, the DeepTrace **server** and **agent** run on the **same host**.  
