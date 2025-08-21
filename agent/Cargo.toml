@@ -154,9 +154,9 @@ path = "src/main.rs"
 # codegen-units = 1
 # rpath = false
 
-# [profile.release]
-# panic = "abort"
-# opt-level = 3
-# # debug = 2
-# lto = true
-# codegen-units = 1
+[profile.release]
+panic = "abort"
+opt-level = 3
+# debug = 2
+lto = true
+codegen-units = 1

@@ -3,14 +3,12 @@
 This guide provides instructions for testing the eBPF overhead of DeepTrace.
 ## Setup & Execution
 
-### Setup Environment
-
-TODO
-
 ### Inject eBPF Program into Kernel
 
 ```bash
-RUST_LOG=info cargo run --release --config 'target."cfg(all())".runner="sudo -E"'
+cd DeepTrace/agent
+cp config/default.toml.example config/default.toml
+RUST_LOG=info cargo run --release --config 'target."cfg(all())".runner="sudo -E"' -- -f config/default.toml
 ```
 
 ### Repeatedly Call a Syscall and Measure the Needed Time (Repeat 10^5 times, take the average of 100)
