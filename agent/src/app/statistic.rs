@@ -81,46 +81,32 @@ pub async fn sync_log(client: &elasticsearch::Elasticsearch) {
             return;
         }
 
-        let resp = client
-            .update(
-                elasticsearch::UpdateParts::IndexId("agent_log", &lcuuid),
-            )
-            .body(json!({
-                "script": {
-                    "source": r#"
-                        if (ctx._source.logs == null) {
-                            ctx._source.logs = params.new_logs;
-                        } else {
-                            ctx._source.logs.addAll(params.new_logs);
-                        }
-                        ctx._source.agent_name = params.agent_name;
-                    "#,
-                    "lang": "painless",
-                    "params": {
-                        "new_logs": logs_to_sync,
-                        "agent_name": agent_name,
-                    }
-                },
-                "upsert": {
+        for log_entry in logs_to_sync.iter() {
+            let resp = client
+                .index(elasticsearch::IndexParts::Index("agent_log"))
+                .body(json!({
                     "agent_name": agent_name,
                     "lcuuid": lcuuid,
-                    "logs": logs_to_sync,
-                }
-            }))
-            .send()
-            .await;
+                    "content": log_entry.content,
+                    "timestamp": log_entry.timestamp,
+                    "level": log_entry.level,
+                }))
+                .send()
+                .await;
 
-        match resp {
-            Ok(r) if r.status_code().is_success() => {
-                info!("Logs synced to ES successfully, id: {}", lcuuid);
-                stat.log_store.logs.clear();
-            }
-            Ok(r) => {
-                error!("Failed to sync logs, status: {}", r.status_code());
-            }
-            Err(e) => {
-                error!("Failed to sync logs: {:?}", e);
+            match resp {
+                Ok(r) if r.status_code().is_success() => {
+                    info!("Log synced to ES successfully, agent: {}, id: {}", agent_name, lcuuid);
+                }
+                Ok(r) => {
+                    error!("Failed to sync log, status: {}", r.status_code());
+                }
+                Err(e) => {
+                    error!("Failed to sync log: {:?}", e);
+                }
             }
         }
+
+        stat.log_store.logs.clear();
     }
 }

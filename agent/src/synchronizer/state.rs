@@ -240,119 +240,40 @@ pub(super) async fn sync_stats(client: &elasticsearch::Elasticsearch) {
     let es_index_name = "agent_stats";
 
     let stats = Stats::new().await;
-    let state_id = stats.lcuuid.clone(); // 使用哈希后的id
-
-    // 获取当前进程 PID 和 agent_name
-    let pid = sysinfo::get_current_pid().map(|p| p.to_string()).unwrap_or_default();
     let agent_name = stats.name.clone();
+    let lcuuid = stats.lcuuid.clone();
+    let timestamp = stats.timestamp;
+    let cpu_usage = stats.cpu_usage;
+    let memory_usage = stats.memory_usage;
+    let span_num = stats.span_num;
 
-    // 构造要追加的各字段数据
-    let new_timestamp = stats.timestamp;
-    let new_cpu = stats.cpu_usage;
-    let new_mem = stats.memory_usage;
-    let new_span = stats.span_num;
-
-    client
-        .update(
-            elasticsearch::UpdateParts::IndexId(
-                &es_index_name,
-                &state_id,
-            ),
-        )
+    // 每次采集直接写入一行
+    let resp = client
+        .index(elasticsearch::IndexParts::Index(es_index_name))
         .body(json!({
-            "script": {
-                "source": r#"
-                    ctx._source.pid = params.pid;
-                    ctx._source.agent_name = params.agent_name;
-                    if (ctx._source.timestamps == null) {
-                        ctx._source.timestamps = [params.timestamp];
-                    } else {
-                        ctx._source.timestamps.add(params.timestamp);
-                    }
-                    if (ctx._source.cpu_usages == null) {
-                        ctx._source.cpu_usages = [params.cpu];
-                    } else {
-                        ctx._source.cpu_usages.add(params.cpu);
-                    }
-                    if (ctx._source.memory_usages == null) {
-                        ctx._source.memory_usages = [params.mem];
-                    } else {
-                        ctx._source.memory_usages.add(params.mem);
-                    }
-                    if (ctx._source.span_nums == null) {
-                        ctx._source.span_nums = [params.span];
-                    } else {
-                        ctx._source.span_nums.add(params.span);
-                    }
-                "#,
-                "lang": "painless",
-                "params": {
-                    "pid": pid,
-                    "agent_name": agent_name,
-                    "timestamp": new_timestamp,
-                    "cpu": new_cpu,
-                    "mem": new_mem,
-                    "span": new_span
-                }
-            },
-            "upsert": {
-                "pid": pid,
-                "agent_name": agent_name,
-                "timestamps": [new_timestamp],
-                "cpu_usages": [new_cpu],
-                "memory_usages": [new_mem],
-                "span_nums": [new_span]
-            }
+            "agent_name": agent_name,
+            "lcuuid": lcuuid,
+            "timestamp": timestamp,
+            "cpu_usage": cpu_usage,
+            "memory_usage": memory_usage,
+            "span_num": span_num
         }))
         .send()
-        .await
-        .expect("Failed to send update request");
+        .await;
+
+    match resp {
+        Ok(r) if r.status_code().is_success() => {
+            info!("Stats synced to ES successfully, agent: {}, lcuuid: {}", agent_name, lcuuid);
+        }
+        Ok(r) => {
+            error!("Failed to sync stats, status: {}", r.status_code());
+        }
+        Err(e) => {
+            error!("Failed to sync stats: {:?}", e);
+        }
+    }
 }
-// pub(super) async fn sync_stats(client: &elasticsearch::Elasticsearch) {
-// 	let es_index_name = "agent_stats";
 
-// 	let stats = Stats::new();
-// 	let state_id = stats.lcuuid.clone(); // 使用哈希后的id
-
-
-// 	// 构造要追加的序列数据
-// 	let new_entry = json!({
-// 		"timestamp": stats.timestamp,
-// 		"cpu_usage": stats.cpu_usage,
-// 		"memory_usage": stats.memory_usage,
-// 		"span_num": stats.span_num,
-// 	});
-
-// 	// 追加到 stats_series 数组
-// 	client
-// 		.update(
-// 			elasticsearch::UpdateParts::IndexId(
-// 				&es_index_name,
-// 				&state_id,
-// 			),
-// 		)
-// 		.body(json!({
-// 			"script": {
-// 				"source": r#"
-// 					if (ctx._source.stats_series == null) {
-// 						ctx._source.stats_series = [params.entry];
-// 					} else {
-// 						ctx._source.stats_series.add(params.entry);
-// 					}
-// 				"#,
-// 				"lang": "painless",
-// 				"params": {
-// 					"entry": new_entry
-// 				}
-// 			},
-// 			"upsert": {
-// 				"stats_series": [new_entry]
-// 			}
-// 		}))
-// 		.send()
-// 		.await
-// 		.expect("Failed to send update request");
-// }
 
 pub(super) async fn health_checker() {
 	let config = elastic_config();
