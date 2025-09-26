@@ -11,6 +11,8 @@ ES_USERNAME = "elastic"
 
 
 
+
+
 def es_write_agent_config(agent_config, elastic_config, server_config):
     ES_PASSWORD, SERVER_IP = read_db_config()
     try:
@@ -148,7 +150,6 @@ def es_read_agent_span_list(agents):
 
 def create_trace_index_with_nested(index_name):
     ES_PASSWORD, SERVER_IP = read_db_config()
-    # SERVER_IP = "114.215.254.187"
     es = Elasticsearch(
         hosts=[f"http://{SERVER_IP}:9200"],
         basic_auth=(ES_USERNAME, ES_PASSWORD)
@@ -157,6 +158,16 @@ def create_trace_index_with_nested(index_name):
         "mappings": {
             "properties": {
                 "spans": {
+                    "type": "nested"
+                },
+                "start_time": {
+                    "type": "date",
+                    "format": "epoch_millis"
+                },
+                "nodes": {
+                    "type": "nested"
+                },
+                "edges": {
                     "type": "nested"
                 }
             }
@@ -170,7 +181,6 @@ def es_write_traces(index_name, traces):
     create_trace_index_with_nested(index_name)
     traces = sorted(traces, key=lambda trace: trace['start_time'])
     ES_PASSWORD, SERVER_IP = read_db_config()
-    # SERVER_IP = "114.215.254.187"
     es = Elasticsearch(
         hosts=[f"http://{SERVER_IP}:9200"],
         basic_auth=(ES_USERNAME, ES_PASSWORD)  # 添加用户名和密码
@@ -188,6 +198,73 @@ def es_write_traces(index_name, traces):
     # 执行批量写入
     success, _ = helpers.bulk(es, actions)
     print(f"Successfully wrote {success} traces to index {index_name}")
+    
+
+
+
+
+def es_write_nodes_edges(nodes, edges):
+    ES_PASSWORD, SERVER_IP = read_db_config()
+    es = Elasticsearch(
+        hosts=[f"http://{SERVER_IP}:9200"],
+        basic_auth=(ES_USERNAME, ES_PASSWORD)  # 添加用户名和密码
+    )
+    
+    node_index = "nodes"
+    edge_index = "edges"
+    
+    # 检查并创建节点索引
+    mapping = {
+        "mappings": {
+            "properties": {
+                "metric": {
+                    "properties": {
+                        "start_time": {
+                            "type": "date",
+                            "format": "epoch_millis"
+                        },
+                        "end_time": {
+                            "type": "date",
+                            "format": "epoch_millis"
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if not es.indices.exists(index=node_index):
+        es.indices.create(index=node_index, body=mapping)
+    
+    # 检查并创建边索引
+    if not es.indices.exists(index=edge_index):
+        es.indices.create(index=edge_index, body=mapping)
+    
+    # 准备节点的 bulk 数据
+    node_actions = [
+        {
+            "_index": node_index,
+            "_source": node
+        }
+        for node in nodes
+    ]
+    
+    # 准备边的 bulk 数据
+    edge_actions = [
+        {
+            "_index": edge_index,
+            "_source": edge
+        }
+        for edge in edges
+    ]
+    
+    # 执行批量写入节点和边
+    if node_actions:
+        success_nodes, _ = helpers.bulk(es, node_actions)
+        print(f"Successfully wrote {success_nodes} nodes to index {node_index}")
+    
+    if edge_actions:
+        success_edges, _ = helpers.bulk(es, edge_actions)
+        print(f"Successfully wrote {success_edges} edges to index {edge_index}")
 
 
 def es_clear_all():
@@ -355,3 +432,6 @@ def write_callgraph(graph):
     
     helpers.bulk(es, actions)
     log("Call graph written to Elasticsearch")
+    
+    
+    
