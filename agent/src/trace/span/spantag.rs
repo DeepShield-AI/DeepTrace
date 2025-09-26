@@ -14,7 +14,7 @@ thread_local! {
 #[derive(Serialize, Clone, Debug)]
 pub struct DockerTag {
 	pub container_id: String,
-	pub container_name: Vec<String>,
+	pub container_name: String,
 	pub image: String,
 	pub hostname: String,
 	pub gateway: String,
@@ -84,10 +84,10 @@ impl DockerTag {
 				}
 			}
 
-			let tag = DockerTag {
+			let mut tag = DockerTag {
 				tgid,
 				container_id: id,
-				container_name: container.names.unwrap_or_default(),
+				container_name: container.names.clone().unwrap_or_default().get(0).cloned().map_or(String::new(), |n| n),
 				image: container.image.unwrap_or_default(),
 				hostname: inspect
 					.config
@@ -109,6 +109,7 @@ impl DockerTag {
 
 			// 以每个进程PID为key映射到tag
 			for pid in pids {
+				tag.tgid = pid as u32;
 				TGID_DOCKER_MAP.with(|map_cell| {
 					map_cell.borrow_mut().insert(pid as u32, tag.clone());
 				});
