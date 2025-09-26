@@ -32,7 +32,7 @@ class Agent:
         self.user_name = self.agent_info['user_name']
         # self.code_path = self.expand_path(self.agent_info['code_path'])
         self.code_path = '/tmp'
-        es_write_agent_config(self.agent_config, self.elastic_config, self.server_config)
+        # es_write_agent_config(self.agent_config, self.elastic_config, self.server_config)
         
 
 
@@ -134,6 +134,7 @@ pids = []
             print(f"{self.agent_name}: Configuration file has been synchronized to {remote_file_path}")
         except Exception as e:
             print(f"{self.agent_name}: Failed to synchronize configuration file - {str(e)}")
+        
 
 
     def clone_code(self, progress_dict):
@@ -293,3 +294,76 @@ pids = []
             print(f"{self.agent_name}: 配置更新失败，状态码: {response.status_code}, 响应: {response.text}")
 
 
+
+    def get_k8s_tags(self):
+        # 第一步：获取所有容器 ID
+        cmd_ids = "crictl ps -q"
+        output, error = self.execute_command(cmd_ids)
+        if not output:
+            print(f"{self.agent_name}: 没有k8s")
+            return []
+
+        ids = [cid.strip() for cid in output.strip().split('\n') if cid.strip()]
+        result = []
+        # 第二步：遍历每个容器 ID，获取详细信息
+        for cid in ids:
+            cmd_inspect = f"crictl inspect {cid}"
+            inspect_out, inspect_err = self.execute_command(cmd_inspect)
+            if not inspect_out:
+                print(f"{self.agent_name}: inspect失败: {inspect_err}")
+                continue
+            # 提取信息
+            pid = None
+            namespace = None
+            pod_name = None
+            pod_uid = None
+            for line in inspect_out.split('\n'):
+                if '"pid":' in line and pid is None:
+                    pid = line.split(':')[-1].replace(',', '').strip()
+                elif '"io.kubernetes.pod.namespace":' in line and namespace is None:
+                    namespace = line.split(':')[-1].replace('"', '').replace(',', '').strip()
+                elif '"name":' in line and pod_name is None:
+                    pod_name = line.split(':')[-1].replace('"', '').replace(',', '').strip()
+                elif '"io.kubernetes.pod.uid":' in line and pod_uid is None:
+                    pod_uid = line.split(':')[-1].replace('"', '').replace(',', '').strip()
+            if pid and namespace and pod_name and pod_uid:
+                result.append({
+                    'tgid': pid,
+                    'namespace': namespace,
+                    'pod_name': pod_name,
+                    'uuid': pod_uid,
+                    'type': 0
+                })
+                
+        cmd = "crictl pods -o json"
+        output, error = self.execute_command(cmd)
+        if not output:
+            print(f"{self.agent_name}: 获取 pod 详情失败: {error}")
+            return []
+
+        try:
+            pods_json = json.loads(output)
+        except Exception as e:
+            print(f"{self.agent_name}: 解析 pod json 失败: {str(e)}")
+            return []
+
+        for pod in pods_json.get("items", []):
+            uuid = pod.get("metadata", {}).get("uid", "")
+            pod_id = pod.get("id", "")
+            ip = ""
+            hostname = ""
+            if pod_id:
+                cmd_inspectp = f"crictl inspectp {pod_id}"
+                inspectp_out, inspectp_err = self.execute_command(cmd_inspectp)
+                inspectp_out_json = json.loads(inspectp_out)
+                if inspectp_out_json:
+                    ip = inspectp_out_json.get("status", {}).get("network", {}).get("ip", '')
+                    hostname = inspectp_out_json.get("info", {}).get("config", {}).get("hostname", '')
+            result.append({
+                "uuid": uuid,
+                "ip": ip,
+                "hostname": hostname,
+                "type": 1,
+            })
+        return result
+        
