@@ -67,7 +67,7 @@ class Span:
             match = re.search(r'Request-Id:\s*(\d+)', content)
             if match:
                 return match.group(1)
-            match = re.search(r'Requestid:\s*(\d+)', content)
+            match = re.search(r'Requestid:\s*([0-9a-fA-F]+)', content)
             if match:
                 return match.group(1)
         if 'x-b3-traceid' in content:

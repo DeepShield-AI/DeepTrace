@@ -151,6 +151,8 @@ def e2e_acc(spans):
                     debug.write(f"e2e Error3: {outgoing_span.trace_id} -> {spanid2traceid[outgoing_span.parent_id]} | {outgoing_span.endpoint}\n")
                     continue
     print(f'error num: {len(trace_acc)-sum(trace_acc.values())}')
+    if len(trace_acc) == 0:
+        return 0
     return sum(trace_acc.values()) / len(trace_acc)
 
 def print_acc(span_dict):

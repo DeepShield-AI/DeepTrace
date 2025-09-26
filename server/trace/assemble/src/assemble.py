@@ -1,4 +1,8 @@
 
+from trace.assemble.src.nodes import construct_nodes
+from trace.assemble.src.edges import construct_edges
+
+
 
 def search_span(span, paret_childs):
     current_spans = [span.span_id, span.parent_id]
@@ -26,11 +30,15 @@ def check_finish(spans, visted):
 def get_status_code(span):
     if span.protocol == 'HTTP1':
         return span.resp_content.split()[1]
+    else:
+        return "200"
 
 
 def add_childs(span, paret_childs):
     span_json = span.tojson()
     span_json['context']['child_ids'] = paret_childs[span.span_id]['childs']
+    span_json['metric']['start_time'] = time_conversion(span.start_time)
+    span_json['metric']['end_time'] = time_conversion(span.end_time)
     return span_json
 
 def construct_topology(spans):
@@ -72,8 +80,39 @@ def construct_topology(spans):
                 'endpoint': span['tag']['ebpf_tag']['endpoint'],
                 'protocol': span['tag']['ebpf_tag']['protocol']
             }
-    return topo, components
+            
     
+    return topo, components
+
+
+def time_conversion(ktime_ns):
+    boot_time = int(open('/proc/stat').read().split('btime ')[1].split('\n')[0])
+    event_time = boot_time * 1000 + int(ktime_ns / 1e3)
+    return event_time
+
+
+def get_aggre_tags(span_list):
+    aggre_tags = {
+        "endpoints": set(),
+        "component_names": set(),
+        "protocols": set(),
+        "ips": set(),
+        "status_codes": set()
+    }
+    for span in span_list:
+        aggre_tags["endpoints"].add(span['tag']['ebpf_tag']['endpoint'])
+        aggre_tags["component_names"].add(span['tag']['docker_tag']['container_name'])
+        aggre_tags["protocols"].add(span['tag']['ebpf_tag']['protocol'])
+        aggre_tags["ips"].add(span['tag']['docker_tag']['ip'])
+        status_code = "200" # TODO
+        if status_code is not None:
+            aggre_tags["status_codes"].add(status_code)
+    trace_tags = {}
+    for key, value in aggre_tags.items():
+        trace_tags[key] = list(value)
+    return trace_tags
+
+
 
 def assemble_trace(spans):
     """
@@ -81,7 +120,18 @@ def assemble_trace(spans):
     """
     span_dict = {span.span_id: span for span in spans}
     paret_childs = {}
+    ip2nodeid = {}
     for span in spans:
+        if span.direction == "Egress":
+            ip = span.dst_ip
+            node_id = span.tgid
+            if ip not in ip2nodeid:
+                ip2nodeid[ip] = node_id
+        if span.direction == "Ingress":
+            ip = span.src_ip
+            node_id = span.tgid
+            if ip not in ip2nodeid:
+                ip2nodeid[ip] = node_id
         if span.span_id not in paret_childs:
             paret_childs[span.span_id] = {'parent': None, 'childs': []}
         if span.parent_id is not None:
@@ -90,6 +140,8 @@ def assemble_trace(spans):
             paret_childs[span.parent_id]['childs'].append(span.span_id)
             paret_childs[span.span_id]['parent'] = span.parent_id
     traces = []
+    all_nodes = []
+    all_edges = []
     visited = set()
     while check_finish(spans, visited) is False:
         span = spans.pop(0)
@@ -113,6 +165,9 @@ def assemble_trace(spans):
         trace_end_time = max(span_dict[span_id].end_time for span_id in valid_span_ids)
         span_list = [add_childs(span_dict[span_id], paret_childs) for span_id in valid_span_ids]
         topo, components = construct_topology(span_list)
+        aggretags = get_aggre_tags(span_list)
+        nodes, fullnodes = construct_nodes(span_list, aggretags)
+        edges, fulledges = construct_edges(span_list, ip2nodeid, aggretags)
         traces.append({ 'trace_id': span.trace_id,
                         'span_num': len(span_list),
                         'e2e_duration': e2e_dutaion,
@@ -124,9 +179,14 @@ def assemble_trace(spans):
                         'client_port': span_dict[root_span_id].dst_port,
                         'protocol': protocol,
                         'status_code': status_code,
-                        'start_time': trace_start_time,
-                        'end_time': trace_end_time,
+                        'start_time': time_conversion(trace_start_time),
+                        'end_time': time_conversion(trace_end_time),
                         'topology': topo,
                         'components': components,
-                        'spans': span_list})
-    return traces
+                        'spans': span_list,
+                        'nodes': nodes,
+                        'edges': edges})
+        all_nodes.extend(fullnodes)
+        all_edges.extend(fulledges)
+    # print(all_nodes[:10])
+    return traces, all_nodes, all_edges
