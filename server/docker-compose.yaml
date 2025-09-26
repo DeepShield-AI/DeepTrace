@@ -40,7 +40,7 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=http://es:9200
       - ELASTICSEARCH_USERNAME=kibana
-      - ELASTICSEARCH_PASSWORD=netsys204
+      - ELASTICSEARCH_PASSWORD=xxxxx
     # 指定网络
     networks:
       - deeptrace-net
@@ -66,25 +66,25 @@ services:
     volumes:
       - ./:/app/
   
-  deeptrace_backend:
-    image: 47.97.67.233:5000/deepshield/deeptrace-ui-backend:latest
-    container_name: deeptrace-ui-backend
-    ports:
-      - "8080:8080"
-    depends_on:
-      - es
-    volumes:
-      - ./config/config.toml:/app/config.toml
+  # deeptrace_backend:
+  #   image: 47.97.67.233:5000/deepshield/deeptrace-ui-backend:latest
+  #   container_name: deeptrace-ui-backend
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - es
+  #   volumes:
+  #     - ./config/config.toml:/app/config.toml
 
-  deeptrace_frontend:
-    image: 47.97.67.233:5000/deepshield/deeptrace-ui-frontend:latest
-    container_name: deeptrace-ui-frontend
-    ports:
-      - "8000:8000"
-    depends_on:
-      - es
-    volumes:
-      - ./frontend/server.js:/app/src/services/server.js
+  # deeptrace_frontend:
+  #   image: 47.97.67.233:5000/deepshield/deeptrace-ui-frontend:latest
+  #   container_name: deeptrace-ui-frontend
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     - es
+  #   volumes:
+  #     - ./frontend/server.js:/app/src/services/server.js
 
 # 定义网络
 networks:
