@@ -1,0 +1,171 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/*",
+    # "libs/*",
+    "xtask",
+    "tests/prism-fixtures"
+]
+exclude = [
+    "crates/observ-trace-ebpf",
+    "crates/observ-cpu-ebpf",
+    "crates/observ-disk-ebpf",
+    "crates/observ-memory-ebpf",
+    "crates/observ-network-ebpf"
+]
+default-members = ["crates/prism", "crates/deeptrace", "tests/prism-fixtures"]
+
+[workspace.package]
+authors = ["smore.ioki@gmail.com", "gyt22@mails.tsinghua.edu.cn"]
+edition = "2024"
+homepage = "https://github.com/DeepShield-AI/DeepTrace"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/DeepShield-AI/DeepTrace"
+publish = false
+rust-version = "1.90.0"
+version = "0.1.0"
+
+[workspace.dependencies]
+observ-core = { path = "crates/observ-core" }
+observ-event = { path = "crates/observ-event" }
+observ-macros = { path = "crates/observ-macros" }
+observ-runtime = { path = "crates/observ-runtime" }
+
+# modules
+observ-config = { path = "crates/observ-config" }
+observ-metric = { path = "crates/observ-metric" }
+observ-sender = { path = "crates/observ-sender" }
+
+# metrics
+observ-cpu = { path = "crates/observ-cpu" }
+observ-disk = { path = "crates/observ-disk" }
+observ-memory = { path = "crates/observ-memory" }
+observ-network = { path = "crates/observ-network" }
+observ-metric-common = { path = "crates/observ-metric-common" }
+observ-metric-utils = { path = "crates/observ-metric-utils" }
+
+# trace
+observ-trace = { path = "crates/observ-trace" }
+observ-trace-common = { path = "crates/observ-trace-common" }
+
+# ebpf
+ebpf-common = { path = "crates/ebpf-common" }
+ebpf-manager = { path = "crates/ebpf-manager" }
+
+# utilities
+codec = { path = "crates/codec" }
+cow = { path = "crates/cow", features = ["serde"] }
+
+# test utils
+observ-fixtures = { path = "tests/observ-fixtures" }
+test-utils = { path = "tests/test-utils" }
+
+# other crates
+anyhow = { version = "1.0.100", default-features = false }
+approx = { version = "0.5.1", default-features = false }
+arc-swap = { version = "1.7.1", default-features = false }
+aya = { version = "0.13.1", default-features = false }
+aya-ebpf = { version = "0.1.1", default-features = false }
+aya-log = { version = "0.2.1", default-features = false }
+aya-log-ebpf = { version = "0.1.1", default-features = false }
+aya-obj = { version = "0.2.1", default-features = false }
+bindgen = { version = "0.72.1", default-features = false }
+bytes = { version = "1.10.1", default-features = false }
+cargo_metadata = { version = "0.23.0", default-features = false }
+cfg-if = { version = "1.0.3", default-features = false }
+chrono = { version = "0.4.42", default-features = false, features = ["clock", "serde"] }
+clap = { version = "4.5.48", default-features = false, features = ["color", "derive", "std", "error-context", "help", "usage"] }
+config = { version = "0.15.18", default-features = false, features = ["toml"] }
+csv-core = { version = "0.1.12", default-features = false }
+dashmap = { version = "7.0.0-rc2", default-features = false }
+elasticsearch = { version = "9.1.0-alpha.1", default-features = false }
+env_logger = { version = "0.11.8", default-features = false }
+libc = { version = "1.0.0-alpha.1", default-features = false }
+log = { version = "0.4.28", default-features = false, features = ["kv"] }
+lru = { version = "0.16.1", default-features = false }
+num_cpus = { version = "1.17.0", default-features = false }
+num_enum = { version = "0.7.4", default-features = false }
+nom = { version = "8.0.0", default-features = false }
+notify = { version = "8.2.0", default-features = false }
+object = { version = "0.37.3", default-features = false }
+once_cell = { version = "1.21.3", default-features = false, features = ["std"] }
+paste = { version = "1.0.15", default-features = false }
+portable-atomic = { version = "1.11.1", default-features = false, features = ["require-cas"] }
+pretty_assertions = { version= "1.4.1", default-features = false, features = ["alloc"] }
+proc-macro2 = { version = "1.0.101" }
+quote = { version = "1.0.41" }
+rand = { version = "0.10.0-rc.0", default-features = false, features = ["thread_rng"] }
+retry = { version = "2.1.0", default-features = false }
+rustc-hash = { version = "2.1.1", default-features = false, features = ["std"] }
+serde = { version = "1.0.228", default-features = false, features = ["derive"] }
+serde_json = { version = "1.0.145", default-features = false, features = ["alloc"] }
+syn = { version = "2.0.106" }
+thiserror = { version = "2.0.17", default-features = false }
+thread_local = { version = "1.1.9", default-features = false }
+tokio = { version = "1.47.1", default-features = false, features = [
+    "macros",
+    "rt",
+    "rt-multi-thread",
+    "net",
+    "signal",
+    "fs",
+    "io-util",
+    "time",
+    "sync"
+] }
+uom = { version = "0.37.0", default-features = false, features = [
+        "autoconvert", # automatic base unit conversion.
+        "u64", # Unsigned integer storage types.
+        "f32", "f64", # Floating point storage types.
+        "si", "std", # Built-in SI system and std library support.
+    ]}
+
+[profile.dev]
+split-debuginfo = "unpacked"
+codegen-units = 16
+
+# mirror configuration for crates compiled for the build platform
+[profile.dev.build-override]
+codegen-units = 16
+
+[profile.dev.package]
+# Build single-source-file crates with cg=1 as it helps make `cargo build` of a whole workspace a bit faster
+observ-runtime = { codegen-units = 1 }
+
+[profile.release]
+opt-level = 3
+debug = "limited"
+lto = "thin"
+codegen-units = 1
+
+[workspace.lints.clippy]
+approx_constant = "allow"
+float_cmp = "allow"
+match_wild_err_arm = "allow"
+new_ret_no_self = "allow"
+type_complexity = "allow"
+unit_arg = "allow"
+
+todo = "deny"
+clone_on_ref_ptr = "deny"
+trivially_copy_pass_by_ref = "deny"
+# valuable to the optimizer, but may produce false positives
+missing_const_for_fn = "deny"
+
+# This is not a style lint, see https://github.com/rust-lang/rust-clippy/pull/15454
+# Remove when the lint gets promoted to `suspicious`.
+declare_interior_mutable_const = "deny"
+
+redundant_clone = "deny"
+
+[workspace.lints.rust]
+async_fn_in_trait = "allow"
+
+# unreachable_pub = "deny"
+unused_extern_crates = "deny"
+unused_allocation = "deny"
+unused_assignments = "deny"
+unused_comparisons = "deny"
+# warnings = "deny"
+dead_code = "allow"
