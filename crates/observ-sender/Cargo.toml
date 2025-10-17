@@ -1,0 +1,28 @@
+[package]
+name = "observ-sender"
+authors.workspace = true
+edition.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+observ-config.workspace = true
+observ-core.workspace = true
+observ-runtime.workspace = true
+codec.workspace = true
+
+arc-swap.workspace = true
+bytes.workspace = true
+chrono.workspace = true
+elasticsearch.workspace = true
+log.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
