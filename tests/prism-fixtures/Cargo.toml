@@ -1,0 +1,13 @@
+[package]
+name = "prism-fixtures"
+authors.workspace = true
+edition.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+fake = { version = "4.4.0", default-features = false, features = ["derive"] }
+
+[lib]
+path = "src/lib.rs"
