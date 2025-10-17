@@ -1,0 +1,29 @@
+[package]
+name = "ebpf-manager"
+description = "eBPF program lifecycle manager for observability modules"
+
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+aya.workspace = true
+aya-log.workspace = true
+log.workspace = true
+object = { workspace = true, features = ["elf", "read_core"] }
+once_cell.workspace = true
+rustc-hash.workspace = true
+thiserror.workspace = true
+
+# Linux-specific dependencies
+[target.'cfg(target_os = "linux")'.dependencies]
+libc.workspace = true
