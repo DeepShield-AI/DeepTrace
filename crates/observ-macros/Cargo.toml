@@ -1,0 +1,22 @@
+[package]
+name = "observ-macros"
+authors.workspace = true
+edition.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+nom = { workspace = true, features = ["alloc"] }
+paste.workspace = true
+proc-macro2.workspace = true
+quote.workspace = true
+syn.workspace = true
+uom.workspace = true
+heck = "0.5"
