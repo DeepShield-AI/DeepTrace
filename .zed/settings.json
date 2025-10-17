@@ -1,0 +1,87 @@
+{
+	"languages": {
+		"Markdown": {
+			"tab_size": 2,
+			"formatter": "prettier"
+		},
+		// "TOML": {
+		// 	"formatter": "prettier",
+		// 	"format_on_save": "on"
+		// },
+		"JSON": {
+			"tab_size": 2,
+			"preferred_line_length": 120,
+			"formatter": "prettier"
+		},
+		"JSONC": {
+			"tab_size": 2,
+			"preferred_line_length": 120,
+			"formatter": "prettier"
+		},
+		"Rust": {
+			"tasks": {
+				"variables": {
+					"RUST_DEFAULT_PACKAGE_RUN": "zed"
+				}
+			}
+		}
+	},
+	"file_types": {
+		"Dockerfile": ["Dockerfile*[!dockerignore]"],
+		"JSONC": ["**/assets/**/*.json", "renovate.json"],
+		"Git Ignore": ["dockerignore"]
+	},
+	"hard_tabs": true,
+	"formatter": "auto",
+	"remove_trailing_whitespace_on_save": true,
+	"ensure_final_newline_on_save": true,
+	"file_scan_exclusions": [
+		"**/.git",
+		"**/.svn",
+		"**/.hg",
+		"**/.jj",
+		"**/CVS",
+		"**/.DS_Store",
+		"**/Thumbs.db",
+		"**/.classpath",
+		"**/.settings"
+	],
+	"inlay_hints": {
+		"enabled": true,
+		"show_background": true,
+		"show_type_hints": true,
+		"show_parameter_hints": true,
+		"show_other_hints": true
+	},
+	"lsp": {
+		"rust-analyzer": {
+			"initialization_options": {
+				"check": {
+					"overrideCommand": ["cargo", "xtask", "clippy", "--", "--workspace", "--quiet"],
+					"invocationStrategy": "once"
+				},
+				"cargo": {
+					"buildScripts": {
+						"overrideCommand": ["cargo", "xtask", "clippy", "--", "--workspace", "--quiet"],
+						"invocationStrategy": "once"
+					},
+					"target": "x86_64-unknown-linux-gnu",
+					"features": "all",
+					"cfgs": ["debug_assertions", "target_arch=bpf", "target_arch=x86_64"]
+				},
+				"linkedProjects": [
+					"Cargo.toml",
+					"crates/observ-trace-ebpf/Cargo.toml",
+					"crates/observ-cpu-ebpf/Cargo.toml",
+					"crates/observ-memory-ebpf/Cargo.toml",
+					"crates/observ-disk-ebpf/Cargo.toml",
+					"crates/observ-network-ebpf/Cargo.toml"
+				],
+				"procMacro": {
+					"enable": true
+				},
+				"checkOnSave": true
+			}
+		}
+	}
+}
