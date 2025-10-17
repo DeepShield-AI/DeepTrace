@@ -1,0 +1,23 @@
+[package]
+name = "observ-trace-common"
+
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[features]
+default = []
+std = []
+user = ["std"]
+
+[dependencies]
+ebpf-common.workspace = true
+
+num_enum = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+
+[lib]
+path = "src/lib.rs"

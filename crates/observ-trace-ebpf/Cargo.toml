@@ -1,0 +1,28 @@
+[package]
+name = "observ-trace-ebpf"
+version = "0.1.0"
+edition = "2024"
+readme = "README.md"
+
+[dependencies]
+aya-ebpf = { version = "0.1.1", default-features = false }
+aya-log-ebpf = { version = "0.1.1", default-features = false }
+l7-parser = { path = "../l7-parser", default-features = false, features = ["ebpf"] }
+bitflags = { version = "2.9.4", default-features = false }
+ebpf-common = { path = "../ebpf-common", default-features = false }
+nom = { version = "8.0.0", default-features = false }
+num_enum = { version = "0.7.4", default-features = false }
+observ-trace-common = { path = "../observ-trace-common", default-features = false }
+
+[[bin]]
+name = "observ_trace_ebpf"
+path = "src/main.rs"
+
+[lib]
+path = "src/lib.rs"
+
+[workspace]
+members = []
+
+[features]
+debug = []
