@@ -1,0 +1,32 @@
+[package]
+name = "observ-config"
+
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+observ-core.workspace = true
+observ-runtime.workspace = true
+
+arc-swap.workspace = true
+bytes.workspace = true
+config.workspace = true
+log.workspace = true
+notify.workspace = true
+retry.workspace = true
+rustc-hash.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
