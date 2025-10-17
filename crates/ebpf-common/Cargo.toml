@@ -1,0 +1,25 @@
+[package]
+name = "ebpf-common"
+description = "A common library for observ eBPF programs."
+
+authors.workspace = true
+edition.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+aya-ebpf.workspace = true
+aya-log-ebpf.workspace = true
+cfg-if.workspace = true
+num_enum.workspace = true
+paste.workspace = true
+
+[build-dependencies]
+bindgen.workspace = true
