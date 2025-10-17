@@ -1,0 +1,18 @@
+[package]
+name = "observ-metric-common"
+authors.workspace = true
+edition.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+log.workspace = true
+nom.workspace = true
+uom.workspace = true

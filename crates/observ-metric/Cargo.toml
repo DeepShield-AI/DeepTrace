@@ -1,0 +1,32 @@
+[package]
+name = "observ-metric"
+authors.workspace = true
+edition.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+observ-core.workspace = true
+observ-cpu.workspace = true
+observ-disk.workspace = true
+observ-event = { workspace = true, features = ["metric"] }
+observ-memory.workspace = true
+observ-metric-common.workspace = true
+observ-metric-utils.workspace = true
+observ-network.workspace = true
+observ-runtime.workspace = true
+
+log.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+uom.workspace = true
+# TODO: remove this
+async-trait = { version = "0.1.89", default-features = false }
+tokio-stream = { version = "0.1.17", default-features = false, features = ["net", "sync", "time", "io-util"] }

@@ -1,0 +1,23 @@
+[package]
+name = "observ-disk"
+authors.workspace = true
+edition.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+observ-macros.workspace = true
+observ-metric-common.workspace = true
+observ-metric-utils.workspace = true
+
+nom = { workspace = true, features = ["alloc"] }
+paste.workspace = true
+thiserror.workspace = true
+uom.workspace = true

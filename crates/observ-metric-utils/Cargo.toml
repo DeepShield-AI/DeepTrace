@@ -1,0 +1,23 @@
+[package]
+name = "observ-metric-utils"
+authors.workspace = true
+edition.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+observ-runtime.workspace = true
+
+log.workspace = true
+tokio.workspace = true
+# TODO: remove this
+futures = { version = "0.3.31", default-features = false, features = ["compat", "io-compat", "std"], package = "futures" }
+futures-util = { version = "0.3.29", default-features = false }
+tokio-stream = { version = "0.1.17", default-features = false, features = ["net", "sync", "time", "io-util"] }
