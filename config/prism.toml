@@ -1,0 +1,34 @@
+[agent]
+name = "prism"
+
+[metric]
+interval = 10
+
+[sender.file.metric]
+# path to the file where metrics will be written
+path = "metrics.csv"
+rotate = true
+# max size in megabytes of the metrics file before it gets rotated
+max_size = 512
+# max time in days to retain old metrics files
+max_age = 7
+# rotate time in days to rotate the metrics file
+rotate_time = 11
+# data format
+data_format = "%Y%m%d"
+
+
+[sender.file.trace]
+# path to the file where metrics will be written
+path = "metrics.csv"
+rotate = true
+# max size in megabytes of the metrics file before it gets rotated
+max_size = 512
+# max time in days to retain old metrics files
+max_age = 6
+# rotate time in days to rotate the metrics file
+rotate_time = 11
+# data format
+data_format = "%Y%m%d"
+
+# [sender.elastic]
