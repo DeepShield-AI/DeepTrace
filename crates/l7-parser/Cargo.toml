@@ -1,0 +1,32 @@
+[package]
+name = "l7-parser"
+
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+observ-trace-common.workspace = true
+
+aya-ebpf = { workspace = true, optional = true }
+aya-log-ebpf = { workspace = true, optional = true }
+cfg-if.workspace = true
+ebpf-common = { workspace = true, optional = true }
+nom.workspace = true
+
+[features]
+default = []
+user = ["std"]
+std = []
+ebpf = ["aya-ebpf", "aya-log-ebpf", "ebpf-common"]
