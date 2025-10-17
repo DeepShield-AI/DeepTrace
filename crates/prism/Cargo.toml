@@ -1,0 +1,43 @@
+[package]
+name = "prism"
+authors = ["smore.ioki@gmail.com"]
+edition.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "prism"
+path = "src/main.rs"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+observ-config.workspace = true
+observ-core.workspace = true
+observ-event.workspace = true
+observ-memory = { workspace = true, optional = true }
+observ-metric.workspace = true
+observ-runtime.workspace = true
+observ-sender.workspace = true
+codec.workspace = true
+
+anyhow.workspace = true
+arc-swap.workspace = true
+clap.workspace = true
+env_logger.workspace = true
+log.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+tikv-jemallocator = "0.6"
+
+[features]
+default = ["ebpf", "metric"]
+ebpf = ["observ-runtime/ebpf"]
+metric = ["observ-memory"]
