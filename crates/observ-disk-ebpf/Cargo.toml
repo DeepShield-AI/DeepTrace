@@ -1,0 +1,21 @@
+[package]
+edition = "2024"
+name = "observ-disk-ebpf"
+version = "0.1.0"
+
+[dependencies]
+aya-ebpf = { version = "0.1.1", default-features = false }
+aya-log-ebpf = { version = "0.1.1", default-features = false }
+
+[[bin]]
+name = "observ_disk_ebpf"
+path = "src/main.rs"
+
+[lib]
+path = "src/lib.rs"
+
+[workspace]
+members = []
+
+[features]
+debug = []
