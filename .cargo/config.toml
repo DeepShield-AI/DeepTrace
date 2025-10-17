@@ -1,0 +1,28 @@
+[build]
+rustflags = [
+    # v0 mangling scheme provides more detailed backtraces around closures
+    # "-C", "symbol-mangling-version=v0",
+    # make final binary statically linked against libc
+    "-Ctarget-feature=+crt-static",
+    # "--cfg", "debug_assertions", "--cfg", "target_arch=\"bpf\"", "--cfg", "target_arch=\"x86_64\""
+]
+
+[alias]
+xc = "xtask clippy -- --workspace --quiet"
+xtask = "run --package xtask --release --"
+# xtask = "run -q --package xtask --release --"
+
+# [target.x86_64-unknown-linux-gnu]
+# linker = "clang"
+# rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
+# [target.aarch64-unknown-linux-gnu]
+# linker = "clang"
+# rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
+[target.'cfg(all())']
+rustflags = [
+    # "-Dclippy::print_stdout",
+    # "-Dclippy::print_stderr",
+    "-Dclippy::dbg_macro",
+]
