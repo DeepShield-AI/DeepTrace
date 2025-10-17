@@ -1,0 +1,96 @@
+[package]
+name = "deeptrace"
+authors.workspace = true
+categories = ["network", "cloud", "ebpf"]
+description = "The DeepTrace project aims to provide deep observability for complex cloud-native applications."
+edition.workspace = true
+homepage = "https://github.com/DeepShield-AI/DeepTrace"
+keywords = ["ebpf", "kernel", "linux", "network", "cloud"]
+license = "MIT OR Apache-2.0"
+publish.workspace = true
+readme = "README.md"
+repository = "https://github.com/DeepShield-AI/DeepTrace"
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+
+[[bin]]
+name = "deeptrace"
+path = "src/main.rs"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+observ-config.workspace = true
+observ-core.workspace = true
+observ-runtime.workspace = true
+observ-sender.workspace = true
+observ-trace.workspace = true
+observ-trace-common = { workspace = true, features = ["user"] }
+
+codec.workspace = true
+# cache
+lru = { version = "0.15.0", default-features = false}
+# communication
+#futures = { version = "0.3.31", default-features = false }
+futures-util = { version = "0.3.31", default-features = false }
+tokio-tungstenite = { version = "0.27.0", default-features = true }
+# concurrency
+arc-swap = { version = "1.7.1", default-features = false }
+crossbeam-channel = { version = "0.5.15", default-features = true }
+dashmap = { version = "7.0.0-rc2", default-features = false }
+tokio = { version = "1.45.0", features = ["macros", "rt", "rt-multi-thread", "net", "signal", "fs", "io-std"], default-features = false }
+# ebpf
+aya = { workspace = true, default-features = false, features = ["async_tokio"] }
+aya-log = { workspace = true }
+# error
+anyhow = { workspace = true, default-features = true }
+thiserror = { version = "2.0.11", default-features = false }
+# serialization
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+# misc
+## api
+rocket = { version = "0.5.1", default-features = false, features = ["json"] }
+## byte
+bytes = { version = "1.9.0", default-features = true }
+# cli
+# `std` feature is currently required to build `clap`.
+#
+# See https://github.com/clap-rs/clap/blob/61f5ee5/clap_builder/src/lib.rs#L15.
+clap = { version = "4.5.40", default-features = false, features = ["derive", "std"] }
+## config
+config = { version = "0.15.11", default-features = true }
+## cpu
+# core_affinity = { version = "0.8.3", default-features = false }
+## docker
+bollard = { version = "0.16", default-features = true }
+## elasticsearch
+elasticsearch = { version = "8.17.0-alpha.1", default-features = false }
+## k8s
+# kube = { version = "0.99.0", features = ["ws"] }
+# k8s-openapi = { version = "0.24.0", features = ["v1_29"] }
+# logging
+env_logger = { version = "0.11.5", default-features = false }
+log = { version = "0.4.22", default-features = false }
+## time
+chrono = { version = "0.4.41", default-features = false, features = ["clock"] }
+chrono-tz = { version = "0.10.3" }
+# unix
+libc = { version = "0.2.159", default-features = false }
+signal-hook = { version = "0.3.18", default-features = false, features = ["iterator"] }
+## url
+url = { version = "2.5.4", default-features = false }
+## zip
+flate2 = { version = "1.1.2", default-features = false, features = ["zlib-rs"] }
+sha2 = {version = "0.10"}
+sysinfo = "0.29"
+nix = { version = "0.20" }
+rand = "0.8"
+
+[build-dependencies]
+anyhow = { workspace = true }
