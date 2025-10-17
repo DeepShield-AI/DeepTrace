@@ -1,0 +1,10 @@
+allow-dbg-in-tests = false
+
+disallowed-types = [
+    { path = "std::collections::HashMap", reason = "use FxHashMap" },
+    { path = "std::collections::HashSet", reason = "use FxHashSet" },
+    { path = "std::collections::hash_map::RandomState", reason = "use BuildHasherDefault<FxHasher>"}
+]
+
+# mark some functions as verboten
+disallowed-methods = []
