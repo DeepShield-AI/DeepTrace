@@ -7,7 +7,7 @@ bitflags! {
 	/// |QR|   Opcode  |AA|TC|RD|RA| Z|AD|CD|   RCODE   |
 	/// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 	/// ```
-	pub struct PacketFlag: u16 {
+	pub(super) struct PacketFlag: u16 {
 		/// QR
 		/// - A one bit field that specifies whether this message is a query (0), or a response (1).
 		const Response = 1 << 15;

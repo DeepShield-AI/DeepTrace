@@ -5,7 +5,7 @@ use core::mem;
 /// The values have the following interpretation
 #[allow(clippy::upper_case_acronyms)]
 #[repr(u16)]
-pub enum RCode {
+pub(super) enum RCode {
 	/// No error condition
 	NoError = 0,
 	/// Format error - The name server was unable to interpret the query.

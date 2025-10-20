@@ -3,9 +3,9 @@ use core::mem;
 /// Possible OPCODE values for a DNS packet, use to specify the type of operation.  
 /// [RFC 1035](https://tools.ietf.org/html/rfc1035): A four bit field that specifies kind of query in this message.  
 /// This value is set by the originator of a query and copied into the response.
-#[repr(u16)]
 #[derive(PartialEq)]
-pub enum OpCode {
+#[repr(u16)]
+pub(super) enum OpCode {
 	/// Normal query
 	StandardQuery = 0,
 	/// Inverse query (query a name by IP)
