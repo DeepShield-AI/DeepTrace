@@ -10,7 +10,7 @@ use aya_ebpf::{
 	programs::TracePointContext,
 };
 use ebpf_common::{co_re::user_msghdr, try_or_log};
-use observ_trace_common::structs::{Direction, Syscall};
+use observ_trace_common::{Direction, Syscall};
 
 /// name: sys_enter_sendmsg
 /// ID: 1417

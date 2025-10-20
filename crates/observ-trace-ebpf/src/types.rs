@@ -5,8 +5,6 @@ use ebpf_common::{
 	constants::{IOV_MAX, IOVLEN_MAX},
 	error::Result,
 };
-use l7_parser::constants::MAX_INFER_PAYLOAD_SIZE;
-use observ_trace_common::{protocols::L7Protocol, structs::Direction};
 
 #[repr(C)]
 pub(crate) struct Args {
@@ -35,9 +33,15 @@ impl Args {
 		Self::new(fd, timestamp, SysBufPtr::MMsg(mmsg, vlen), enter_seq)
 	}
 	#[inline(always)]
-	pub fn extract<const N: usize>(&self, mut buffer: Buffer<N>, ret: u32) -> Result<()> {
+	pub fn extract<const N: usize>(
+		&self,
+		buffer: &mut Buffer<N>,
+		ret: u32,
+	) -> Result<()> {
 		match self.buffer {
-			SysBufPtr::Ubuf(ubuf, size) => buffer.read_user_at(ubuf, min(size, ret)),
+			SysBufPtr::Ubuf(ubuf, size) => {
+				buffer.read_user_at(ubuf, min(size, ret))
+			},
 			SysBufPtr::Msg(iovec, vlen) =>
 				buffer.fill_from_iovec::<IOV_MAX>(iovec, vlen, Some(ret as usize)),
 			SysBufPtr::MMsg(mmsg, vlen) =>
@@ -51,16 +55,4 @@ pub(crate) enum SysBufPtr {
 	Ubuf(*mut u8, u32),
 	Msg(iovec, u32),
 	MMsg(mmsghdr, u32),
-}
-
-#[repr(C)]
-pub struct SocketInfo {
-	pub uuid: u32,
-	pub exit_seq: u32,
-	pub seq: u32,
-	pub direction: Direction,
-	pub pre_direction: Direction,
-	pub l7protocol: L7Protocol,
-	padding: u8,
-	pub prev_buf: Buffer<MAX_INFER_PAYLOAD_SIZE>,
 }

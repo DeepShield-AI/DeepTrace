@@ -1,4 +1,4 @@
-use crate::types::{Args, SocketInfo};
+use crate::types::Args;
 use aya_ebpf::{
 	macros::map,
 	maps::{HashMap, PerfEventByteArray},
@@ -13,10 +13,6 @@ pub(crate) static mut PIDS: HashMap<u32, u32> = HashMap::with_max_entries(MAX_PI
 pub(crate) static mut INGRESS: HashMap<u64, Args> = HashMap::with_max_entries(1 << 10, 0);
 #[map(name = "egress")]
 pub(crate) static mut EGRESS: HashMap<u64, Args> = HashMap::with_max_entries(1 << 10, 0);
-
-/// Storage socket info.
-#[map(name = "socket_info")]
-pub(crate) static mut SOCKET_INFO: HashMap<u64, SocketInfo> = HashMap::with_max_entries(1 << 10, 0);
 
 #[map(name = "EVENTS")]
 pub(crate) static mut EVENTS: PerfEventByteArray = PerfEventByteArray::new(0);

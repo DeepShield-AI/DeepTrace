@@ -10,7 +10,7 @@ use aya_ebpf::{
 	programs::TracePointContext,
 };
 use ebpf_common::{co_re::mmsghdr, try_or_log};
-use observ_trace_common::structs::{Direction, Syscall};
+use observ_trace_common::{Direction, Syscall};
 
 /// name: sys_enter_recvmmsg  send multiple messages on a socket
 /// ID: 1415

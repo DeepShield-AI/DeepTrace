@@ -1,7 +1,7 @@
 #![allow(static_mut_refs)]
 use crate::{
-	maps::{EGRESS, EVENTS, INGRESS, SOCKET_INFO},
-	types::{Args, SocketInfo, SysBufPtr},
+	maps::{EGRESS, EVENTS, INGRESS},
+	types::Args,
 	utils::{gen_connect_key, is_tcp_udp, quintuple_from_sock, tcp_sock_from_fd},
 };
 use aya_ebpf::{
@@ -11,15 +11,15 @@ use aya_ebpf::{
 	programs::TracePointContext,
 };
 use aya_log_ebpf::info;
-use core::cmp::min;
 use ebpf_common::{
 	alloc,
-	constants::{IOV_MAX, IOVLEN_MAX, MAX_PAYLOAD_SIZE},
+	buffer::Buffer,
+	constants::MAX_PAYLOAD_SIZE,
 	error::{Result, code::*},
 };
+use l7_parser::protocol_infer;
 use observ_trace_common::{
-	message::Message,
-	structs::{Direction, Syscall},
+	Direction, Message, SocketInfo, Syscall, constants::MAX_INFER_SIZE, maps::SOCKET_INFO,
 };
 
 /// Processing enter of `read`, `readv`, `recvfrom`, `recvmsg`, `recvmmsg`, `write`, `writev`, `sendto`, `sendmsg`, `sendmmsg` syscalls
@@ -65,15 +65,16 @@ pub fn try_exit(
 
 	alloc::init()?;
 	let data = alloc::alloc_zero::<Message>()?;
-
 	let sock = tcp_sock_from_fd(args.fd)?;
+	let key = gen_connect_key(bpf_get_current_pid_tgid(), args.fd);
 
-	data.quintuple = quintuple_from_sock(sock)?;
+	let quintuple = quintuple_from_sock(sock)?;
+	data.quintuple = quintuple;
 	data.quintuple.l4_protocol = is_tcp_udp(sock)?;
 
 	data.tgid = ctx.tgid();
 	data.pid = ctx.pid();
-	data.comm = ctx.command().map_err(|_| FAILED_TO_GET_COMM)?;
+	data.comm = Buffer::from_slice(&ctx.command().map_err(|_| FAILED_TO_GET_COMM)?);
 	data.enter_seq = args.enter_seq;
 
 	data.exit_seq = match direction {
@@ -82,17 +83,27 @@ pub fn try_exit(
 		_ => return Err(INVALID_DIRECTION),
 	};
 
+	let infer_payload = alloc::alloc_zero::<Buffer<MAX_INFER_SIZE>>()?;
+	args.extract(infer_payload, ret)?;
+
+	let result = protocol_infer(
+		ctx,
+		&quintuple,
+		direction,
+		infer_payload,
+		key,
+		args.enter_seq,
+		data.exit_seq,
+	)?;
 	data.timestamp_ns = unsafe { bpf_ktime_get_ns() };
 	data.syscall = syscall;
 	data.direction = direction;
 
-	match args.buffer {
-		SysBufPtr::Ubuf(ubuf, size) => data.payload.read_user_at(ubuf, min(size, ret))?,
-		SysBufPtr::Msg(iovec, vlen) =>
-			data.payload.fill_from_iovec::<IOV_MAX>(iovec, vlen, Some(ret as usize))?,
-		SysBufPtr::MMsg(mmsg, vlen) =>
-			data.payload.fill_from_mmsghdr::<IOVLEN_MAX>(mmsg, min(vlen, ret), None)?,
-	}
+	data.type_ = result.type_;
+	data.protocol = result.protocol;
+	data.seq = result.seq;
+	data.uuid = result.uuid;
+	// args.extract(&mut data.payload, ret)?;
 
 	map.remove(&id).map_err(|_| MAP_DELETE_FAILED)?;
 

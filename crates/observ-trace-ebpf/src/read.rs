@@ -10,7 +10,7 @@ use aya_ebpf::{
 	programs::TracePointContext,
 };
 use ebpf_common::try_or_log;
-use observ_trace_common::structs::{Direction, Syscall};
+use observ_trace_common::{Direction, Syscall};
 
 /// `name`: sys_enter_read `ID`: 701
 ///
