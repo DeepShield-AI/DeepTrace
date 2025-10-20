@@ -29,9 +29,6 @@ pub struct Agent {
 impl Agent {
 	pub fn new(config_path: String) -> Result<Self, AgentError> {
 		let _ = env_logger::builder().is_test(false).try_init();
-		// #[cfg(feature = "ebpf")]
-		// ebpf::prepare_ebpf();
-		// init(config_path)?;
 
 		let (state_tx, _rx) = watch::channel(State::Stopped);
 		Ok(Self { state_tx, handle: None, config_path })
