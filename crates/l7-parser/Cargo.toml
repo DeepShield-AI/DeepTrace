@@ -21,6 +21,7 @@ observ-trace-common.workspace = true
 
 aya-ebpf = { workspace = true, optional = true }
 aya-log-ebpf = { workspace = true, optional = true }
+bitflags.workspace = true
 cfg-if.workspace = true
 ebpf-common = { workspace = true, optional = true }
 nom.workspace = true
