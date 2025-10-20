@@ -1,1 +1,1 @@
-pub(super) const MONGODB_HEADER_SIZE: u32 = 16;
+pub(super) const MONGODB_HEADER_SIZE: usize = 16;

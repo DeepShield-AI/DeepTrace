@@ -3,8 +3,7 @@ use core::mem;
 /// Clients can send request messages that specify all but the [OpReply](OpCode::OpReply) OpCode. `OpReply` is reserved for use by the database.
 /// Only the [OpQuery](OpCode::OpQuery) and [OpGetMore](OpCode::OpGetMore) messages result in a response from the database. There will be no response sent for any other message.
 #[repr(i32)]
-#[derive(Debug)]
-pub(crate) enum OpCode {
+pub(super) enum OpCode {
 	/// Reply to a client request. `response_to` is set.
 	OpReply = 1,
 	/// Update document.
