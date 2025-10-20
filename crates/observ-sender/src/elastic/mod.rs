@@ -1,6 +1,4 @@
-use super::SendError;
 use bytes::BytesMut;
-use codec::encode::json;
 use elasticsearch::{
 	BulkParts, Elasticsearch,
 	auth::Credentials,
@@ -53,8 +51,8 @@ impl<S: Sendable + Serialize> Sender<S> for ElasticSender {
 				}}"#,
 				self.config.index_name
 			)
-			.as_bytes()),
-		);
+			.as_bytes(),
+		));
 		self.buf.push(item);
 		if self.buf.len() > self.config.bulk_size * 1024 {
 			<Self as Sender<S>>::flush(self).await?;

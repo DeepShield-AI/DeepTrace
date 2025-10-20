@@ -2,7 +2,6 @@ use super::SendError;
 use crate::Sendable;
 use bytes::BytesMut;
 use chrono::{DateTime, Duration, FixedOffset, TimeZone, Utc};
-use log::info;
 use observ_core::Sender;
 use serde::Serialize;
 use std::{
@@ -179,7 +178,7 @@ impl<S: Sendable + Serialize> Sender<S> for FileSender {
 		if self.should_rotate_by_time() {
 			self.switch_to_new_date().await?;
 		}
-		let config = observ_config::file_sender_config("metric");
+
 		self.buffer.extend_from_slice(&item);
 		if self.buffer.len() > (1 << 14) {
 			<Self as Sender<S>>::flush(self).await?;
