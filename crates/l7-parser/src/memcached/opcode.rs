@@ -4,8 +4,7 @@ use core::mem;
 
 /// Memcache Opcodes
 #[repr(u8)]
-#[derive(Debug)]
-pub enum OpCode {
+pub(super) enum OpCode {
 	Get = 0x00,
 	Set = 0x01,
 	Add = 0x02,

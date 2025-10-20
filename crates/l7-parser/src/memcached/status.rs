@@ -2,7 +2,7 @@
 ///
 /// Used in Response Packets if an error occurred
 #[repr(u16)]
-pub enum Status {
+pub(super) enum Status {
 	NoError = 0,
 	KeyNotFound = 1,
 	KeyExists = 2,
