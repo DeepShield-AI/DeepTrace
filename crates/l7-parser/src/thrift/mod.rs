@@ -1,22 +1,18 @@
-use super::Infer;
-use crate::structs::InferInfo;
+use crate::{Classification, Infer, utils::check_protocol};
 use aya_ebpf::programs::TracePointContext;
+use ebpf_common::error::{Result, code::*};
 use kind::Kind;
 use observ_trace_common::{
-	message::{Message, MessageType},
-	protocols::L7Protocol,
-	structs::Quintuple,
+	Buffer, Direction, L7Protocol, MessageType, Quintuple, constants::MAX_INFER_SIZE,
 };
+use parse::{binary_thrift, compact_thrift};
 
 mod constants;
 mod kind;
 mod parse;
-use crate::protocols::utils::check_protocol;
-use parse::{thrift_binary_header, thrift_compact_header};
 
-#[derive(Debug)]
 pub(crate) struct Thrift {
-	pub kind: Kind,
+	kind: Kind,
 }
 
 impl Thrift {
@@ -29,31 +25,28 @@ impl Thrift {
 }
 
 impl Infer for Thrift {
+	#[inline(always)]
 	fn parse(
 		_ctx: &TracePointContext,
-		info: &InferInfo,
-		_quintuple: Quintuple,
-	) -> Result<Message, u32> {
-		let payload = info.buf.as_slice();
-		if !check_protocol(info.key, L7Protocol::Thrift) {
-			return Err(0);
+		_quintuple: &Quintuple,
+		_direction: Direction,
+		buffer: &Buffer<MAX_INFER_SIZE>,
+		key: u64,
+		_enter_seq: u32,
+		_exit_seq: u32,
+	) -> Result<Classification> {
+		if !check_protocol(key, L7Protocol::Thrift) {
+			return Err(SOCKET_PROTOCOL_MISMATCH);
 		}
-		match thrift_binary_header(payload, info.count) {
-			Ok(thrift) => {
-				let mut message = Message::new();
-				message.protocol = L7Protocol::Thrift;
-				message.type_ = thrift.message_type();
-				Ok(message)
-			},
-			Err(_) => match thrift_compact_header(payload) {
-				Ok(thrift) => {
-					let mut message = Message::new();
-					message.protocol = L7Protocol::Thrift;
-					message.type_ = thrift.message_type();
-					Ok(message)
-				},
-				Err(_) => Err(0),
-			},
-		}
+		let payload = buffer.as_slice();
+
+		binary_thrift(payload, buffer.len())
+			.or_else(|_| compact_thrift(payload))
+			.map(|thrift| {
+				let mut classification = Classification::new();
+				classification.protocol = L7Protocol::Thrift;
+				classification.type_ = thrift.message_type();
+				classification
+			})
 	}
 }

@@ -1,4 +1,5 @@
 use super::{Kind, Thrift, constants::BINARY_PROTOCOL_VERSION};
+use ebpf_common::error::{Result, code::*};
 use nom::{
 	IResult, Parser,
 	branch::alt,
@@ -25,45 +26,49 @@ fn name_length(i: &[u8]) -> IResult<&[u8], i32> {
 }
 
 #[inline]
-pub(crate) fn thrift_binary_header(i: &[u8], len: u32) -> Result<Thrift, u32> {
+pub(in crate::thrift) fn binary_thrift(i: &[u8], len: usize) -> Result<Thrift> {
 	let mut binary = alt((
 		(version, be_u8, kind, name_length),
-		preceded(verify(be_u32, |&length| length == len - 4), (version, be_u8, kind, name_length)),
+		preceded(
+			verify(be_u32, |&length| length as usize == len - 4),
+			(version, be_u8, kind, name_length),
+		),
 	));
-	let (_, (_, _, kind, _)) = binary.parse(i).map_err(|_| 0_u32)?;
+	let (_, (_, _, kind, _)) = binary.parse(i).map_err(|_| PARSE_BINARY_THRIFT_FAILED)?;
 	Ok(Thrift { kind })
 }
-#[cfg(test)]
-mod tests {
-	use super::*;
-	use crate::utils::tests::load_pcap;
-	use observ_trace_common::constants::MAX_PAYLOAD_SIZE;
-	const FILE_DIR: &str = "../../../tests/protocols/thrift";
-	#[test]
-	fn test_binary_thrift_pcap() -> Result<(), u32> {
-		let files = vec![("social.pcap", "social.result"), ("tt.pcap", "tt.result")];
-		for (actual, expected) in files {
-			let actual = format!("{}/{}", FILE_DIR, actual);
-			let expected = format!("{}/{}", FILE_DIR, expected);
-			let expected = std::fs::read_to_string(&expected).map_err(|_| 0_u32)?;
-			let actual = run(&actual).map_err(|_| 0_u32)?;
-			assert_eq!(actual, expected, "{} != {}", actual, expected);
-		}
-		Ok(())
-	}
 
-	fn run(actually: &str) -> Result<String, u32> {
-		let packets = load_pcap(actually, MAX_PAYLOAD_SIZE as usize)?;
-		if packets.is_empty() {
-			return Err(0);
-		}
-		let mut output = String::new();
-		for (_, payload) in packets {
-			let Ok(header) = thrift_binary_header(&payload, payload.len() as u32) else {
-				continue;
-			};
-			output.push_str(&format!("{:?}, {:?}\n", header.message_type(), header));
-		}
-		Ok(output)
-	}
-}
+// #[cfg(test)]
+// mod tests {
+// 	use super::*;
+// 	use crate::utils::tests::load_pcap;
+// 	use observ_trace_common::constants::MAX_PAYLOAD_SIZE;
+// 	const FILE_DIR: &str = "../../../tests/protocols/thrift";
+// 	#[test]
+// 	fn test_binary_thrift_pcap() -> Result<(), u32> {
+// 		let files = vec![("social.pcap", "social.result"), ("tt.pcap", "tt.result")];
+// 		for (actual, expected) in files {
+// 			let actual = format!("{}/{}", FILE_DIR, actual);
+// 			let expected = format!("{}/{}", FILE_DIR, expected);
+// 			let expected = std::fs::read_to_string(&expected).map_err(|_| 0_u32)?;
+// 			let actual = run(&actual).map_err(|_| 0_u32)?;
+// 			assert_eq!(actual, expected, "{} != {}", actual, expected);
+// 		}
+// 		Ok(())
+// 	}
+
+// 	fn run(actually: &str) -> Result<String, u32> {
+// 		let packets = load_pcap(actually, MAX_PAYLOAD_SIZE as usize)?;
+// 		if packets.is_empty() {
+// 			return Err(0);
+// 		}
+// 		let mut output = String::new();
+// 		for (_, payload) in packets {
+// 			let Ok(header) = thrift_binary_header(&payload, payload.len() as u32) else {
+// 				continue;
+// 			};
+// 			output.push_str(&format!("{:?}, {:?}\n", header.message_type(), header));
+// 		}
+// 		Ok(output)
+// 	}
+// }

@@ -1,8 +1,7 @@
 use core::mem;
 
 #[repr(u8)]
-#[derive(Debug)]
-pub(crate) enum Kind {
+pub(super) enum Kind {
 	Call = 1,
 	Reply = 2,
 	Exception = 3,

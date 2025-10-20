@@ -2,6 +2,7 @@ use super::{
 	Kind, Thrift,
 	constants::{COMPACT_PROTOCOL_ID, COMPACT_PROTOCOL_VERSION},
 };
+use ebpf_common::error::{Result, code::*};
 use nom::{
 	IResult, Parser,
 	bytes::streaming::tag,
@@ -25,10 +26,10 @@ fn kind_and_version(i: &[u8]) -> IResult<&[u8], Kind> {
 }
 
 #[inline]
-pub(crate) fn thrift_compact_header(i: &[u8]) -> Result<Thrift, u32> {
+pub(in crate::thrift) fn compact_thrift(i: &[u8]) -> Result<Thrift> {
 	let mut compact = (protocol_id, kind_and_version);
 
-	let (_, (_, kind)) = compact.parse(i).map_err(|_| 0_u32)?;
+	let (_, (_, kind)) = compact.parse(i).map_err(|_| PARSE_COMPACT_THRIFT_FAILED)?;
 
 	Ok(Thrift { kind })
 }
