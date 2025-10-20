@@ -1,6 +1,6 @@
 use super::HTTP1;
 use nom::{IResult, Parser, branch::alt, bytes::streaming::tag};
-use observ_trace_common::message::MessageType;
+use observ_trace_common::MessageType;
 
 fn http1_method(i: &[u8]) -> IResult<&[u8], &[u8]> {
 	alt((

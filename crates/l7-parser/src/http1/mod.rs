@@ -1,16 +1,13 @@
-use super::{Infer, utils::check_protocol};
-use crate::{
-	config::{MAX_INFER_PAYLOAD_SIZE, mask::INFER_MASK},
-	maps::{INFER_BUFFER, SOCKET_INFO},
-	structs::InferInfo,
-};
-use aya_ebpf::{helpers::r#gen::bpf_probe_read, programs::TracePointContext};
+use crate::{Infer, types::Classification, utils::check_protocol};
+use aya_ebpf::programs::TracePointContext;
 use constants::HTTP1_MIN_SIZE;
-use core::cmp::min;
+use ebpf_common::{
+	alloc,
+	error::{Result, code::*},
+};
 use observ_trace_common::{
-	message::{Message, MessageType},
-	protocols::L7Protocol,
-	structs::Quintuple,
+	Buffer, Direction, L7Protocol, MessageType, Quintuple, constants::MAX_INFER_SIZE,
+	maps::SOCKET_INFO,
 };
 use parse::http1;
 mod constants;
@@ -27,69 +24,43 @@ impl HTTP1 {
 }
 
 impl Infer for HTTP1 {
+	#[inline(always)]
 	fn parse(
 		_ctx: &TracePointContext,
-		info: &InferInfo,
-		_quintuple: Quintuple,
-	) -> Result<Message, u32> {
-		if info.count < HTTP1_MIN_SIZE {
-			return Err(0_u32);
+		_quintuple: &Quintuple,
+		direction: Direction,
+		buffer: &Buffer<MAX_INFER_SIZE>,
+		key: u64,
+		enter_seq: u32,
+		_exit_seq: u32,
+	) -> Result<Classification> {
+		if buffer.len() < HTTP1_MIN_SIZE {
+			return Err(INFER_PAYLOAD_TOO_SHORT);
 		}
-		if !check_protocol(info.key, L7Protocol::HTTP1) {
-			return Err(0);
+		if !check_protocol(key, L7Protocol::HTTP1) {
+			return Err(SOCKET_PROTOCOL_MISMATCH);
 		}
-		let payload = info.buf.as_slice();
-		if let Ok(header) = http1(payload) {
-			let mut message = Message::new();
-			message.protocol = L7Protocol::HTTP1;
-			message.type_ = header.message_type();
-			return Ok(message);
-		}
-		// If the message is not complete, we can try to parse it again with the previous message
-		let key = info.key;
-		let map = unsafe { &SOCKET_INFO };
-		let socket_info = unsafe { map.get(&key) }.ok_or(0_u32)?;
-		if socket_info.prev_len > 0 &&
-			socket_info.direction == info.direction &&
-			socket_info.exit_seq == info.enter_seq
-		{
-			let buf = unsafe { INFER_BUFFER.get_ptr_mut(0) }.ok_or(0_u32)?;
-			let ptr = unsafe { &mut *buf };
-
-			if unsafe {
-				bpf_probe_read(
-					ptr.as_mut_ptr() as *mut _,
-					socket_info.prev_len & INFER_MASK,
-					socket_info.prev_buf.as_ptr() as *const _,
-				)
-			} != 0
-			{
-				return Err(0);
-			}
-
-			let start =
-				min((socket_info.prev_len & INFER_MASK) as usize, MAX_INFER_PAYLOAD_SIZE as usize);
-			let ptr = &mut ptr[start..];
-			if unsafe {
-				bpf_probe_read(
-					ptr.as_mut_ptr() as *mut _,
-					ptr.len() as u32 & INFER_MASK,
-					info.buf.as_ptr() as *const _,
-				)
-			} != 0
-			{
-				return Err(0);
-			}
-			return match http1(&unsafe { *buf }) {
-				Ok(header) => {
-					let mut message = Message::new();
-					message.protocol = L7Protocol::HTTP1;
-					message.type_ = header.message_type();
-					Ok(message)
-				},
-				Err(_) => Err(0),
-			};
-		}
-		Err(0)
+		http1(buffer.as_slice())
+			.or_else(|_| {
+				unsafe { SOCKET_INFO.get(&key) }.ok_or(MAP_GET_FAILED).and_then(|socket_info| {
+					if socket_info.prev_buf.len() > 0 &&
+						socket_info.direction == direction &&
+						socket_info.exit_seq == enter_seq
+					{
+						let buf = alloc::alloc_zero::<Buffer<MAX_INFER_SIZE>>()?;
+						buf.append(socket_info.prev_buf.as_slice())?;
+						buf.append(buffer.as_slice())?;
+						http1(buf.as_slice())
+					} else {
+						Err(PARSE_HTTP1_FAILED)
+					}
+				})
+			})
+			.map(|header| {
+				let mut classification = Classification::new();
+				classification.protocol = L7Protocol::HTTP1;
+				classification.type_ = header.message_type();
+				classification
+			})
 	}
 }
