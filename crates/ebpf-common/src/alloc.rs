@@ -24,7 +24,7 @@ macro_rules! max {
     ($a:expr, $($rest:expr),* $(,)?) => {{max($a, max!($($rest),*))}};
 }
 
-const MAX_ALLOCS: u32 = 1;
+const MAX_ALLOCS: u32 = 8;
 
 // Optimized [`HEAP_MAX_ALLOC_SIZE`]
 // we need to double the actual maximum size we need to hack the verifier.
@@ -112,6 +112,6 @@ impl Allocator {
 
 	fn zero_alloc<T>(&mut self) -> Result<&'static mut T> {
 		let alloc = self.alloc_slice::<T>()?;
-		Ok(unsafe { core::mem::transmute(alloc.as_mut_ptr()) })
+		Ok(unsafe { &mut *(alloc.as_mut_ptr() as *mut T) })
 	}
 }

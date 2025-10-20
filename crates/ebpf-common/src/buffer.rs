@@ -5,7 +5,7 @@ use crate::{
 };
 use aya_ebpf::{
 	check_bounds_signed,
-	helpers::{bpf_probe_read_kernel_str_bytes, r#gen},
+	helpers::{bpf_probe_read_kernel_str_bytes, r#gen}
 };
 use core::cmp::min;
 
@@ -37,6 +37,14 @@ impl<const N: usize> Buffer<N> {
 	#[inline(always)]
 	pub fn as_slice(&self) -> &[u8] {
 		&self.buf[..min(self.len(), N)]
+	}
+
+	pub fn from_slice(slice: &[u8]) -> Self {
+		let mut buffer = Self::new();
+		let len = min(slice.len(), N);
+		buffer.buf[..len].copy_from_slice(&slice[..len]);
+		buffer.len = len;
+		buffer
 	}
 
 	#[inline(always)]
@@ -73,6 +81,41 @@ impl<const N: usize> Buffer<N> {
 	#[inline(always)]
 	pub const fn cap(&self) -> usize {
 		N
+	}
+
+	#[inline(always)]
+	pub fn append(&mut self, other: &[u8]) -> Result<()> {
+		// offset is at current len to append
+		let offset = self.len as i64;
+
+		let mut size = other.len() as i64;
+
+		let left = N as i64 - offset;
+		if size > left {
+			// TODO: logic check here:
+			size = left
+		}
+
+		// check map access is not OOB
+		if !check_bounds_signed(offset, 0, N as i64) {
+			return Ok(());
+		}
+
+		// check not write OOB
+		if !check_bounds_signed(size, 0, N as i64) {
+			return Ok(());
+		}
+
+		if let Some(dst) = self
+			.buf
+			// we need to clamp as we cast offset and bounds might be lost by verifier
+			.get_mut((offset as usize).clamp(0, N)..N) &&
+			let Some(src) = other.get(..(size as usize).clamp(0, N))
+		{
+			dst.copy_from_slice(src);
+			self.len += size as usize;
+		}
+		Ok(())
 	}
 }
 
@@ -191,7 +234,7 @@ impl<const N: usize> Buffer<N> {
 			let ret = unsafe {
 				r#gen::bpf_probe_read_user(
 					self.buf.as_mut_ptr() as *mut _,
-					size as u32 & (N - 1) as u32,
+					size as u32,
 					ptr as *const _,
 				)
 			};
