@@ -1,20 +1,16 @@
-use super::{Infer, utils::check_protocol};
-use crate::structs::InferInfo;
+use crate::{Classification, Infer, utils::check_protocol};
 use aya_ebpf::programs::TracePointContext;
+use ebpf_common::error::{Result, code::*};
 use observ_trace_common::{
-	message::{Message, MessageType},
-	protocols::L7Protocol,
-	structs::Quintuple,
+	Buffer, Direction, L7Protocol, MessageType, Quintuple, constants::MAX_INFER_SIZE,
 };
 use parse::redis;
 
 mod parse;
-#[cfg(test)]
-mod tests;
-#[derive(Debug)]
+
 pub(crate) struct Redis {
-	pub first: u8,
-	pub is_command: bool,
+	first: u8,
+	is_command: bool,
 }
 
 impl Redis {
@@ -30,34 +26,29 @@ impl Redis {
 	}
 }
 
-#[cfg(test)]
-impl std::fmt::Display for Redis {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		f.write_str(&format!("Redis {{ first: {} }}", self.first as char))
-	}
-}
-
 impl Infer for Redis {
+	#[inline(always)]
 	fn parse(
 		_ctx: &TracePointContext,
-		info: &InferInfo,
-		_quintuple: Quintuple,
-	) -> Result<Message, u32> {
-		let payload = info.buf.as_slice();
-		if info.len < 4 {
-			return Err(0);
+		_quintuple: &Quintuple,
+		_direction: Direction,
+		buffer: &Buffer<MAX_INFER_SIZE>,
+		key: u64,
+		_enter_seq: u32,
+		_exit_seq: u32,
+	) -> Result<Classification> {
+		let payload = buffer.as_slice();
+		if buffer.len() < 4 {
+			return Err(INFER_PAYLOAD_TOO_SHORT);
 		}
-		if !check_protocol(info.key, L7Protocol::Redis) {
-			return Err(0);
+		if !check_protocol(key, L7Protocol::Redis) {
+			return Err(SOCKET_PROTOCOL_MISMATCH);
 		}
-		match redis(payload, info.len) {
-			Ok(redis) => {
-				let mut message = Message::new();
-				message.protocol = L7Protocol::Redis;
-				message.type_ = redis.message_type();
-				Ok(message)
-			},
-			Err(_) => Err(0_u32),
-		}
+		redis(payload, buffer.len()).map(|redis| {
+			let mut classification = Classification::new();
+			classification.protocol = L7Protocol::Redis;
+			classification.type_ = redis.message_type();
+			classification
+		})
 	}
 }

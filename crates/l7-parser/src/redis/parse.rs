@@ -1,4 +1,5 @@
 use super::Redis;
+use ebpf_common::error::{Result, code::*};
 use nom::{IResult, Parser, branch::alt, bytes::streaming::tag, combinator::map};
 fn prefix(i: &[u8]) -> IResult<&[u8], u8> {
 	map(
@@ -64,25 +65,25 @@ fn error(i: &[u8]) -> IResult<&[u8], &[u8]> {
 // }
 
 // TODO: need more strict check
-pub(super) fn redis(i: &[u8], count: u32) -> Result<Redis, u32> {
-	let (i, first) = prefix(i).map_err(|_| 0_u32)?;
+pub(super) fn redis(i: &[u8], count: usize) -> Result<Redis> {
+	let (i, first) = prefix(i).map_err(|_| REDIS_PREFIX_INVALID)?;
 	let mut redis = Redis::new();
 	redis.first = first;
 	if first == b'-' {
-		error(i).map_err(|_| 0_u32)?;
+		error(i).map_err(|_| REDIS_ERROR_PARSE_FAILED)?;
 		Ok(redis)
 	} else {
 		let mut p = count;
 		let mut found = false;
 		for r in 0..5 + 2 {
 			if i[r] == b'\r' && i[r + 1] == b'\n' {
-				p = r as u32 + 2;
+				p = r + 2;
 				found = true;
 				break;
 			}
 		}
 		if !found || p > count {
-			return Err(0_u32);
+			return Err(REDIS_CRLF_NOT_FOUND);
 		}
 
 		if first != b'*' || p == count {
@@ -107,7 +108,7 @@ pub(super) fn redis(i: &[u8], count: u32) -> Result<Redis, u32> {
 			}
 		}
 		if !found {
-			return Err(0_u32);
+			return Err(REDIS_CRLF_NOT_FOUND);
 		}
 		Ok(redis)
 	}
