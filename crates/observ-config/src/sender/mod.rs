@@ -8,6 +8,6 @@ mod file;
 
 #[derive(Debug, Deserialize)]
 pub struct SenderConfig {
-	pub(crate) elastic: FxHashMap<String, ElasticSenderConfig>,
-	pub(crate) file: FxHashMap<String, FileSenderConfig>,
+	pub(crate) elastic: Option<FxHashMap<String, ElasticSenderConfig>>,
+	pub(crate) file: Option<FxHashMap<String, FileSenderConfig>>,
 }

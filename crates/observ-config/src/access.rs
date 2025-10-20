@@ -30,12 +30,20 @@ pub fn agent_config() -> AgentAccess {
 }
 
 pub fn sender_config() -> SenderAccess {
-	Map::new(config(), |config: &ObservConfig| -> &SenderConfig { &config.sender })
+	Map::new(config(), |config: &ObservConfig| -> &SenderConfig {
+		config.sender.as_ref().expect("sender config not found")
+	})
 }
 
 fn file_sender_map() -> FileSenderAccess {
 	Map::new(config(), |config: &ObservConfig| -> &FxHashMap<String, FileSenderConfig> {
-		&config.sender.file
+		config
+			.sender
+			.as_ref()
+			.expect("file sender config not found")
+			.file
+			.as_ref()
+			.expect("file sender config not found")
 	})
 }
 
@@ -46,7 +54,13 @@ pub fn file_sender_config(key: &str) -> FileSenderConfig {
 
 fn elastic_sender_map() -> ElasticAccess {
 	Map::new(config(), |config: &ObservConfig| -> &FxHashMap<String, ElasticSenderConfig> {
-		&config.sender.elastic
+		config
+			.sender
+			.as_ref()
+			.expect("elastic sender config not found")
+			.elastic
+			.as_ref()
+			.expect("elastic sender config not found")
 	})
 }
 

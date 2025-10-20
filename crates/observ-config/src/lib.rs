@@ -37,7 +37,7 @@ static CONFIG: OnceCell<Arc<ArcSwap<ObservConfig>>> = OnceCell::const_new();
 #[derive(Debug, Deserialize)]
 pub struct ObservConfig {
 	pub(crate) agent: AgentConfig,
-	pub(crate) sender: SenderConfig,
+	pub(crate) sender: Option<SenderConfig>,
 	pub(crate) metric: Option<MetricConfig>,
 	pub(crate) trace: Option<TraceConfig>,
 	pub(crate) ebpf: Option<FxHashMap<String, EbpfConfig>>,
