@@ -1,6 +1,4 @@
-use core::fmt;
 use num_enum::{FromPrimitive, IntoPrimitive};
-use serde::Serialize;
 
 #[derive(FromPrimitive, IntoPrimitive)]
 #[repr(u16)]
@@ -107,69 +105,65 @@ pub enum SaFamily {
 	AF_Reversed(u16),
 }
 
-impl From<&SaFamily> for &'static str {
-	fn from(protocol: &SaFamily) -> Self {
-		match protocol {
-			SaFamily::AF_UNSPEC => "Unspecified",
-			SaFamily::AF_UNIX => "Unix domain sockets",
-			SaFamily::AF_INET => "IPv4",
-			SaFamily::AF_AX25 => "Amateur Radio AX.25",
-			SaFamily::AF_IPX => "Novell Internet Protocol",
-			SaFamily::AF_APPLETALK => "Appletalk DDP",
-			SaFamily::AF_NETROM => "Amateur radio NetROM",
-			SaFamily::AF_BRIDGE => "Multiprotocol bridge",
-			SaFamily::AF_ATMPVC => "ATM PVCs",
-			SaFamily::AF_X25 => "Reserved for X.25 project",
-			SaFamily::AF_INET6 => "IPv6",
-			SaFamily::AF_ROSE => "Amateur Radio X.25 PLP",
-			SaFamily::AF_DECnet => "Reserved for DECnet project",
-			SaFamily::AF_NETBEUI => "Reserved for 802.2LLC project",
-			SaFamily::AF_SECURITY => "Security callback pseudo AF",
-			SaFamily::AF_KEY => "AF_KEY key management API",
-			SaFamily::AF_NETLINK => "Netlink",
-			SaFamily::AF_PACKET => "Packet family",
-			SaFamily::AF_ASH => "Ash",
-			SaFamily::AF_ECONET => "Acorn Econet",
-			SaFamily::AF_ATMSVC => "ATM SVCs",
-			SaFamily::AF_RDS => "RDS sockets",
-			SaFamily::AF_SNA => "Linux SNA Project",
-			SaFamily::AF_IRDA => "IRDA sockets",
-			SaFamily::AF_PPPOX => "PPPoX sockets",
-			SaFamily::AF_WANPIPE => "Wanpipe API sockets",
-			SaFamily::AF_LLC => "Linux LLC",
-			SaFamily::AF_IB => "Native InfiniBand address",
-			SaFamily::AF_MPLS => "MPLS",
-			SaFamily::AF_CAN => "Controller Area Network",
-			SaFamily::AF_TIPC => "TIPC sockets",
-			SaFamily::AF_BLUETOOTH => "Bluetooth sockets",
-			SaFamily::AF_IUCV => "IUCV sockets",
-			SaFamily::AF_RXRPC => "RxRPC sockets",
-			SaFamily::AF_ISDN => "mISDN sockets",
-			SaFamily::AF_PHONET => "Phonet sockets",
-			SaFamily::AF_IEEE802154 => "IEEE 802.15.4 sockets",
-			SaFamily::AF_CAIF => "CAIF sockets",
-			SaFamily::AF_ALG => "Algorithm sockets",
-			SaFamily::AF_NFC => "NFC sockets",
-			SaFamily::AF_VSOCK => "vSockets",
-			SaFamily::AF_KCM => "Kernel Connection Multiplexor",
-			SaFamily::AF_QIPCRTR => "Qualcomm IPC Router",
-			SaFamily::AF_SMC => "SMC sockets",
-			SaFamily::AF_XDP => "XDP sockets",
-			SaFamily::AF_MCTP => "Management component transport protocol",
-			SaFamily::AF_MAX => "AF_MAX For now.",
-			SaFamily::AF_Reversed(_) => "Reversed",
+#[cfg(feature = "user")]
+impl std::fmt::Display for SaFamily {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::AF_UNSPEC => write!(f, "Unspecified"),
+			Self::AF_UNIX => write!(f, "Unix domain sockets"),
+			Self::AF_INET => write!(f, "IPv4"),
+			Self::AF_AX25 => write!(f, "Amateur Radio AX.25"),
+			Self::AF_IPX => write!(f, "Novell Internet Protocol"),
+			Self::AF_APPLETALK => write!(f, "Appletalk DDP"),
+			Self::AF_NETROM => write!(f, "Amateur radio NetROM"),
+			Self::AF_BRIDGE => write!(f, "Multiprotocol bridge"),
+			Self::AF_ATMPVC => write!(f, "ATM PVCs"),
+			Self::AF_X25 => write!(f, "Reserved for X.25 project"),
+			Self::AF_INET6 => write!(f, "IPv6"),
+			Self::AF_ROSE => write!(f, "Amateur Radio X.25 PLP"),
+			Self::AF_DECnet => write!(f, "Reserved for DECnet project"),
+			Self::AF_NETBEUI => write!(f, "Reserved for 802.2LLC project"),
+			Self::AF_SECURITY => write!(f, "Security callback pseudo AF"),
+			Self::AF_KEY => write!(f, "AF_KEY key management API"),
+			Self::AF_NETLINK => write!(f, "Netlink"),
+			Self::AF_PACKET => write!(f, "Packet family"),
+			Self::AF_ASH => write!(f, "Ash"),
+			Self::AF_ECONET => write!(f, "Acorn Econet"),
+			Self::AF_ATMSVC => write!(f, "ATM SVCs"),
+			Self::AF_RDS => write!(f, "RDS sockets"),
+			Self::AF_SNA => write!(f, "Linux SNA Project"),
+			Self::AF_IRDA => write!(f, "IRDA sockets"),
+			Self::AF_PPPOX => write!(f, "PPPoX sockets"),
+			Self::AF_WANPIPE => write!(f, "Wanpipe API sockets"),
+			Self::AF_LLC => write!(f, "Linux LLC"),
+			Self::AF_IB => write!(f, "Native InfiniBand address"),
+			Self::AF_MPLS => write!(f, "MPLS"),
+			Self::AF_CAN => write!(f, "Controller Area Network"),
+			Self::AF_TIPC => write!(f, "TIPC sockets"),
+			Self::AF_BLUETOOTH => write!(f, "Bluetooth sockets"),
+			Self::AF_IUCV => write!(f, "IUCV sockets"),
+			Self::AF_RXRPC => write!(f, "RxRPC sockets"),
+			Self::AF_ISDN => write!(f, "mISDN sockets"),
+			Self::AF_PHONET => write!(f, "Phonet sockets"),
+			Self::AF_IEEE802154 => write!(f, "IEEE 802.15.4 sockets"),
+			Self::AF_CAIF => write!(f, "CAIF sockets"),
+			Self::AF_ALG => write!(f, "Algorithm sockets"),
+			Self::AF_NFC => write!(f, "NFC sockets"),
+			Self::AF_VSOCK => write!(f, "vSockets"),
+			Self::AF_KCM => write!(f, "Kernel Connection Multiplexor"),
+			Self::AF_QIPCRTR => write!(f, "Qualcomm IPC Router"),
+			Self::AF_SMC => write!(f, "SMC sockets"),
+			Self::AF_XDP => write!(f, "XDP sockets"),
+			Self::AF_MCTP => write!(f, "Management component transport protocol"),
+			Self::AF_MAX => write!(f, "AF_MAX For now."),
+			Self::AF_Reversed(bad) => write!(f, "Reversed {}", bad),
 		}
 	}
 }
 
-impl fmt::Display for SaFamily {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.write_str(self.into())
-	}
-}
-
 /// Standard well-defined IP protocols.
-#[derive(Copy, Clone, PartialEq, Hash, Eq, Serialize, Debug)]
+#[cfg_attr(feature = "user", derive(serde::Serialize, Hash, Eq))]
+#[derive(Clone, Copy, PartialEq)]
 #[repr(u16)]
 pub enum L4Protocol {
 	/// Dummy protocol for TCP.
@@ -230,37 +224,38 @@ pub enum L4Protocol {
 	IPPROTO_MPTCP = 262,
 }
 
-impl From<&L4Protocol> for &'static str {
-	fn from(protocol: &L4Protocol) -> Self {
-		match protocol {
-			L4Protocol::IPPROTO_IP => "IP",
-			L4Protocol::IPPROTO_ICMP => "ICMP",
-			L4Protocol::IPPROTO_IGMP => "IGMP",
-			L4Protocol::IPPROTO_IPIP => "IPIP",
-			L4Protocol::IPPROTO_TCP => "TCP",
-			L4Protocol::IPPROTO_EGP => "EGP",
-			L4Protocol::IPPROTO_PUP => "PUP",
-			L4Protocol::IPPROTO_UDP => "UDP",
-			L4Protocol::IPPROTO_IDP => "IDP",
-			L4Protocol::IPPROTO_TP => "TP",
-			L4Protocol::IPPROTO_DCCP => "DCCP",
-			L4Protocol::IPPROTO_IPV6 => "IPv6",
-			L4Protocol::IPPROTO_RSVP => "RSVP",
-			L4Protocol::IPPROTO_GRE => "GRE",
-			L4Protocol::IPPROTO_ESP => "ESP",
-			L4Protocol::IPPROTO_AH => "AH",
-			L4Protocol::IPPROTO_MTP => "MTP",
-			L4Protocol::IPPROTO_BEETPH => "BEETPH",
-			L4Protocol::IPPROTO_ENCAP => "ENCAP",
-			L4Protocol::IPPROTO_PIM => "PIM",
-			L4Protocol::IPPROTO_COMP => "COMP",
-			L4Protocol::IPPROTO_L2TP => "L2TP",
-			L4Protocol::IPPROTO_SCTP => "SCTP",
-			L4Protocol::IPPROTO_UDPLITE => "UDPLITE",
-			L4Protocol::IPPROTO_MPLS => "MPLS",
-			L4Protocol::IPPROTO_ETHERNET => "ETHERNET",
-			L4Protocol::IPPROTO_RAW => "RAW",
-			L4Protocol::IPPROTO_MPTCP => "MPTCP",
+#[cfg(feature = "user")]
+impl std::fmt::Display for L4Protocol {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::IPPROTO_IP => write!(f, "IP"),
+			Self::IPPROTO_ICMP => write!(f, "ICMP"),
+			Self::IPPROTO_IGMP => write!(f, "IGMP"),
+			Self::IPPROTO_IPIP => write!(f, "IPIP"),
+			Self::IPPROTO_TCP => write!(f, "TCP"),
+			Self::IPPROTO_EGP => write!(f, "EGP"),
+			Self::IPPROTO_PUP => write!(f, "PUP"),
+			Self::IPPROTO_UDP => write!(f, "UDP"),
+			Self::IPPROTO_IDP => write!(f, "IDP"),
+			Self::IPPROTO_TP => write!(f, "TP"),
+			Self::IPPROTO_DCCP => write!(f, "DCCP"),
+			Self::IPPROTO_IPV6 => write!(f, "IPv6"),
+			Self::IPPROTO_RSVP => write!(f, "RSVP"),
+			Self::IPPROTO_GRE => write!(f, "GRE"),
+			Self::IPPROTO_ESP => write!(f, "ESP"),
+			Self::IPPROTO_AH => write!(f, "AH"),
+			Self::IPPROTO_MTP => write!(f, "MTP"),
+			Self::IPPROTO_BEETPH => write!(f, "BEETPH"),
+			Self::IPPROTO_ENCAP => write!(f, "ENCAP"),
+			Self::IPPROTO_PIM => write!(f, "PIM"),
+			Self::IPPROTO_COMP => write!(f, "COMP"),
+			Self::IPPROTO_L2TP => write!(f, "L2TP"),
+			Self::IPPROTO_SCTP => write!(f, "SCTP"),
+			Self::IPPROTO_UDPLITE => write!(f, "UDPLITE"),
+			Self::IPPROTO_MPLS => write!(f, "MPLS"),
+			Self::IPPROTO_ETHERNET => write!(f, "ETHERNET"),
+			Self::IPPROTO_RAW => write!(f, "RAW"),
+			Self::IPPROTO_MPTCP => write!(f, "MPTCP"),
 		}
 	}
 }

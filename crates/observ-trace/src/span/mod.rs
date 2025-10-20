@@ -7,11 +7,7 @@ use observ_config::{SpanAccess, span_config};
 use observ_core::Module;
 use observ_event::span::Span;
 use observ_runtime::handle;
-use observ_trace_common::{
-	message::{Message, MessageType},
-	protocols::L7Protocol,
-	structs::Quintuple,
-};
+use observ_trace_common::{L7Protocol, Message, MessageType, Quintuple};
 use std::{
 	num::NonZeroUsize,
 	sync::{
@@ -28,7 +24,7 @@ use tokio::{
 
 mod error;
 
-#[derive(Eq, PartialEq, Hash, Debug)]
+#[derive(Eq, PartialEq, Hash)]
 pub struct SessionKey {
 	quintuple: Quintuple,
 	protocol: L7Protocol,

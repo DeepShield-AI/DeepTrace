@@ -1,6 +1,6 @@
 use content::SpanContent;
 use metric::SpanMetric;
-use observ_trace_common::message::Message;
+use observ_trace_common::Message;
 use serde::Serialize;
 
 mod content;

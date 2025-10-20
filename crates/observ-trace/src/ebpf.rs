@@ -5,7 +5,7 @@ use aya::{
 use ebpf_manager::{kernel, log::init_logger, program::Programs};
 use log::{debug, error, info, warn};
 use observ_config::ebpf_config;
-use observ_trace_common::map::PIDS_MAP;
+use observ_trace_common::maps::PIDS_MAP;
 
 const BPF_ELF: &[u8] = {
 	#[cfg(debug_assertions)]

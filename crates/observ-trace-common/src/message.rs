@@ -1,12 +1,29 @@
-use crate::{
-	protocols::L7Protocol,
-	structs::{Direction, Quintuple, Syscall},
-};
+use crate::{direction::Direction, protocols::L7Protocol, socket::Quintuple, syscall::Syscall};
+use aya_ebpf::TASK_COMM_LEN;
 pub use ebpf_common::{buffer::Buffer, constants::MAX_PAYLOAD_SIZE};
-use serde::Serialize;
+
+#[cfg_attr(feature = "user", derive(serde::Serialize))]
+#[derive(Clone, Copy, PartialEq)]
+#[repr(u8)]
+pub enum MessageType {
+	Unknown = 0,
+	Request = 1,
+	Response = 2,
+}
+
+#[cfg(feature = "user")]
+impl std::fmt::Display for MessageType {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			MessageType::Unknown => f.write_str("Unknown"),
+			MessageType::Request => f.write_str("Request"),
+			MessageType::Response => f.write_str("Response"),
+		}
+	}
+}
 
 /// Syscall message sent to user space
-#[cfg_attr(feature = "user", derive(Serialize))]
+#[cfg_attr(feature = "user", derive(serde::Serialize))]
 #[repr(C)]
 pub struct Message {
 	pub tgid: u32,
@@ -14,6 +31,7 @@ pub struct Message {
 	// TODO: are enter and exit seq necessary?
 	pub enter_seq: u32,
 	pub exit_seq: u32,
+	#[cfg_attr(feature = "user", serde(skip))]
 	pub seq: u32,
 	// TODO: this timestamp is enter syscall time, do we need to add more timestamps?
 	pub timestamp_ns: u64,
@@ -24,16 +42,13 @@ pub struct Message {
 	pub quintuple: Quintuple,
 	pub syscall: Syscall,
 	pub direction: Direction,
-	#[cfg_attr(feature = "user", serde(skip))]
-	padding: u16,
-	#[cfg_attr(feature = "user", serde(serialize_with = "serialize_comm"))]
-	pub comm: [u8; 16],
-	#[cfg_attr(feature = "user", serde(serialize_with = "serialize_buffer"))]
-	pub payload: Buffer<MAX_PAYLOAD_SIZE>,
-	// for protocol infer
-	pub protocol: L7Protocol,
 	#[cfg_attr(feature = "user", serde(rename(serialize = "type")))]
 	pub type_: MessageType,
+	pub protocol: L7Protocol,
+	#[cfg_attr(feature = "user", serde(serialize_with = "serialize_comm"))]
+	pub comm: Buffer<TASK_COMM_LEN>,
+	#[cfg_attr(feature = "user", serde(serialize_with = "serialize_buffer"))]
+	pub payload: Buffer<MAX_PAYLOAD_SIZE>,
 }
 
 impl Message {
@@ -59,14 +74,7 @@ impl Message {
 	}
 }
 
-#[derive(Default, Clone, Copy, Serialize, Debug, PartialEq)]
-pub enum MessageType {
-	#[default]
-	Unknown = -1,
-	Request = 0,
-	Response = 1,
-}
-
+#[cfg(feature = "user")]
 impl Message {
 	#[inline]
 	pub fn is_request(&self) -> bool {
@@ -83,12 +91,12 @@ impl std::fmt::Display for Message {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(
 			f,
-			"tgid: {}, pid: {}, Quintuple: {}, Time: {}, Command: {}, Syscall: {}, Direction: {}, Protocol: {}, Type: {:?}, Enter: {}, Exit: {}, Data: {}",
+			"tgid: {}, pid: {}, Quintuple: {}, Time: {}, Command: {}, Syscall: {}, Direction: {}, Protocol: {}, Type: {}, Enter: {}, Exit: {}, Data: {}",
 			self.tgid,
 			self.pid,
 			self.quintuple,
 			self.timestamp_ns,
-			String::from_utf8_lossy(&self.comm),
+			String::from_utf8_lossy(self.comm.as_slice()),
 			self.syscall,
 			self.direction,
 			self.protocol,
@@ -99,21 +107,15 @@ impl std::fmt::Display for Message {
 		)
 	}
 }
-#[cfg(feature = "user")]
-impl Message {
-	pub fn buffer(&self) -> &[u8] {
-		self.payload.as_slice()
-	}
-}
 
 #[cfg(feature = "user")]
-fn serialize_comm<S>(i: &[u8], serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_comm<S>(i: &Buffer<TASK_COMM_LEN>, serializer: S) -> Result<S::Ok, S::Error>
 where
 	S: serde::Serializer,
 {
 	use core::ffi::CStr;
 
-	let s = CStr::from_bytes_until_nul(i).unwrap().to_str().unwrap();
+	let s = CStr::from_bytes_until_nul(i.as_slice()).unwrap().to_str().unwrap();
 	serializer.serialize_str(s)
 }
 

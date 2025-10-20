@@ -1,9 +1,7 @@
 use num_enum::{FromPrimitive, IntoPrimitive};
-use serde::Serialize;
 
-#[derive(
-	FromPrimitive, IntoPrimitive, Copy, Clone, Default, PartialEq, Eq, Hash, Serialize, Debug,
-)]
+#[cfg_attr(feature = "user", derive(Eq, Hash, serde::Serialize))]
+#[derive(FromPrimitive, IntoPrimitive, PartialEq, Copy, Clone)]
 #[repr(u8)]
 pub enum L7Protocol {
 	#[default]
@@ -55,47 +53,41 @@ pub enum L7Protocol {
 	Max = 255,
 }
 
-impl From<&L7Protocol> for &'static str {
-	fn from(protocol: &L7Protocol) -> Self {
-		match protocol {
-			L7Protocol::Unknown => "Unknown",
-			L7Protocol::HTTP1 => "HTTP/1",
-			L7Protocol::Http2 => "HTTP/2",
-			L7Protocol::Dubbo => "Dubbo",
-			L7Protocol::Grpc => "gRPC",
-			L7Protocol::SofaRPC => "SofaRPC",
-			L7Protocol::FastCGI => "FastCGI",
-			L7Protocol::Brpc => "BRPC",
-			L7Protocol::Tars => "TARS",
-			L7Protocol::SomeIp => "SomeIP",
-			L7Protocol::Thrift => "Thrift",
-			L7Protocol::MySQL => "MySQL",
-			L7Protocol::PostgreSQL => "PostgreSQL",
-			L7Protocol::Oracle => "Oracle",
-			L7Protocol::Redis => "Redis",
-			L7Protocol::MongoDB => "MongoDB",
-			L7Protocol::Memcached => "Memcached",
-			L7Protocol::Cassandra => "Cassandra",
-			L7Protocol::Kafka => "Kafka",
-			L7Protocol::MQTT => "MQTT",
-			L7Protocol::AMQP => "AMQP",
-			L7Protocol::OpenWire => "OpenWire",
-			L7Protocol::NATS => "NATS",
-			L7Protocol::Pulsar => "Pulsar",
-			L7Protocol::ZMTP => "ZMTP",
-			L7Protocol::RocketMQ => "RocketMQ",
-			L7Protocol::DNS => "DNS",
-			L7Protocol::TLS => "TLS",
-			L7Protocol::Ping => "Ping",
-			L7Protocol::Custom => "Custom",
-			L7Protocol::Max => "Max",
-		}
-	}
-}
-
 #[cfg(feature = "user")]
 impl std::fmt::Display for L7Protocol {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		f.write_str(self.into())
+		match self {
+			Self::Unknown => f.write_str("Unknown"),
+			Self::HTTP1 => f.write_str("HTTP/1"),
+			Self::Http2 => f.write_str("HTTP/2"),
+			Self::Dubbo => f.write_str("Dubbo"),
+			Self::Grpc => f.write_str("gRPC"),
+			Self::SofaRPC => f.write_str("SofaRPC"),
+			Self::FastCGI => f.write_str("FastCGI"),
+			Self::Brpc => f.write_str("BRPC"),
+			Self::Tars => f.write_str("TARS"),
+			Self::SomeIp => f.write_str("SomeIP"),
+			Self::Thrift => f.write_str("Thrift"),
+			Self::MySQL => f.write_str("MySQL"),
+			Self::PostgreSQL => f.write_str("PostgreSQL"),
+			Self::Oracle => f.write_str("Oracle"),
+			Self::Redis => f.write_str("Redis"),
+			Self::MongoDB => f.write_str("MongoDB"),
+			Self::Memcached => f.write_str("Memcached"),
+			Self::Cassandra => f.write_str("Cassandra"),
+			Self::Kafka => f.write_str("Kafka"),
+			Self::MQTT => f.write_str("MQTT"),
+			Self::AMQP => f.write_str("AMQP"),
+			Self::OpenWire => f.write_str("OpenWire"),
+			Self::NATS => f.write_str("NATS"),
+			Self::Pulsar => f.write_str("Pulsar"),
+			Self::ZMTP => f.write_str("ZMTP"),
+			Self::RocketMQ => f.write_str("RocketMQ"),
+			Self::DNS => f.write_str("DNS"),
+			Self::TLS => f.write_str("TLS"),
+			Self::Ping => f.write_str("Ping"),
+			Self::Custom => f.write_str("Custom"),
+			Self::Max => f.write_str("Max"),
+		}
 	}
 }

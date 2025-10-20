@@ -1,4 +1,4 @@
-use observ_trace_common::message::{Buffer, MAX_PAYLOAD_SIZE, serialize_buffer};
+use observ_trace_common::{Buffer, MAX_PAYLOAD_SIZE, serialize_buffer};
 use serde::Serialize;
 
 #[derive(Serialize)]

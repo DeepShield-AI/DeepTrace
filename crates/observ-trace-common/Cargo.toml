@@ -16,6 +16,7 @@ user = ["std"]
 [dependencies]
 ebpf-common.workspace = true
 
+aya-ebpf.workspace = true
 num_enum = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 

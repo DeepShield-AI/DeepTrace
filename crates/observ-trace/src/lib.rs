@@ -12,8 +12,7 @@ use observ_config::{TraceAccess, TraceConfig, ebpf_config, trace_config};
 use observ_core::Module;
 use observ_event::span::Span;
 use observ_runtime::handle;
-use observ_trace_common::{map::EVENT_MAP, message::Message};
-use serde_json::json;
+use observ_trace_common::{Message, maps::EVENT_MAP};
 use span::SpanConstructor;
 use std::sync::{
 	Arc,
@@ -120,8 +119,8 @@ impl Module for TraceCollector {
 
 					for buf in buffers.iter().take(events.read) {
 						let message = Message::decode(buf);
-						info!("Received message {}", message.pid);
-						info!("Received message {:?}", json!(message));
+						// info!("Received message {}", message.pid);
+						// info!("Received message {:?}", json!(message));
 						message_sender.send(message).await.expect("Error sending message");
 					}
 				}

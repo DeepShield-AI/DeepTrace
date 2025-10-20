@@ -13,7 +13,7 @@ workspace = true
 path = "src/lib.rs"
 
 [dependencies]
-observ-trace-common = { workspace = true, optional = true }
+observ-trace-common = { workspace = true, features = ["user"], optional = true }
 
 bytes.workspace = true
 chrono.workspace = true
