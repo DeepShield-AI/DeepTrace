@@ -1,8 +1,7 @@
 use core::mem;
 
 #[repr(u8)]
-#[derive(Debug)]
-pub enum Com {
+pub(super) enum Com {
 	Query = 0x03,
 	Connect = 0x0b,
 	StmtPrepare = 0x16,
