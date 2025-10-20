@@ -4,7 +4,7 @@ use core::mem;
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
 #[repr(u8)]
-pub enum OpCode {
+pub(super) enum OpCode {
 	ERROR = 0x00,
 	STARTUP = 0x01,
 	READY = 0x02,

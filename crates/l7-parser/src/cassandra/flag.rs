@@ -2,7 +2,7 @@ use bitflags::bitflags;
 
 bitflags! {
 	/// Flags applying to this frame.
-	pub struct Flags: u8 {
+	pub(super) struct Flags: u8 {
 		/// Compression flag.
 		/// If set, the frame body is compressed. The actual compression to use should have been set
 		/// up beforehand through the Startup message.
