@@ -10,7 +10,7 @@ You can install Docker by following the official instructions: [Docker Installat
 
 Check if Docker is installed correctly:
 ```bash
-docker --version
+sudo docker --version
 ```
 
 ---
@@ -36,7 +36,7 @@ sudo systemctl restart docker
 
 ### 3. Pull Images from Private Registry
 ```bash
-docker pull 47.97.67.233:5000/deepshield/deeptrace:latest
+sudo docker pull 47.97.67.233:5000/deepshield/deeptrace:latest
 ```
 > Verify with: `docker images | grep deeptrace`
 
@@ -47,17 +47,16 @@ docker pull 47.97.67.233:5000/deepshield/deeptrace:latest
 ```bash
 cd DeepTrace
 
-docker run --privileged --rm -it -v $(pwd):/DeepTrace 47.97.67.233:5000/deepshield/deeptrace bash -c \
-'cd /DeepTrace/agent &&
-aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > src/trace/ebpf/src/vmlinux.rs &&
-sed -i '"'"'2i\#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code, unnecessary_transmutes)]'"'"' src/trace/ebpf/src/vmlinux.rs &&
-cargo build --release'
+sudo docker run --privileged --rm -it -v $(pwd):/DeepTrace deeptrace bash -c \
+'cd /DeepTrace && cargo xtask build --profile release'
 
-# binary file directory: ./agent/target/release/agent
+# if your machine architecture is x86_64, you can find the agent binary file in 
+# /target/x86_64-unknown-linux-gnu/release/deeptrace
 # You can also run the agent with:
-cp agent/config/default.toml.example agent/config/default.toml
+cp config/deeptrace.toml.example config/deeptrace.toml
+
 # modify the config file
-RUST_LOG=info sudo ./agent/target/release/agent -f agent/config/default.toml
+sudo RUST_LOG=info ./target/x86_64-unknown-linux-gnu/release/deeptrace -c config/deeptrace.toml
 ```
 
 ## Manually compilation
@@ -76,7 +75,8 @@ RUST_LOG=info sudo ./agent/target/release/agent -f agent/config/default.toml
 # Update packages and install essential tools
 sudo apt-get update && sudo apt-get install -y --no-install-suggests --no-install-recommends \
   build-essential clang llvm-18 llvm-18-dev llvm-18-tools \
-  curl ca-certificates git make libelf-dev
+  curl ca-certificates git make libelf-dev libclang-18-dev \
+  pkg-config libssl-dev openssl
 
 # Set LLVM environment variables (persist in ~/.bashrc if needed)
 
@@ -87,19 +87,12 @@ source ~/.bashrc
 
 ---
 
-### Step 2: Build and Install `bpftool`
+### Step 2: Build and Install `libbpf`
 ```bash
-git clone --recurse-submodules https://github.com/libbpf/bpftool.git
-cd bpftool/src
-make -j$(nproc) && sudo make install  # Build with parallelism 
-cd ../../ && rm -rf bpftool  # Cleanup
-
-# Verify installation
-bpftool version  # Should display version info 
-
-# Mount the tracefs filesystem
-sudo mkdir -p /sys/kernel/tracing
-sudo mount -t tracefs nodev /sys/kernel/tracing
+git clone https://github.com/libbpf/libbpf.git --branch libbpf-1.6.2 --depth 1 .
+cd libbpf/src
+BUILD_STATIC_ONLY=y make -j$(nproc) && sudo make install  # Build with parallelism 
+ldconfig
 ```
 
 ---
@@ -115,11 +108,10 @@ source ~/.bashrc
 # Add components and toolchains
 rustup component add rust-src
 rustup toolchain install nightly --component rust-src
+rustup target add aarch64-unknown-linux-gnu
 
 # Install BPF-specific tools
-cargo install --features=llvm-sys/prefer-dynamic bpf-linker
-cargo install bindgen-cli  # Generate Rust bindings for C code 
-cargo install --git https://github.com/aya-rs/aya -- aya-tool
+cargo install bpf-linker
 ```
 
 ---
@@ -132,16 +124,9 @@ cd DeepTrace
 
 ---
 
-### Step 5: Generate Kernel Bindings
+### Step 5: Compile the Agent
 ```bash
-mkdir -p agent/src/ebpf/trace/src
-aya-tool generate task_struct user_msghdr mmsghdr tcp_sock socket files_struct > agent/src/ebpf/trace/src/vmlinux.rs
-
-# Allow non-standard naming in generated code
-sed -i '2i\#![allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code, unnecessary_transmutes)]' agent/src/ebpf/trace/src/vmlinux.rs
-
-# Build the project
-cargo build --release  # Compile with optimizations 
+cargo xtask build --profile release # Compile with optimizations 
 ```
 
 ### Step 6: Load the Workload Images
@@ -155,11 +140,10 @@ chmod +x ./scripts/load_docker_images.sh
 
 ### Step 7: Output
 
-The compiled agent will be located at `target/release/deeptrace`. You can run it with:
+The compiled agent will be located at `target/x86_64-unknown-linux-gnu/release/deeptrace`. You can run it with:
 ```bash
-RUST_LOG=info cargo run --release \
-  --config 'target."cfg(all())".runner="sudo -E"' \
-  -- --pids <pid>
+mv config/deeptrace.toml.example config/deeptrace.toml
+RUST_LOG=info cargo xtask run -c config/deeptrace.toml
 ```
 
 For more testing, check the [Testing Guide](../tests/README.md) for more details.
