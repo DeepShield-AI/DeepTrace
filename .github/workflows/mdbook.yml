@@ -43,12 +43,12 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Build with mdBook
         run: |
-          mdbook-mermaid install .
-          mdbook build
+          mdbook-mermaid install ./docs
+          mdbook build ./docs
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./book
+          path: ./docs/book
 
   # Deployment job
   deploy:
