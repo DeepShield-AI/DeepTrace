@@ -19,7 +19,7 @@ To minimize overhead, DeepTrace employs **on-host compression** and **dual-index
 
 # Documentation
 
-You can get more information in our comprehensive [documentation](docs/README.md)
+You can get more information in our comprehensive [documentation](https://deepshield-ai.github.io/DeepTrace/index.html)
 
 # Getting Started with DeepTrace
 
