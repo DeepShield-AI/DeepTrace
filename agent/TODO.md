@@ -1,0 +1,60 @@
+- ebpf
+    - [x] add ebpf-common
+    - [ ] add ebpf-macros
+    - [x] impl alloc
+    - [x] add rewrite trace-ebpf
+    - [ ] currently, when a syscall is invoke, read read/write seq while make socket read twice, optimize this in order to reduce overhead
+    - [x] how to restructure trace-ebpf to make buffer read decoupling with l7 parse
+- parser
+    - [x] l7 parser
+    - [ ] add tests
+- event
+    - [ ] add message and trace event
+- metric
+    - [x] add cpu metric
+- encode
+    - [ ] use serde for metric encode
+    - [x] add json encode
+    - [ ] remove unused logic in csv encoder
+- review
+    - [ ] codec
+    - [ ] cow
+    - [ ] ebpf-common
+    - [ ] observ-config
+    - [x] observ-core
+    - [ ] observ-cpu
+    - [x] observ-cpu-ebpf
+    - [ ] observ-disk
+    - [x] observ-disk-ebpf
+    - [ ] observ-event
+    - [ ] observ-macros
+    - [ ] observ-memory
+    - [x] observ-memory-ebpf
+    - [ ] observ-metric
+    - [ ] observ-metric-common
+    - [ ] observ-metric-utils
+    - [ ] observ-network
+    - [x] observ-network-ebpf
+    - [x] observ-runtime
+    - [ ] observ-sender
+    - [ ] observ-trace-common
+    - [ ] prism
+    - [ ] deeptrace
+- sender
+    - [ ] optimize the file sender
+    - [ ] add elastic sender
+- docs
+    - [ ] add mdbook
+    - [ ] change docs to mdbook
+- test
+    - [ ] test code
+- refactor
+    - [x] move trace-ebpf to observ-trace-ebpf
+    - [ ] move trace to observ-trace
+    - [x] move trace-common to observ-trace-common
+    - [ ] move observ-metric-utils into observ-metric-common
+- config
+    - [x] add observ-config
+    - [ ] optimize retry logic
+- bug fix
+    - [x] fix observ-config: when update config file, the config readed is empty

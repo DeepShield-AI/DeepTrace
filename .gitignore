@@ -13,3 +13,5 @@ target/
 
 resources/docker/images/**/ubuntu.*
 **/__pycache__/
+
+output/

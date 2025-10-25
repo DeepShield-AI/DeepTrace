@@ -4,6 +4,8 @@ import re
 import os
 import time
 import sys
+from config.parse_config import load_agents
+import json
 
 
 def install_agents(agents):
@@ -34,6 +36,7 @@ def install_agents(agents):
 
 
 def start_agents(agents):
+    get_all_k8s_tags()
     def start_agent(agent_name, agent):
         agent.get_pids()
         agent.sync_config()
@@ -241,3 +244,32 @@ def uninstall_workload(agents):
         else:
             print(f"{agent_name} 离开swarm集群成功")
 
+
+
+def get_all_k8s_tags():
+    agents = load_agents()
+    all_tags = []
+    for agent_name, agent in agents.items():
+        tags = agent.get_k8s_tags()
+        if tags:
+            all_tags.extend(tags)
+
+    tag_map = {}
+    for tag in all_tags:
+        if tag['type'] == 0:
+            if tag['tgid'] not in tag_map:
+                tag_map[tag['tgid']] = {
+                    'namespace': tag['namespace'],
+                    'pod_name': tag['pod_name'],
+                    'uuid': tag['uuid'],
+                    'hostname': '',
+                    'ip': '',
+                }
+        if tag['type'] == 1:
+            for key, value in tag_map.items():
+                if tag['uuid'] == value['uuid']:
+                    value['hostname'] = tag['hostname']
+                    value['ip'] = tag['ip']
+    
+    with open("./config/k8s_tag_map.json", "w") as f:
+        json.dump(tag_map, f, ensure_ascii=False, indent=2)

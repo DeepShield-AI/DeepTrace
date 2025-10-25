@@ -1,0 +1,1435 @@
+{
+  "_index": "traces",
+  "_id": "LQsRmJgB3XEdw7DqxRul",
+  "_version": 1,
+  "_ignored": [
+    "spans.content.resp_content.keyword"
+  ],
+  "_source": {
+    "trace_id": "fe3c9f4f4fc5d13d",
+    "span_num": 6,
+    "e2e_duration": 13087376,
+    "endpoint": "/productpage?u=normal",
+    "component_name": "python",
+    "server_ip": "172.18.0.5",
+    "server_port": 9080,
+    "client_ip": "172.18.0.1",
+    "client_port": 29562,
+    "protocol": "HTTP1",
+    "status_code": "200",
+    "start_time": 6295915007982913,
+    "end_time": 6295915021070289,
+    "topology": {
+      "477368": {
+        "477178": {
+          "477056": null
+        }
+      }
+    },
+    "components": {
+      "477056": {
+        "name": [
+          "/bookinfo_ratings_1"
+        ],
+        "ip": "172.18.0.3",
+        "endpoint": "/ratings/0",
+        "protocol": "HTTP1"
+      },
+      "477178": {
+        "name": [
+          "/bookinfo_reviews_1"
+        ],
+        "ip": "172.18.0.4",
+        "endpoint": "/reviews/0",
+        "protocol": "HTTP1"
+      },
+      "477368": {
+        "name": [
+          "/bookinfo_productpage_1"
+        ],
+        "ip": "172.18.0.5",
+        "endpoint": "/details/0",
+        "protocol": "HTTP1"
+      }
+    },
+    "spans": [
+      {
+        "context": {
+          "trace_id": "fe3c9f4f4fc5d13d",
+          "span_id": "zwuWMIIGfwt0nFRzFEdICDzSUkcmftC3Cn67qWhbLBXTH8ErIPzGDnha5dPPSfTL",
+          "parent_id": "UN5XoopYhhMleKdgX9H1xKwECoGO3hB6vTALKWefzjYIz1aFeUJMRd3ElRLsoPD2",
+          "parent_trace_id": "UnknownTraceID",
+          "child_ids": []
+        },
+        "tag": {
+          "docker_tag": {
+            "container_id": "ba6b0e0d39f7b93d97560a06530acf462a0168d925453cdf981c8e3c822431ff",
+            "container_name": [
+              "/bookinfo_productpage_1"
+            ],
+            "created": "2025-08-11T07:34:37.469049507Z",
+            "gateway": "172.18.0.1",
+            "hostname": "ba6b0e0d39f7",
+            "image": "docker.1ms.run/istio/examples-bookinfo-productpage-v1:1.16.2",
+            "ip": "172.18.0.5",
+            "network_mode": "bookinfo_bookinfo-net",
+            "tgid": 477058
+          },
+          "ebpf_tag": {
+            "component": "python",
+            "direction": "Egress",
+            "dst_ip": "172.18.0.5",
+            "dst_port": 58172,
+            "pid": 479973,
+            "protocol": "HTTP1",
+            "req_seq": 0,
+            "resp_seq": 1,
+            "src_ip": "172.18.0.2",
+            "src_port": 9080,
+            "tgid": 477368,
+            "endpoint": "/details/0"
+          }
+        },
+        "metric": {
+          "duration": 955333,
+          "end_time": 6295915011291811,
+          "req_size": 232,
+          "resp_size": 180,
+          "start_time": 6295915010336478
+        },
+        "content": {
+          "req_content": "GET /details/0 HTTP/1.1\r\nHost: details:9080\r\nuser-agent: python-requests/2.32.3\r\nAccept-Encoding: gzip, deflate\r\nAccept: */*\r\nConnection: keep-alive\r\nX-B3-TraceId: fe3c9f4f4fc5d13d\r\nX-B3-SpanId: fe3c9f4f4fc5d13d\r\nX-B3-Sampled: 1\r\n\r\n",
+          "resp_content": "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nServer: WEBrick/1.6.0 (Ruby/2.7.1/2020-03-31)\r\nDate: Mon, 11 Aug 2025 07:38:44 GMT\r\nContent-Length: 178\r\nConnection: Keep-Alive\r\n\r\n"
+        }
+      },
+      {
+        "context": {
+          "trace_id": "UnknownTraceID",
+          "span_id": "UN5XoopYhhMleKdgX9H1xKwECoGO3hB6vTALKWefzjYIz1aFeUJMRd3ElRLsoPD2",
+          "parent_id": null,
+          "parent_trace_id": null,
+          "child_ids": [
+            "zwuWMIIGfwt0nFRzFEdICDzSUkcmftC3Cn67qWhbLBXTH8ErIPzGDnha5dPPSfTL",
+            "9lCAzSDEkhtiBdUp8fe0gwWZAz4IlCwOOqlBl5eqEmECabwj6cxwYwQDiTtjKWgt"
+          ]
+        },
+        "tag": {
+          "docker_tag": {
+            "container_id": "ba6b0e0d39f7b93d97560a06530acf462a0168d925453cdf981c8e3c822431ff",
+            "container_name": [
+              "/bookinfo_productpage_1"
+            ],
+            "created": "2025-08-11T07:34:37.469049507Z",
+            "gateway": "172.18.0.1",
+            "hostname": "ba6b0e0d39f7",
+            "image": "docker.1ms.run/istio/examples-bookinfo-productpage-v1:1.16.2",
+            "ip": "172.18.0.5",
+            "network_mode": "bookinfo_bookinfo-net",
+            "tgid": 477058
+          },
+          "ebpf_tag": {
+            "component": "python",
+            "direction": "Ingress",
+            "dst_ip": "172.18.0.1",
+            "dst_port": 29562,
+            "pid": 479973,
+            "protocol": "HTTP1",
+            "req_seq": 0,
+            "resp_seq": 1,
+            "src_ip": "172.18.0.5",
+            "src_port": 9080,
+            "tgid": 477368,
+            "endpoint": "/productpage?u=normal"
+          }
+        },
+        "metric": {
+          "duration": 13087376,
+          "end_time": 6295915021070289,
+          "req_size": 176,
+          "resp_size": 17,
+          "start_time": 6295915007982913
+        },
+        "content": {
+          "req_content": "GET /productpage?u=normal HTTP/1.1\r\nHost: localhost:19080\r\nUser-Agent: python-requests/2.32.3\r\nAccept-Encoding: gzip, deflate, br, zstd\r\nAccept: */*\r\nConnection: keep-alive\r\n\r\n",
+          "resp_content": "HTTP/1.0 200 OK\r\n"
+        }
+      },
+      {
+        "context": {
+          "trace_id": "fe3c9f4f4fc5d13d",
+          "span_id": "9lCAzSDEkhtiBdUp8fe0gwWZAz4IlCwOOqlBl5eqEmECabwj6cxwYwQDiTtjKWgt",
+          "parent_id": "UN5XoopYhhMleKdgX9H1xKwECoGO3hB6vTALKWefzjYIz1aFeUJMRd3ElRLsoPD2",
+          "parent_trace_id": "UnknownTraceID",
+          "child_ids": [
+            "0LQMJn3sznJvDHBcg61sUwKvYviLCZpnkJ9J6QUXJiYjzdTyPgqy8B11qnxKzSd4"
+          ]
+        },
+        "tag": {
+          "docker_tag": {
+            "container_id": "ba6b0e0d39f7b93d97560a06530acf462a0168d925453cdf981c8e3c822431ff",
+            "container_name": [
+              "/bookinfo_productpage_1"
+            ],
+            "created": "2025-08-11T07:34:37.469049507Z",
+            "gateway": "172.18.0.1",
+            "hostname": "ba6b0e0d39f7",
+            "image": "docker.1ms.run/istio/examples-bookinfo-productpage-v1:1.16.2",
+            "ip": "172.18.0.5",
+            "network_mode": "bookinfo_bookinfo-net",
+            "tgid": 477058
+          },
+          "ebpf_tag": {
+            "component": "python",
+            "direction": "Egress",
+            "dst_ip": "172.18.0.5",
+            "dst_port": 43652,
+            "pid": 479973,
+            "protocol": "HTTP1",
+            "req_seq": 0,
+            "resp_seq": 1,
+            "src_ip": "172.18.0.4",
+            "src_port": 9080,
+            "tgid": 477368,
+            "endpoint": "/reviews/0"
+          }
+        },
+        "metric": {
+          "duration": 5402032,
+          "end_time": 6295915019277275,
+          "req_size": 232,
+          "resp_size": 540,
+          "start_time": 6295915013875243
+        },
+        "content": {
+          "req_content": "GET /reviews/0 HTTP/1.1\r\nHost: reviews:9080\r\nuser-agent: python-requests/2.32.3\r\nAccept-Encoding: gzip, deflate\r\nAccept: */*\r\nConnection: keep-alive\r\nX-B3-TraceId: fe3c9f4f4fc5d13d\r\nX-B3-SpanId: fe3c9f4f4fc5d13d\r\nX-B3-Sampled: 1\r\n\r\n",
+          "resp_content": "HTTP/1.1 200 OK\r\nX-Powered-By: Servlet/3.1\r\nContent-Type: application/json\r\nDate: Mon, 11 Aug 2025 07:38:44 GMT\r\nContent-Language: en-US\r\nContent-Length: 379\r\n\r\n{\"id\": \"0\",\"reviews\": [{  \"reviewer\": \"Reviewer1\",  \"text\": \"An extremely entertaining play by Shakespeare. The slapstick humour is refreshing!\", \"rating\": {\"stars\": 5, \"color\": \"black\"}},{  \"reviewer\": \"Reviewer2\",  \"text\": \"Absolutely fun and entertaining. The play lacks thematic depth when compared to other plays by Shakespeare.\", \"rating\": {\"stars\": 4, \"color\": \"black\"}}]}"
+        }
+      },
+      {
+        "context": {
+          "trace_id": "fe3c9f4f4fc5d13d",
+          "span_id": "0LQMJn3sznJvDHBcg61sUwKvYviLCZpnkJ9J6QUXJiYjzdTyPgqy8B11qnxKzSd4",
+          "parent_id": "9lCAzSDEkhtiBdUp8fe0gwWZAz4IlCwOOqlBl5eqEmECabwj6cxwYwQDiTtjKWgt",
+          "parent_trace_id": "fe3c9f4f4fc5d13d",
+          "child_ids": [
+            "kcNP7FgUIWBYPH8Mfk7k7AJYkPMBHAHNnI8UQBwwqnMl9Zin5ocj4giSMES2XaCC"
+          ]
+        },
+        "tag": {
+          "docker_tag": {
+            "container_id": "9d8553ba35520ade5c17b3d517a4b061f74eb0f9fb50eb016136de33d66cdab5",
+            "container_name": [
+              "/bookinfo_reviews_1"
+            ],
+            "created": "2025-08-11T07:34:36.893943794Z",
+            "gateway": "172.18.0.1",
+            "hostname": "9d8553ba3552",
+            "image": "docker.1ms.run/istio/examples-bookinfo-reviews-v2:1.16.2",
+            "ip": "172.18.0.4",
+            "network_mode": "bookinfo_bookinfo-net",
+            "tgid": 477058
+          },
+          "ebpf_tag": {
+            "component": "Default Executo",
+            "direction": "Ingress",
+            "dst_ip": "172.18.0.5",
+            "dst_port": 43652,
+            "pid": 477384,
+            "protocol": "HTTP1",
+            "req_seq": 0,
+            "resp_seq": 1,
+            "src_ip": "172.18.0.4",
+            "src_port": 9080,
+            "tgid": 477178,
+            "endpoint": "/reviews/0"
+          }
+        },
+        "metric": {
+          "duration": 5093096,
+          "end_time": 6295915019275867,
+          "req_size": 232,
+          "resp_size": 540,
+          "start_time": 6295915014182771
+        },
+        "content": {
+          "req_content": "GET /reviews/0 HTTP/1.1\r\nHost: reviews:9080\r\nuser-agent: python-requests/2.32.3\r\nAccept-Encoding: gzip, deflate\r\nAccept: */*\r\nConnection: keep-alive\r\nX-B3-TraceId: fe3c9f4f4fc5d13d\r\nX-B3-SpanId: fe3c9f4f4fc5d13d\r\nX-B3-Sampled: 1\r\n\r\n",
+          "resp_content": "HTTP/1.1 200 OK\r\nX-Powered-By: Servlet/3.1\r\nContent-Type: application/json\r\nDate: Mon, 11 Aug 2025 07:38:44 GMT\r\nContent-Language: en-US\r\nContent-Length: 379\r\n\r\n{\"id\": \"0\",\"reviews\": [{  \"reviewer\": \"Reviewer1\",  \"text\": \"An extremely entertaining play by Shakespeare. The slapstick humour is refreshing!\", \"rating\": {\"stars\": 5, \"color\": \"black\"}},{  \"reviewer\": \"Reviewer2\",  \"text\": \"Absolutely fun and entertaining. The play lacks thematic depth when compared to other plays by Shakespeare.\", \"rating\": {\"stars\": 4, \"color\": \"black\"}}]}"
+        }
+      },
+      {
+        "context": {
+          "trace_id": "fe3c9f4f4fc5d13d",
+          "span_id": "kcNP7FgUIWBYPH8Mfk7k7AJYkPMBHAHNnI8UQBwwqnMl9Zin5ocj4giSMES2XaCC",
+          "parent_id": "0LQMJn3sznJvDHBcg61sUwKvYviLCZpnkJ9J6QUXJiYjzdTyPgqy8B11qnxKzSd4",
+          "parent_trace_id": "fe3c9f4f4fc5d13d",
+          "child_ids": [
+            "VXrQidh9FooxAg9JrJNQInqw3TOgSfFJqQAJaKGTmBcjqnmF4PGM9vBKzPuheIHv"
+          ]
+        },
+        "tag": {
+          "docker_tag": {
+            "container_id": "9d8553ba35520ade5c17b3d517a4b061f74eb0f9fb50eb016136de33d66cdab5",
+            "container_name": [
+              "/bookinfo_reviews_1"
+            ],
+            "created": "2025-08-11T07:34:36.893943794Z",
+            "gateway": "172.18.0.1",
+            "hostname": "9d8553ba3552",
+            "image": "docker.1ms.run/istio/examples-bookinfo-reviews-v2:1.16.2",
+            "ip": "172.18.0.4",
+            "network_mode": "bookinfo_bookinfo-net",
+            "tgid": 477058
+          },
+          "ebpf_tag": {
+            "component": "Default Executo",
+            "direction": "Egress",
+            "dst_ip": "172.18.0.4",
+            "dst_port": 55236,
+            "pid": 477384,
+            "protocol": "HTTP1",
+            "req_seq": 8,
+            "resp_seq": 9,
+            "src_ip": "172.18.0.3",
+            "src_port": 9080,
+            "tgid": 477178,
+            "endpoint": "/ratings/0"
+          }
+        },
+        "metric": {
+          "duration": 517204,
+          "end_time": 6295915017921014,
+          "req_size": 256,
+          "resp_size": 199,
+          "start_time": 6295915017403810
+        },
+        "content": {
+          "req_content": "GET /ratings/0 HTTP/1.1\r\nAccept: application/json\r\nx-b3-traceid: fe3c9f4f4fc5d13d\r\nx-b3-spanid: fe3c9f4f4fc5d13d\r\nx-b3-sampled: 1\r\nuser-agent: python-requests/2.32.3\r\nCache-Control: no-cache\r\nPragma: no-cache\r\nHost: ratings:9080\r\nConnection: keep-alive\r\n\r\n",
+          "resp_content": "HTTP/1.1 200 OK\r\nContent-type: application/json\r\nDate: Mon, 11 Aug 2025 07:38:44 GMT\r\nConnection: keep-alive\r\nTransfer-Encoding: chunked\r\n\r\n30\r\n{\"id\":0,\"ratings\":{\"Reviewer1\":5,\"Reviewer2\":4}}\r\n0\r\n\r\n"
+        }
+      },
+      {
+        "context": {
+          "trace_id": "fe3c9f4f4fc5d13d",
+          "span_id": "VXrQidh9FooxAg9JrJNQInqw3TOgSfFJqQAJaKGTmBcjqnmF4PGM9vBKzPuheIHv",
+          "parent_id": "kcNP7FgUIWBYPH8Mfk7k7AJYkPMBHAHNnI8UQBwwqnMl9Zin5ocj4giSMES2XaCC",
+          "parent_trace_id": "fe3c9f4f4fc5d13d",
+          "child_ids": []
+        },
+        "tag": {
+          "docker_tag": {
+            "container_id": "51612233e3db2cec2f6981a9f7e9928411496abe0d4d0df025230a4e0834a1a0",
+            "container_name": [
+              "/bookinfo_ratings_1"
+            ],
+            "created": "2025-08-11T07:34:35.849570285Z",
+            "gateway": "172.18.0.1",
+            "hostname": "51612233e3db",
+            "image": "docker.1ms.run/istio/examples-bookinfo-ratings-v1:1.16.2",
+            "ip": "172.18.0.3",
+            "network_mode": "bookinfo_bookinfo-net",
+            "tgid": 477058
+          },
+          "ebpf_tag": {
+            "component": "node",
+            "direction": "Ingress",
+            "dst_ip": "172.18.0.4",
+            "dst_port": 55236,
+            "pid": 477056,
+            "protocol": "HTTP1",
+            "req_seq": 8,
+            "resp_seq": 9,
+            "src_ip": "172.18.0.3",
+            "src_port": 9080,
+            "tgid": 477056,
+            "endpoint": "/ratings/0"
+          }
+        },
+        "metric": {
+          "duration": 478114,
+          "end_time": 6295915017911973,
+          "req_size": 256,
+          "resp_size": 199,
+          "start_time": 6295915017433859
+        },
+        "content": {
+          "req_content": "GET /ratings/0 HTTP/1.1\r\nAccept: application/json\r\nx-b3-traceid: fe3c9f4f4fc5d13d\r\nx-b3-spanid: fe3c9f4f4fc5d13d\r\nx-b3-sampled: 1\r\nuser-agent: python-requests/2.32.3\r\nCache-Control: no-cache\r\nPragma: no-cache\r\nHost: ratings:9080\r\nConnection: keep-alive\r\n\r\n",
+          "resp_content": "HTTP/1.1 200 OK\r\nContent-type: application/json\r\nDate: Mon, 11 Aug 2025 07:38:44 GMT\r\nConnection: keep-alive\r\nTransfer-Encoding: chunked\r\n\r\n30\r\n{\"id\":0,\"ratings\":{\"Reviewer1\":5,\"Reviewer2\":4}}\r\n0\r\n\r\n"
+        }
+      }
+    ]
+  },
+  "fields": {
+    "components.477178.name": [
+      "/bookinfo_reviews_1"
+    ],
+    "components.477368.ip": [
+      "172.18.0.5"
+    ],
+    "components.477178.ip.keyword": [
+      "172.18.0.4"
+    ],
+    "status_code": [
+      "200"
+    ],
+    "components.477368.ip.keyword": [
+      "172.18.0.5"
+    ],
+    "client_ip.keyword": [
+      "172.18.0.1"
+    ],
+    "components.477056.protocol": [
+      "HTTP1"
+    ],
+    "components.477368.protocol": [
+      "HTTP1"
+    ],
+    "endpoint.keyword": [
+      "/productpage?u=normal"
+    ],
+    "components.477368.endpoint": [
+      "/details/0"
+    ],
+    "components.477056.name": [
+      "/bookinfo_ratings_1"
+    ],
+    "components.477178.endpoint": [
+      "/reviews/0"
+    ],
+    "status_code.keyword": [
+      "200"
+    ],
+    "client_port": [
+      29562
+    ],
+    "components.477056.endpoint.keyword": [
+      "/ratings/0"
+    ],
+    "component_name.keyword": [
+      "python"
+    ],
+    "endpoint": [
+      "/productpage?u=normal"
+    ],
+    "protocol": [
+      "HTTP1"
+    ],
+    "components.477178.protocol": [
+      "HTTP1"
+    ],
+    "components.477056.name.keyword": [
+      "/bookinfo_ratings_1"
+    ],
+    "server_ip": [
+      "172.18.0.5"
+    ],
+    "client_ip": [
+      "172.18.0.1"
+    ],
+    "components.477056.endpoint": [
+      "/ratings/0"
+    ],
+    "components.477178.endpoint.keyword": [
+      "/reviews/0"
+    ],
+    "components.477178.ip": [
+      "172.18.0.4"
+    ],
+    "components.477368.name": [
+      "/bookinfo_productpage_1"
+    ],
+    "spans": [
+      {
+        "tag.ebpf_tag.endpoint": [
+          "/details/0"
+        ],
+        "metric.resp_size": [
+          180
+        ],
+        "tag.ebpf_tag.src_ip.keyword": [
+          "172.18.0.2"
+        ],
+        "tag.docker_tag.network_mode.keyword": [
+          "bookinfo_bookinfo-net"
+        ],
+        "tag.docker_tag.hostname.keyword": [
+          "ba6b0e0d39f7"
+        ],
+        "tag.docker_tag.container_id": [
+          "ba6b0e0d39f7b93d97560a06530acf462a0168d925453cdf981c8e3c822431ff"
+        ],
+        "tag.ebpf_tag.src_ip": [
+          "172.18.0.2"
+        ],
+        "tag.ebpf_tag.dst_ip": [
+          "172.18.0.5"
+        ],
+        "tag.docker_tag.image": [
+          "docker.1ms.run/istio/examples-bookinfo-productpage-v1:1.16.2"
+        ],
+        "tag.ebpf_tag.src_port": [
+          9080
+        ],
+        "tag.docker_tag.hostname": [
+          "ba6b0e0d39f7"
+        ],
+        "tag.ebpf_tag.pid": [
+          479973
+        ],
+        "context.parent_trace_id": [
+          "UnknownTraceID"
+        ],
+        "tag.ebpf_tag.component.keyword": [
+          "python"
+        ],
+        "tag.ebpf_tag.resp_seq": [
+          1
+        ],
+        "tag.docker_tag.container_id.keyword": [
+          "ba6b0e0d39f7b93d97560a06530acf462a0168d925453cdf981c8e3c822431ff"
+        ],
+        "tag.ebpf_tag.tgid": [
+          477368
+        ],
+        "context.parent_id": [
+          "UN5XoopYhhMleKdgX9H1xKwECoGO3hB6vTALKWefzjYIz1aFeUJMRd3ElRLsoPD2"
+        ],
+        "metric.duration": [
+          955333
+        ],
+        "tag.docker_tag.ip": [
+          "172.18.0.5"
+        ],
+        "tag.ebpf_tag.protocol.keyword": [
+          "HTTP1"
+        ],
+        "tag.ebpf_tag.protocol": [
+          "HTTP1"
+        ],
+        "metric.req_size": [
+          232
+        ],
+        "tag.ebpf_tag.component": [
+          "python"
+        ],
+        "tag.ebpf_tag.endpoint.keyword": [
+          "/details/0"
+        ],
+        "tag.docker_tag.network_mode": [
+          "bookinfo_bookinfo-net"
+        ],
+        "tag.ebpf_tag.dst_ip.keyword": [
+          "172.18.0.5"
+        ],
+        "content.req_content": [
+          "GET /details/0 HTTP/1.1\r\nHost: details:9080\r\nuser-agent: python-requests/2.32.3\r\nAccept-Encoding: gzip, deflate\r\nAccept: */*\r\nConnection: keep-alive\r\nX-B3-TraceId: fe3c9f4f4fc5d13d\r\nX-B3-SpanId: fe3c9f4f4fc5d13d\r\nX-B3-Sampled: 1\r\n\r\n"
+        ],
+        "context.parent_id.keyword": [
+          "UN5XoopYhhMleKdgX9H1xKwECoGO3hB6vTALKWefzjYIz1aFeUJMRd3ElRLsoPD2"
+        ],
+        "content.resp_content.keyword": [
+          "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nServer: WEBrick/1.6.0 (Ruby/2.7.1/2020-03-31)\r\nDate: Mon, 11 Aug 2025 07:38:44 GMT\r\nContent-Length: 178\r\nConnection: Keep-Alive\r\n\r\n"
+        ],
+        "context.span_id.keyword": [
+          "zwuWMIIGfwt0nFRzFEdICDzSUkcmftC3Cn67qWhbLBXTH8ErIPzGDnha5dPPSfTL"
+        ],
+        "tag.docker_tag.container_name.keyword": [
+          "/bookinfo_productpage_1"
+        ],
+        "content.resp_content": [
+          "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nServer: WEBrick/1.6.0 (Ruby/2.7.1/2020-03-31)\r\nDate: Mon, 11 Aug 2025 07:38:44 GMT\r\nContent-Length: 178\r\nConnection: Keep-Alive\r\n\r\n"
+        ],
+        "tag.ebpf_tag.dst_port": [
+          58172
+        ],
+        "content.req_content.keyword": [
+          "GET /details/0 HTTP/1.1\r\nHost: details:9080\r\nuser-agent: python-requests/2.32.3\r\nAccept-Encoding: gzip, deflate\r\nAccept: */*\r\nConnection: keep-alive\r\nX-B3-TraceId: fe3c9f4f4fc5d13d\r\nX-B3-SpanId: fe3c9f4f4fc5d13d\r\nX-B3-Sampled: 1\r\n\r\n"
+        ],
+        "tag.docker_tag.gateway": [
+          "172.18.0.1"
+        ],
+        "context.trace_id.keyword": [
+          "fe3c9f4f4fc5d13d"
+        ],
+        "tag.docker_tag.created": [
+          "2025-08-11T07:34:37.469Z"
+        ],
+        "tag.ebpf_tag.req_seq": [
+          0
+        ],
+        "metric.start_time": [
+          6295915010336478
+        ],
+        "tag.docker_tag.gateway.keyword": [
+          "172.18.0.1"
+        ],
+        "tag.docker_tag.tgid": [
+          477058
+        ],
+        "tag.ebpf_tag.direction.keyword": [
+          "Egress"
+        ],
+        "context.parent_trace_id.keyword": [
+          "UnknownTraceID"
+        ],
+        "metric.end_time": [
+          6295915011291811
+        ],
+        "tag.docker_tag.container_name": [
+          "/bookinfo_productpage_1"
+        ],
+        "context.span_id": [
+          "zwuWMIIGfwt0nFRzFEdICDzSUkcmftC3Cn67qWhbLBXTH8ErIPzGDnha5dPPSfTL"
+        ],
+        "tag.docker_tag.ip.keyword": [
+          "172.18.0.5"
+        ],
+        "tag.docker_tag.image.keyword": [
+          "docker.1ms.run/istio/examples-bookinfo-productpage-v1:1.16.2"
+        ],
+        "tag.ebpf_tag.direction": [
+          "Egress"
+        ],
+        "context.trace_id": [
+          "fe3c9f4f4fc5d13d"
+        ]
+      },
+      {
+        "tag.ebpf_tag.endpoint": [
+          "/productpage?u=normal"
+        ],
+        "metric.resp_size": [
+          17
+        ],
+        "tag.ebpf_tag.src_ip.keyword": [
+          "172.18.0.5"
+        ],
+        "tag.docker_tag.network_mode.keyword": [
+          "bookinfo_bookinfo-net"
+        ],
+        "tag.docker_tag.hostname.keyword": [
+          "ba6b0e0d39f7"
+        ],
+        "tag.docker_tag.container_id": [
+          "ba6b0e0d39f7b93d97560a06530acf462a0168d925453cdf981c8e3c822431ff"
+        ],
+        "tag.ebpf_tag.src_ip": [
+          "172.18.0.5"
+        ],
+        "tag.ebpf_tag.dst_ip": [
+          "172.18.0.1"
+        ],
+        "tag.docker_tag.image": [
+          "docker.1ms.run/istio/examples-bookinfo-productpage-v1:1.16.2"
+        ],
+        "tag.ebpf_tag.src_port": [
+          9080
+        ],
+        "tag.docker_tag.hostname": [
+          "ba6b0e0d39f7"
+        ],
+        "tag.ebpf_tag.pid": [
+          479973
+        ],
+        "tag.ebpf_tag.component.keyword": [
+          "python"
+        ],
+        "tag.ebpf_tag.resp_seq": [
+          1
+        ],
+        "tag.docker_tag.container_id.keyword": [
+          "ba6b0e0d39f7b93d97560a06530acf462a0168d925453cdf981c8e3c822431ff"
+        ],
+        "tag.ebpf_tag.tgid": [
+          477368
+        ],
+        "context.child_ids.keyword": [
+          "zwuWMIIGfwt0nFRzFEdICDzSUkcmftC3Cn67qWhbLBXTH8ErIPzGDnha5dPPSfTL",
+          "9lCAzSDEkhtiBdUp8fe0gwWZAz4IlCwOOqlBl5eqEmECabwj6cxwYwQDiTtjKWgt"
+        ],
+        "metric.duration": [
+          13087376
+        ],
+        "tag.docker_tag.ip": [
+          "172.18.0.5"
+        ],
+        "tag.ebpf_tag.protocol.keyword": [
+          "HTTP1"
+        ],
+        "tag.ebpf_tag.protocol": [
+          "HTTP1"
+        ],
+        "metric.req_size": [
+          176
+        ],
+        "context.child_ids": [
+          "zwuWMIIGfwt0nFRzFEdICDzSUkcmftC3Cn67qWhbLBXTH8ErIPzGDnha5dPPSfTL",
+          "9lCAzSDEkhtiBdUp8fe0gwWZAz4IlCwOOqlBl5eqEmECabwj6cxwYwQDiTtjKWgt"
+        ],
+        "tag.ebpf_tag.component": [
+          "python"
+        ],
+        "tag.ebpf_tag.endpoint.keyword": [
+          "/productpage?u=normal"
+        ],
+        "tag.docker_tag.network_mode": [
+          "bookinfo_bookinfo-net"
+        ],
+        "tag.ebpf_tag.dst_ip.keyword": [
+          "172.18.0.1"
+        ],
+        "content.req_content": [
+          "GET /productpage?u=normal HTTP/1.1\r\nHost: localhost:19080\r\nUser-Agent: python-requests/2.32.3\r\nAccept-Encoding: gzip, deflate, br, zstd\r\nAccept: */*\r\nConnection: keep-alive\r\n\r\n"
+        ],
+        "content.resp_content.keyword": [
+          "HTTP/1.0 200 OK\r\n"
+        ],
+        "context.span_id.keyword": [
+          "UN5XoopYhhMleKdgX9H1xKwECoGO3hB6vTALKWefzjYIz1aFeUJMRd3ElRLsoPD2"
+        ],
+        "tag.docker_tag.container_name.keyword": [
+          "/bookinfo_productpage_1"
+        ],
+        "content.resp_content": [
+          "HTTP/1.0 200 OK\r\n"
+        ],
+        "tag.ebpf_tag.dst_port": [
+          29562
+        ],
+        "content.req_content.keyword": [
+          "GET /productpage?u=normal HTTP/1.1\r\nHost: localhost:19080\r\nUser-Agent: python-requests/2.32.3\r\nAccept-Encoding: gzip, deflate, br, zstd\r\nAccept: */*\r\nConnection: keep-alive\r\n\r\n"
+        ],
+        "tag.docker_tag.gateway": [
+          "172.18.0.1"
+        ],
+        "context.trace_id.keyword": [
+          "UnknownTraceID"
+        ],
+        "tag.docker_tag.created": [
+          "2025-08-11T07:34:37.469Z"
+        ],
+        "tag.ebpf_tag.req_seq": [
+          0
+        ],
+        "metric.start_time": [
+          6295915007982913
+        ],
+        "tag.docker_tag.gateway.keyword": [
+          "172.18.0.1"
+        ],
+        "tag.docker_tag.tgid": [
+          477058
+        ],
+        "tag.ebpf_tag.direction.keyword": [
+          "Ingress"
+        ],
+        "metric.end_time": [
+          6295915021070289
+        ],
+        "tag.docker_tag.container_name": [
+          "/bookinfo_productpage_1"
+        ],
+        "context.span_id": [
+          "UN5XoopYhhMleKdgX9H1xKwECoGO3hB6vTALKWefzjYIz1aFeUJMRd3ElRLsoPD2"
+        ],
+        "tag.docker_tag.ip.keyword": [
+          "172.18.0.5"
+        ],
+        "tag.docker_tag.image.keyword": [
+          "docker.1ms.run/istio/examples-bookinfo-productpage-v1:1.16.2"
+        ],
+        "tag.ebpf_tag.direction": [
+          "Ingress"
+        ],
+        "context.trace_id": [
+          "UnknownTraceID"
+        ]
+      },
+      {
+        "tag.ebpf_tag.endpoint": [
+          "/reviews/0"
+        ],
+        "metric.resp_size": [
+          540
+        ],
+        "tag.ebpf_tag.src_ip.keyword": [
+          "172.18.0.4"
+        ],
+        "tag.docker_tag.network_mode.keyword": [
+          "bookinfo_bookinfo-net"
+        ],
+        "tag.docker_tag.hostname.keyword": [
+          "ba6b0e0d39f7"
+        ],
+        "tag.docker_tag.container_id": [
+          "ba6b0e0d39f7b93d97560a06530acf462a0168d925453cdf981c8e3c822431ff"
+        ],
+        "tag.ebpf_tag.src_ip": [
+          "172.18.0.4"
+        ],
+        "tag.ebpf_tag.dst_ip": [
+          "172.18.0.5"
+        ],
+        "tag.docker_tag.image": [
+          "docker.1ms.run/istio/examples-bookinfo-productpage-v1:1.16.2"
+        ],
+        "tag.ebpf_tag.src_port": [
+          9080
+        ],
+        "tag.docker_tag.hostname": [
+          "ba6b0e0d39f7"
+        ],
+        "tag.ebpf_tag.pid": [
+          479973
+        ],
+        "context.parent_trace_id": [
+          "UnknownTraceID"
+        ],
+        "tag.ebpf_tag.component.keyword": [
+          "python"
+        ],
+        "tag.ebpf_tag.resp_seq": [
+          1
+        ],
+        "tag.docker_tag.container_id.keyword": [
+          "ba6b0e0d39f7b93d97560a06530acf462a0168d925453cdf981c8e3c822431ff"
+        ],
+        "tag.ebpf_tag.tgid": [
+          477368
+        ],
+        "context.child_ids.keyword": [
+          "0LQMJn3sznJvDHBcg61sUwKvYviLCZpnkJ9J6QUXJiYjzdTyPgqy8B11qnxKzSd4"
+        ],
+        "context.parent_id": [
+          "UN5XoopYhhMleKdgX9H1xKwECoGO3hB6vTALKWefzjYIz1aFeUJMRd3ElRLsoPD2"
+        ],
+        "metric.duration": [
+          5402032
+        ],
+        "tag.docker_tag.ip": [
+          "172.18.0.5"
+        ],
+        "tag.ebpf_tag.protocol.keyword": [
+          "HTTP1"
+        ],
+        "tag.ebpf_tag.protocol": [
+          "HTTP1"
+        ],
+        "metric.req_size": [
+          232
+        ],
+        "context.child_ids": [
+          "0LQMJn3sznJvDHBcg61sUwKvYviLCZpnkJ9J6QUXJiYjzdTyPgqy8B11qnxKzSd4"
+        ],
+        "tag.ebpf_tag.component": [
+          "python"
+        ],
+        "tag.ebpf_tag.endpoint.keyword": [
+          "/reviews/0"
+        ],
+        "tag.docker_tag.network_mode": [
+          "bookinfo_bookinfo-net"
+        ],
+        "tag.ebpf_tag.dst_ip.keyword": [
+          "172.18.0.5"
+        ],
+        "content.req_content": [
+          "GET /reviews/0 HTTP/1.1\r\nHost: reviews:9080\r\nuser-agent: python-requests/2.32.3\r\nAccept-Encoding: gzip, deflate\r\nAccept: */*\r\nConnection: keep-alive\r\nX-B3-TraceId: fe3c9f4f4fc5d13d\r\nX-B3-SpanId: fe3c9f4f4fc5d13d\r\nX-B3-Sampled: 1\r\n\r\n"
+        ],
+        "context.parent_id.keyword": [
+          "UN5XoopYhhMleKdgX9H1xKwECoGO3hB6vTALKWefzjYIz1aFeUJMRd3ElRLsoPD2"
+        ],
+        "context.span_id.keyword": [
+          "9lCAzSDEkhtiBdUp8fe0gwWZAz4IlCwOOqlBl5eqEmECabwj6cxwYwQDiTtjKWgt"
+        ],
+        "tag.docker_tag.container_name.keyword": [
+          "/bookinfo_productpage_1"
+        ],
+        "content.resp_content": [
+          "HTTP/1.1 200 OK\r\nX-Powered-By: Servlet/3.1\r\nContent-Type: application/json\r\nDate: Mon, 11 Aug 2025 07:38:44 GMT\r\nContent-Language: en-US\r\nContent-Length: 379\r\n\r\n{\"id\": \"0\",\"reviews\": [{  \"reviewer\": \"Reviewer1\",  \"text\": \"An extremely entertaining play by Shakespeare. The slapstick humour is refreshing!\", \"rating\": {\"stars\": 5, \"color\": \"black\"}},{  \"reviewer\": \"Reviewer2\",  \"text\": \"Absolutely fun and entertaining. The play lacks thematic depth when compared to other plays by Shakespeare.\", \"rating\": {\"stars\": 4, \"color\": \"black\"}}]}"
+        ],
+        "tag.ebpf_tag.dst_port": [
+          43652
+        ],
+        "content.req_content.keyword": [
+          "GET /reviews/0 HTTP/1.1\r\nHost: reviews:9080\r\nuser-agent: python-requests/2.32.3\r\nAccept-Encoding: gzip, deflate\r\nAccept: */*\r\nConnection: keep-alive\r\nX-B3-TraceId: fe3c9f4f4fc5d13d\r\nX-B3-SpanId: fe3c9f4f4fc5d13d\r\nX-B3-Sampled: 1\r\n\r\n"
+        ],
+        "tag.docker_tag.gateway": [
+          "172.18.0.1"
+        ],
+        "context.trace_id.keyword": [
+          "fe3c9f4f4fc5d13d"
+        ],
+        "tag.docker_tag.created": [
+          "2025-08-11T07:34:37.469Z"
+        ],
+        "tag.ebpf_tag.req_seq": [
+          0
+        ],
+        "metric.start_time": [
+          6295915013875243
+        ],
+        "tag.docker_tag.gateway.keyword": [
+          "172.18.0.1"
+        ],
+        "tag.docker_tag.tgid": [
+          477058
+        ],
+        "tag.ebpf_tag.direction.keyword": [
+          "Egress"
+        ],
+        "context.parent_trace_id.keyword": [
+          "UnknownTraceID"
+        ],
+        "metric.end_time": [
+          6295915019277275
+        ],
+        "tag.docker_tag.container_name": [
+          "/bookinfo_productpage_1"
+        ],
+        "context.span_id": [
+          "9lCAzSDEkhtiBdUp8fe0gwWZAz4IlCwOOqlBl5eqEmECabwj6cxwYwQDiTtjKWgt"
+        ],
+        "tag.docker_tag.ip.keyword": [
+          "172.18.0.5"
+        ],
+        "tag.docker_tag.image.keyword": [
+          "docker.1ms.run/istio/examples-bookinfo-productpage-v1:1.16.2"
+        ],
+        "tag.ebpf_tag.direction": [
+          "Egress"
+        ],
+        "context.trace_id": [
+          "fe3c9f4f4fc5d13d"
+        ]
+      },
+      {
+        "tag.ebpf_tag.endpoint": [
+          "/reviews/0"
+        ],
+        "metric.resp_size": [
+          540
+        ],
+        "tag.ebpf_tag.src_ip.keyword": [
+          "172.18.0.4"
+        ],
+        "tag.docker_tag.network_mode.keyword": [
+          "bookinfo_bookinfo-net"
+        ],
+        "tag.docker_tag.hostname.keyword": [
+          "9d8553ba3552"
+        ],
+        "tag.docker_tag.container_id": [
+          "9d8553ba35520ade5c17b3d517a4b061f74eb0f9fb50eb016136de33d66cdab5"
+        ],
+        "tag.ebpf_tag.src_ip": [
+          "172.18.0.4"
+        ],
+        "tag.ebpf_tag.dst_ip": [
+          "172.18.0.5"
+        ],
+        "tag.docker_tag.image": [
+          "docker.1ms.run/istio/examples-bookinfo-reviews-v2:1.16.2"
+        ],
+        "tag.ebpf_tag.src_port": [
+          9080
+        ],
+        "tag.docker_tag.hostname": [
+          "9d8553ba3552"
+        ],
+        "tag.ebpf_tag.pid": [
+          477384
+        ],
+        "context.parent_trace_id": [
+          "fe3c9f4f4fc5d13d"
+        ],
+        "tag.ebpf_tag.component.keyword": [
+          "Default Executo"
+        ],
+        "tag.ebpf_tag.resp_seq": [
+          1
+        ],
+        "tag.docker_tag.container_id.keyword": [
+          "9d8553ba35520ade5c17b3d517a4b061f74eb0f9fb50eb016136de33d66cdab5"
+        ],
+        "tag.ebpf_tag.tgid": [
+          477178
+        ],
+        "context.child_ids.keyword": [
+          "kcNP7FgUIWBYPH8Mfk7k7AJYkPMBHAHNnI8UQBwwqnMl9Zin5ocj4giSMES2XaCC"
+        ],
+        "context.parent_id": [
+          "9lCAzSDEkhtiBdUp8fe0gwWZAz4IlCwOOqlBl5eqEmECabwj6cxwYwQDiTtjKWgt"
+        ],
+        "metric.duration": [
+          5093096
+        ],
+        "tag.docker_tag.ip": [
+          "172.18.0.4"
+        ],
+        "tag.ebpf_tag.protocol.keyword": [
+          "HTTP1"
+        ],
+        "tag.ebpf_tag.protocol": [
+          "HTTP1"
+        ],
+        "metric.req_size": [
+          232
+        ],
+        "context.child_ids": [
+          "kcNP7FgUIWBYPH8Mfk7k7AJYkPMBHAHNnI8UQBwwqnMl9Zin5ocj4giSMES2XaCC"
+        ],
+        "tag.ebpf_tag.component": [
+          "Default Executo"
+        ],
+        "tag.ebpf_tag.endpoint.keyword": [
+          "/reviews/0"
+        ],
+        "tag.docker_tag.network_mode": [
+          "bookinfo_bookinfo-net"
+        ],
+        "tag.ebpf_tag.dst_ip.keyword": [
+          "172.18.0.5"
+        ],
+        "content.req_content": [
+          "GET /reviews/0 HTTP/1.1\r\nHost: reviews:9080\r\nuser-agent: python-requests/2.32.3\r\nAccept-Encoding: gzip, deflate\r\nAccept: */*\r\nConnection: keep-alive\r\nX-B3-TraceId: fe3c9f4f4fc5d13d\r\nX-B3-SpanId: fe3c9f4f4fc5d13d\r\nX-B3-Sampled: 1\r\n\r\n"
+        ],
+        "context.parent_id.keyword": [
+          "9lCAzSDEkhtiBdUp8fe0gwWZAz4IlCwOOqlBl5eqEmECabwj6cxwYwQDiTtjKWgt"
+        ],
+        "context.span_id.keyword": [
+          "0LQMJn3sznJvDHBcg61sUwKvYviLCZpnkJ9J6QUXJiYjzdTyPgqy8B11qnxKzSd4"
+        ],
+        "tag.docker_tag.container_name.keyword": [
+          "/bookinfo_reviews_1"
+        ],
+        "content.resp_content": [
+          "HTTP/1.1 200 OK\r\nX-Powered-By: Servlet/3.1\r\nContent-Type: application/json\r\nDate: Mon, 11 Aug 2025 07:38:44 GMT\r\nContent-Language: en-US\r\nContent-Length: 379\r\n\r\n{\"id\": \"0\",\"reviews\": [{  \"reviewer\": \"Reviewer1\",  \"text\": \"An extremely entertaining play by Shakespeare. The slapstick humour is refreshing!\", \"rating\": {\"stars\": 5, \"color\": \"black\"}},{  \"reviewer\": \"Reviewer2\",  \"text\": \"Absolutely fun and entertaining. The play lacks thematic depth when compared to other plays by Shakespeare.\", \"rating\": {\"stars\": 4, \"color\": \"black\"}}]}"
+        ],
+        "tag.ebpf_tag.dst_port": [
+          43652
+        ],
+        "content.req_content.keyword": [
+          "GET /reviews/0 HTTP/1.1\r\nHost: reviews:9080\r\nuser-agent: python-requests/2.32.3\r\nAccept-Encoding: gzip, deflate\r\nAccept: */*\r\nConnection: keep-alive\r\nX-B3-TraceId: fe3c9f4f4fc5d13d\r\nX-B3-SpanId: fe3c9f4f4fc5d13d\r\nX-B3-Sampled: 1\r\n\r\n"
+        ],
+        "tag.docker_tag.gateway": [
+          "172.18.0.1"
+        ],
+        "context.trace_id.keyword": [
+          "fe3c9f4f4fc5d13d"
+        ],
+        "tag.docker_tag.created": [
+          "2025-08-11T07:34:36.893Z"
+        ],
+        "tag.ebpf_tag.req_seq": [
+          0
+        ],
+        "metric.start_time": [
+          6295915014182771
+        ],
+        "tag.docker_tag.gateway.keyword": [
+          "172.18.0.1"
+        ],
+        "tag.docker_tag.tgid": [
+          477058
+        ],
+        "tag.ebpf_tag.direction.keyword": [
+          "Ingress"
+        ],
+        "context.parent_trace_id.keyword": [
+          "fe3c9f4f4fc5d13d"
+        ],
+        "metric.end_time": [
+          6295915019275867
+        ],
+        "tag.docker_tag.container_name": [
+          "/bookinfo_reviews_1"
+        ],
+        "context.span_id": [
+          "0LQMJn3sznJvDHBcg61sUwKvYviLCZpnkJ9J6QUXJiYjzdTyPgqy8B11qnxKzSd4"
+        ],
+        "tag.docker_tag.ip.keyword": [
+          "172.18.0.4"
+        ],
+        "tag.docker_tag.image.keyword": [
+          "docker.1ms.run/istio/examples-bookinfo-reviews-v2:1.16.2"
+        ],
+        "tag.ebpf_tag.direction": [
+          "Ingress"
+        ],
+        "context.trace_id": [
+          "fe3c9f4f4fc5d13d"
+        ]
+      },
+      {
+        "tag.ebpf_tag.endpoint": [
+          "/ratings/0"
+        ],
+        "metric.resp_size": [
+          199
+        ],
+        "tag.ebpf_tag.src_ip.keyword": [
+          "172.18.0.3"
+        ],
+        "tag.docker_tag.network_mode.keyword": [
+          "bookinfo_bookinfo-net"
+        ],
+        "tag.docker_tag.hostname.keyword": [
+          "9d8553ba3552"
+        ],
+        "tag.docker_tag.container_id": [
+          "9d8553ba35520ade5c17b3d517a4b061f74eb0f9fb50eb016136de33d66cdab5"
+        ],
+        "tag.ebpf_tag.src_ip": [
+          "172.18.0.3"
+        ],
+        "tag.ebpf_tag.dst_ip": [
+          "172.18.0.4"
+        ],
+        "tag.docker_tag.image": [
+          "docker.1ms.run/istio/examples-bookinfo-reviews-v2:1.16.2"
+        ],
+        "tag.ebpf_tag.src_port": [
+          9080
+        ],
+        "tag.docker_tag.hostname": [
+          "9d8553ba3552"
+        ],
+        "tag.ebpf_tag.pid": [
+          477384
+        ],
+        "context.parent_trace_id": [
+          "fe3c9f4f4fc5d13d"
+        ],
+        "tag.ebpf_tag.component.keyword": [
+          "Default Executo"
+        ],
+        "tag.ebpf_tag.resp_seq": [
+          9
+        ],
+        "tag.docker_tag.container_id.keyword": [
+          "9d8553ba35520ade5c17b3d517a4b061f74eb0f9fb50eb016136de33d66cdab5"
+        ],
+        "tag.ebpf_tag.tgid": [
+          477178
+        ],
+        "context.child_ids.keyword": [
+          "VXrQidh9FooxAg9JrJNQInqw3TOgSfFJqQAJaKGTmBcjqnmF4PGM9vBKzPuheIHv"
+        ],
+        "context.parent_id": [
+          "0LQMJn3sznJvDHBcg61sUwKvYviLCZpnkJ9J6QUXJiYjzdTyPgqy8B11qnxKzSd4"
+        ],
+        "metric.duration": [
+          517204
+        ],
+        "tag.docker_tag.ip": [
+          "172.18.0.4"
+        ],
+        "tag.ebpf_tag.protocol.keyword": [
+          "HTTP1"
+        ],
+        "tag.ebpf_tag.protocol": [
+          "HTTP1"
+        ],
+        "metric.req_size": [
+          256
+        ],
+        "context.child_ids": [
+          "VXrQidh9FooxAg9JrJNQInqw3TOgSfFJqQAJaKGTmBcjqnmF4PGM9vBKzPuheIHv"
+        ],
+        "tag.ebpf_tag.component": [
+          "Default Executo"
+        ],
+        "tag.ebpf_tag.endpoint.keyword": [
+          "/ratings/0"
+        ],
+        "tag.docker_tag.network_mode": [
+          "bookinfo_bookinfo-net"
+        ],
+        "tag.ebpf_tag.dst_ip.keyword": [
+          "172.18.0.4"
+        ],
+        "content.req_content": [
+          "GET /ratings/0 HTTP/1.1\r\nAccept: application/json\r\nx-b3-traceid: fe3c9f4f4fc5d13d\r\nx-b3-spanid: fe3c9f4f4fc5d13d\r\nx-b3-sampled: 1\r\nuser-agent: python-requests/2.32.3\r\nCache-Control: no-cache\r\nPragma: no-cache\r\nHost: ratings:9080\r\nConnection: keep-alive\r\n\r\n"
+        ],
+        "context.parent_id.keyword": [
+          "0LQMJn3sznJvDHBcg61sUwKvYviLCZpnkJ9J6QUXJiYjzdTyPgqy8B11qnxKzSd4"
+        ],
+        "content.resp_content.keyword": [
+          "HTTP/1.1 200 OK\r\nContent-type: application/json\r\nDate: Mon, 11 Aug 2025 07:38:44 GMT\r\nConnection: keep-alive\r\nTransfer-Encoding: chunked\r\n\r\n30\r\n{\"id\":0,\"ratings\":{\"Reviewer1\":5,\"Reviewer2\":4}}\r\n0\r\n\r\n"
+        ],
+        "context.span_id.keyword": [
+          "kcNP7FgUIWBYPH8Mfk7k7AJYkPMBHAHNnI8UQBwwqnMl9Zin5ocj4giSMES2XaCC"
+        ],
+        "tag.docker_tag.container_name.keyword": [
+          "/bookinfo_reviews_1"
+        ],
+        "content.resp_content": [
+          "HTTP/1.1 200 OK\r\nContent-type: application/json\r\nDate: Mon, 11 Aug 2025 07:38:44 GMT\r\nConnection: keep-alive\r\nTransfer-Encoding: chunked\r\n\r\n30\r\n{\"id\":0,\"ratings\":{\"Reviewer1\":5,\"Reviewer2\":4}}\r\n0\r\n\r\n"
+        ],
+        "tag.ebpf_tag.dst_port": [
+          55236
+        ],
+        "content.req_content.keyword": [
+          "GET /ratings/0 HTTP/1.1\r\nAccept: application/json\r\nx-b3-traceid: fe3c9f4f4fc5d13d\r\nx-b3-spanid: fe3c9f4f4fc5d13d\r\nx-b3-sampled: 1\r\nuser-agent: python-requests/2.32.3\r\nCache-Control: no-cache\r\nPragma: no-cache\r\nHost: ratings:9080\r\nConnection: keep-alive\r\n\r\n"
+        ],
+        "tag.docker_tag.gateway": [
+          "172.18.0.1"
+        ],
+        "context.trace_id.keyword": [
+          "fe3c9f4f4fc5d13d"
+        ],
+        "tag.docker_tag.created": [
+          "2025-08-11T07:34:36.893Z"
+        ],
+        "tag.ebpf_tag.req_seq": [
+          8
+        ],
+        "metric.start_time": [
+          6295915017403810
+        ],
+        "tag.docker_tag.gateway.keyword": [
+          "172.18.0.1"
+        ],
+        "tag.docker_tag.tgid": [
+          477058
+        ],
+        "tag.ebpf_tag.direction.keyword": [
+          "Egress"
+        ],
+        "context.parent_trace_id.keyword": [
+          "fe3c9f4f4fc5d13d"
+        ],
+        "metric.end_time": [
+          6295915017921014
+        ],
+        "tag.docker_tag.container_name": [
+          "/bookinfo_reviews_1"
+        ],
+        "context.span_id": [
+          "kcNP7FgUIWBYPH8Mfk7k7AJYkPMBHAHNnI8UQBwwqnMl9Zin5ocj4giSMES2XaCC"
+        ],
+        "tag.docker_tag.ip.keyword": [
+          "172.18.0.4"
+        ],
+        "tag.docker_tag.image.keyword": [
+          "docker.1ms.run/istio/examples-bookinfo-reviews-v2:1.16.2"
+        ],
+        "tag.ebpf_tag.direction": [
+          "Egress"
+        ],
+        "context.trace_id": [
+          "fe3c9f4f4fc5d13d"
+        ]
+      },
+      {
+        "tag.ebpf_tag.endpoint": [
+          "/ratings/0"
+        ],
+        "metric.resp_size": [
+          199
+        ],
+        "tag.ebpf_tag.src_ip.keyword": [
+          "172.18.0.3"
+        ],
+        "tag.docker_tag.network_mode.keyword": [
+          "bookinfo_bookinfo-net"
+        ],
+        "tag.docker_tag.hostname.keyword": [
+          "51612233e3db"
+        ],
+        "tag.docker_tag.container_id": [
+          "51612233e3db2cec2f6981a9f7e9928411496abe0d4d0df025230a4e0834a1a0"
+        ],
+        "tag.ebpf_tag.src_ip": [
+          "172.18.0.3"
+        ],
+        "tag.ebpf_tag.dst_ip": [
+          "172.18.0.4"
+        ],
+        "tag.docker_tag.image": [
+          "docker.1ms.run/istio/examples-bookinfo-ratings-v1:1.16.2"
+        ],
+        "tag.ebpf_tag.src_port": [
+          9080
+        ],
+        "tag.docker_tag.hostname": [
+          "51612233e3db"
+        ],
+        "tag.ebpf_tag.pid": [
+          477056
+        ],
+        "context.parent_trace_id": [
+          "fe3c9f4f4fc5d13d"
+        ],
+        "tag.ebpf_tag.component.keyword": [
+          "node"
+        ],
+        "tag.ebpf_tag.resp_seq": [
+          9
+        ],
+        "tag.docker_tag.container_id.keyword": [
+          "51612233e3db2cec2f6981a9f7e9928411496abe0d4d0df025230a4e0834a1a0"
+        ],
+        "tag.ebpf_tag.tgid": [
+          477056
+        ],
+        "context.parent_id": [
+          "kcNP7FgUIWBYPH8Mfk7k7AJYkPMBHAHNnI8UQBwwqnMl9Zin5ocj4giSMES2XaCC"
+        ],
+        "metric.duration": [
+          478114
+        ],
+        "tag.docker_tag.ip": [
+          "172.18.0.3"
+        ],
+        "tag.ebpf_tag.protocol.keyword": [
+          "HTTP1"
+        ],
+        "tag.ebpf_tag.protocol": [
+          "HTTP1"
+        ],
+        "metric.req_size": [
+          256
+        ],
+        "tag.ebpf_tag.component": [
+          "node"
+        ],
+        "tag.ebpf_tag.endpoint.keyword": [
+          "/ratings/0"
+        ],
+        "tag.docker_tag.network_mode": [
+          "bookinfo_bookinfo-net"
+        ],
+        "tag.ebpf_tag.dst_ip.keyword": [
+          "172.18.0.4"
+        ],
+        "content.req_content": [
+          "GET /ratings/0 HTTP/1.1\r\nAccept: application/json\r\nx-b3-traceid: fe3c9f4f4fc5d13d\r\nx-b3-spanid: fe3c9f4f4fc5d13d\r\nx-b3-sampled: 1\r\nuser-agent: python-requests/2.32.3\r\nCache-Control: no-cache\r\nPragma: no-cache\r\nHost: ratings:9080\r\nConnection: keep-alive\r\n\r\n"
+        ],
+        "context.parent_id.keyword": [
+          "kcNP7FgUIWBYPH8Mfk7k7AJYkPMBHAHNnI8UQBwwqnMl9Zin5ocj4giSMES2XaCC"
+        ],
+        "content.resp_content.keyword": [
+          "HTTP/1.1 200 OK\r\nContent-type: application/json\r\nDate: Mon, 11 Aug 2025 07:38:44 GMT\r\nConnection: keep-alive\r\nTransfer-Encoding: chunked\r\n\r\n30\r\n{\"id\":0,\"ratings\":{\"Reviewer1\":5,\"Reviewer2\":4}}\r\n0\r\n\r\n"
+        ],
+        "context.span_id.keyword": [
+          "VXrQidh9FooxAg9JrJNQInqw3TOgSfFJqQAJaKGTmBcjqnmF4PGM9vBKzPuheIHv"
+        ],
+        "tag.docker_tag.container_name.keyword": [
+          "/bookinfo_ratings_1"
+        ],
+        "content.resp_content": [
+          "HTTP/1.1 200 OK\r\nContent-type: application/json\r\nDate: Mon, 11 Aug 2025 07:38:44 GMT\r\nConnection: keep-alive\r\nTransfer-Encoding: chunked\r\n\r\n30\r\n{\"id\":0,\"ratings\":{\"Reviewer1\":5,\"Reviewer2\":4}}\r\n0\r\n\r\n"
+        ],
+        "tag.ebpf_tag.dst_port": [
+          55236
+        ],
+        "content.req_content.keyword": [
+          "GET /ratings/0 HTTP/1.1\r\nAccept: application/json\r\nx-b3-traceid: fe3c9f4f4fc5d13d\r\nx-b3-spanid: fe3c9f4f4fc5d13d\r\nx-b3-sampled: 1\r\nuser-agent: python-requests/2.32.3\r\nCache-Control: no-cache\r\nPragma: no-cache\r\nHost: ratings:9080\r\nConnection: keep-alive\r\n\r\n"
+        ],
+        "tag.docker_tag.gateway": [
+          "172.18.0.1"
+        ],
+        "context.trace_id.keyword": [
+          "fe3c9f4f4fc5d13d"
+        ],
+        "tag.docker_tag.created": [
+          "2025-08-11T07:34:35.849Z"
+        ],
+        "tag.ebpf_tag.req_seq": [
+          8
+        ],
+        "metric.start_time": [
+          6295915017433859
+        ],
+        "tag.docker_tag.gateway.keyword": [
+          "172.18.0.1"
+        ],
+        "tag.docker_tag.tgid": [
+          477058
+        ],
+        "tag.ebpf_tag.direction.keyword": [
+          "Ingress"
+        ],
+        "context.parent_trace_id.keyword": [
+          "fe3c9f4f4fc5d13d"
+        ],
+        "metric.end_time": [
+          6295915017911973
+        ],
+        "tag.docker_tag.container_name": [
+          "/bookinfo_ratings_1"
+        ],
+        "context.span_id": [
+          "VXrQidh9FooxAg9JrJNQInqw3TOgSfFJqQAJaKGTmBcjqnmF4PGM9vBKzPuheIHv"
+        ],
+        "tag.docker_tag.ip.keyword": [
+          "172.18.0.3"
+        ],
+        "tag.docker_tag.image.keyword": [
+          "docker.1ms.run/istio/examples-bookinfo-ratings-v1:1.16.2"
+        ],
+        "tag.ebpf_tag.direction": [
+          "Ingress"
+        ],
+        "context.trace_id": [
+          "fe3c9f4f4fc5d13d"
+        ]
+      }
+    ],
+    "trace_id": [
+      "fe3c9f4f4fc5d13d"
+    ],
+    "components.477056.protocol.keyword": [
+      "HTTP1"
+    ],
+    "component_name": [
+      "python"
+    ],
+    "end_time": [
+      6295915021070289
+    ],
+    "components.477056.ip.keyword": [
+      "172.18.0.3"
+    ],
+    "components.477178.protocol.keyword": [
+      "HTTP1"
+    ],
+    "components.477368.endpoint.keyword": [
+      "/details/0"
+    ],
+    "server_ip.keyword": [
+      "172.18.0.5"
+    ],
+    "trace_id.keyword": [
+      "fe3c9f4f4fc5d13d"
+    ],
+    "components.477368.name.keyword": [
+      "/bookinfo_productpage_1"
+    ],
+    "components.477056.ip": [
+      "172.18.0.3"
+    ],
+    "start_time": [
+      6295915007982913
+    ],
+    "components.477178.name.keyword": [
+      "/bookinfo_reviews_1"
+    ],
+    "span_num": [
+      6
+    ],
+    "components.477368.protocol.keyword": [
+      "HTTP1"
+    ],
+    "protocol.keyword": [
+      "HTTP1"
+    ],
+    "server_port": [
+      9080
+    ],
+    "e2e_duration": [
+      13087376
+    ]
+  }
+}
