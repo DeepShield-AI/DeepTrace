@@ -17,9 +17,9 @@ Choose manual compilation when you need to:
 ### System Requirements
 
 - **Ubuntu 24.04 LTS** (recommended) or compatible Linux distribution
-- **Kernel 6.8.0+** with eBPF support and BTF information
+- **Kernel 4.7.0+** with eBPF support and BTF information
 - **20GB+ free disk space**
-- **4GB+ RAM** (8GB recommended for compilation)
+- **8GB+ RAM**
 - **Internet connectivity** for downloading dependencies
 
 ### Required Packages
@@ -145,6 +145,8 @@ ls -la
 Now compile the DeepTrace agent with optimizations:
 
 ```bash
+cd agent
+
 # Compile with release profile for optimal performance
 cargo xtask build --profile release
 
@@ -201,7 +203,7 @@ For development and debugging:
 
 ```bash
 # Build with debug symbols
-cargo xtask build --profile dev
+cargo xtask build --profile debug
 
 # Run with debug logging
 RUST_LOG=debug cargo xtask run -c config/deeptrace.toml
@@ -213,6 +215,7 @@ Enable or disable specific features:
 
 ```bash
 # Build with specific features
+# todo: feature is currently not supported
 cargo xtask build --profile release --features "feature1,feature2"
 
 # Build without default features
@@ -267,7 +270,7 @@ rustup update
 cargo clean
 
 # Rebuild with verbose output
-cargo xtask build --profile release --verbose
+cargo xtask build --profile release -- --verbose
 ```
 
 #### eBPF Compilation Errors
@@ -357,10 +360,10 @@ git config core.hooksPath .githooks
 cargo test
 
 # Format code
-cargo fmt
+cargo +nightly fmt
 
 # Run linter
-cargo clippy
+cargo xtask clippy
 ```
 
 ## Next Steps
@@ -379,7 +382,3 @@ After successful manual compilation:
 - **[Rust Installation Guide](https://rustup.rs/)**
 - **[Aya eBPF Framework](https://github.com/aya-rs/aya)**
 - **[BPF Linker Documentation](https://github.com/aya-rs/bpf-linker)**
-
----
-
-Manual compilation provides complete control over the build process but requires more setup than Docker installation. Choose the method that best fits your development workflow and deployment requirements.

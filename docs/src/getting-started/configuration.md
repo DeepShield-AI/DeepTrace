@@ -24,10 +24,8 @@ server/config/config.toml
 
 DeepTrace provides several example configurations:
 
-- `config.toml.example` - Basic configuration template
+- `deeptrace.toml.example` - Basic configuration template
 - `full.toml` - Complete configuration with all options
-- `production.toml` - Production-ready configuration
-- `development.toml` - Development environment settings
 
 ## Required Configuration
 
@@ -96,77 +94,6 @@ workers = 16
 ip = "0.0.0.0"
 port = 7901
 path = "deeptrace/ws"
-
-# Additional server settings
-max_connections = 1000
-connection_timeout = 30
-heartbeat_interval = 10
-```
-
-### DeepTrace Service
-
-```toml
-# DeepTrace agent service port
-deeptrace_port = 52001
-
-# Service configuration
-[service]
-log_level = "info"
-log_file = "/var/log/deeptrace/agent.log"
-pid_file = "/var/run/deeptrace/agent.pid"
-```
-
-### Agent Performance Settings
-
-```toml
-[agents]
-# Span processing configuration
-[agents.span]
-batch_size = 1024
-flush_interval = 5
-max_queue_size = 10000
-
-# Data sender configuration
-[agents.sender]
-mem_buffer_size = 16      # MB
-file_buffer_size = 32     # MB
-file_size_limit = 1024    # MB
-batch_size = 1024
-compression = true
-retry_attempts = 3
-retry_delay = 1000        # milliseconds
-
-# Trace collection settings
-[agents.trace]
-# Specific PIDs to monitor (empty = monitor all Docker containers)
-pids = []
-
-# Process filtering
-include_processes = ["nginx", "redis", "mongodb"]
-exclude_processes = ["systemd", "kernel"]
-
-# Protocol detection
-auto_detect_protocols = true
-supported_protocols = ["http", "grpc", "redis", "mongodb", "mysql"]
-```
-
-### API Configuration
-
-```toml
-[agents.api]
-# API server settings
-port = 7899
-address = "0.0.0.0"
-workers = 1
-ident = "deeptrace"
-
-# API security
-enable_auth = false
-api_key = "your_api_key_here"
-
-# Rate limiting
-rate_limit = 1000  # requests per minute
-burst_limit = 100
 ```
 
 ## Advanced Configuration
@@ -274,23 +201,6 @@ ssh_port = 22
 ssh_key_path = "/home/deeptrace/.ssh/id_rsa"
 ```
 
-#### TLS Configuration
-
-Enable TLS for secure communication:
-
-```toml
-[server.tls]
-enabled = true
-cert_file = "/etc/deeptrace/certs/server.crt"
-key_file = "/etc/deeptrace/certs/server.key"
-ca_file = "/etc/deeptrace/certs/ca.crt"
-
-[elastic.tls]
-enabled = true
-verify_certificates = true
-ca_file = "/etc/elasticsearch/certs/ca.crt"
-```
-
 ## Environment Variables
 
 DeepTrace supports environment variable substitution in configuration files:
@@ -347,8 +257,6 @@ Error: Cannot connect to Elasticsearch at localhost:9200
 ### 1. Security
 
 - **Use environment variables** for sensitive information
-- **Enable TLS** for production deployments
-- **Use SSH keys** instead of passwords
 - **Restrict network access** to DeepTrace ports
 
 ### 2. Performance
@@ -371,75 +279,6 @@ Error: Cannot connect to Elasticsearch at localhost:9200
 - **Document custom settings** and their purposes
 - **Test configuration changes** in development first
 - **Keep backups** of working configurations
-
-## Configuration Templates
-
-### Small Deployment (1-5 hosts)
-
-```toml
-[server]
-ip = "192.168.1.100"
-port = 7901
-
-[elastic]
-elastic_password = "simple_password"
-bulk_size = 512
-
-[[agents.agent_info]]
-agent_name = "small-deployment"
-user_name = "ubuntu"
-host_ip = "192.168.1.101"
-ssh_port = 22
-host_password = "password"
-workers = 4
-
-[agents.sender]
-batch_size = 512
-mem_buffer_size = 16
-```
-
-### Medium Deployment (5-20 hosts)
-
-```toml
-[server]
-ip = "deeptrace.internal.com"
-port = 7901
-
-[elastic]
-elastic_password = "${ELASTIC_PASSWORD}"
-bulk_size = 1024
-request_timeout = 20
-
-# Multiple agents configuration...
-[agents.sender]
-batch_size = 1024
-mem_buffer_size = 32
-compression = true
-```
-
-### Large Deployment (20+ hosts)
-
-```toml
-[server]
-ip = "deeptrace-cluster.company.com"
-port = 7901
-max_connections = 5000
-
-[elastic]
-elastic_password = "${ELASTIC_PASSWORD}"
-bulk_size = 2048
-request_timeout = 30
-
-[agents.sender]
-batch_size = 2048
-mem_buffer_size = 64
-file_buffer_size = 128
-compression = true
-
-[logging]
-level = "warn"
-file = "/var/log/deeptrace/production.log"
-```
 
 ## Troubleshooting Configuration
 
@@ -477,7 +316,3 @@ After configuring DeepTrace:
 1. **[All-in-One Deployment](./all-in-one.md)**: Deploy for testing
 2. **[Basic Usage](../user-guide/basic-usage.md)**: Start using DeepTrace
 3. **[Troubleshooting](../troubleshooting/common-issues.md)**: Resolve issues
-
----
-
-Proper configuration is crucial for DeepTrace's performance and reliability. Take time to understand each setting and adjust them according to your specific requirements and environment.

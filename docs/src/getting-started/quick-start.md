@@ -7,7 +7,7 @@ Get DeepTrace up and running in just 10 minutes! This guide will walk you throug
 Before you begin, ensure you have:
 
 - **Ubuntu 24.04 LTS** (or compatible Linux distribution)
-- **Kernel version 6.8.0+** with eBPF support
+- **Kernel version 4.7.0+** with eBPF support
 - **Docker 26.1.3+** installed and running
 - **40GB+ free disk space**
 - **Root/sudo access**
@@ -24,28 +24,19 @@ cd DeepTrace
 
 ## Step 2: Quick Configuration
 
-Copy the example configuration and update the required fields:
-
-```bash
-cp server/config/config.toml.example server/config/config.toml
-```
+- **To deploy DeepTrace, you must fill in the following fields in the [configuration file](https://github.com/DeepShield-AI/DeepTrace/blob/main/server/config/config.toml)(DeepTrace/server/config/config.toml) in order to run it.** These required fields are presented in the configuration file in the format of **xxx**. In all-in-one mode, the `server.ip` and `agents.agent_info.host_ip` values are identical.  
 
 Edit the configuration file and fill in these **required** fields:
 
-```toml
-[server]
-ip = "YOUR_SERVER_IP"  # External IP of your host
-
-[elastic]
-elastic_password = "YOUR_ELASTIC_PASSWORD"  # Choose a secure password
-
-[[agents.agent_info]]
-agent_name = "agent-1"
-user_name = "YOUR_USERNAME"  # SSH username for the host
-host_ip = "YOUR_HOST_IP"     # Same as server.ip for all-in-one mode
-ssh_port = 22
-host_password = "YOUR_SSH_PASSWORD"  # SSH password
-```
+| Configuration Item | Description |
+| --- | --- |
+| `server.ip` | The external IP address of the host running the DeepTrace server and the Elastic database |
+| `elastic.elastic_password` | Password for Elastic |
+| `agents.agent_info.agent_name` | Name of the agent, which uniquely identifies each agent instance |
+| `agents.agent_info.user_name` | The username for logging into the host where the agent is located via SSH |
+| `agents.agent_info.host_ip` | IP address of the agent host |
+| `agents.agent_info.ssh_port` | SSH port of the agent host (usually 22) |
+| `agents.agent_info.host_password` | The password for logging into the host where the agent is located via SSH |
 
 ## Step 3: Deploy DeepTrace Server
 
@@ -79,15 +70,12 @@ http://YOUR_SERVER_IP:5601
 - Username: `elastic`
 - Password: `YOUR_ELASTIC_PASSWORD` (from Step 2)
 
-## Step 5: Deploy Sample Application (Optional)
+## Step 5: Deploy a Microservice Application
 
-For testing purposes, deploy the Social Network microservice application:
+To generate traces, deploy a microservice application on the host:
 
-```bash
-sudo docker exec -it deeptrace_server python -m cli.src.cmd agent install_app
-```
-
-This will set up a complete microservices environment for trace collection.
+- Bookinfo — see [Bookinfo Guide](https://github.com/DeepShield-AI/DeepTrace/blob/main/tests/workload/bookinfo/README.md)
+- Social Network — see [Social Network Guide](https://github.com/DeepShield-AI/DeepTrace/blob/main/tests/workload/socialnetwork/README.md)
 
 ## Step 6: Install and Start Agent
 
@@ -109,17 +97,11 @@ The agent will automatically:
 
 ## Step 7: Generate Sample Traffic
 
-If you deployed the sample application, generate some traffic:
+If you deployed the microservice application, generate some traffic:
+Refer to the following documents for sending requests:
 
-```bash
-# Find the workload generator container
-CONTAINER_ID=$(sudo docker ps | grep wrk2 | awk '{print $1}')
-
-# Enter the container and run load test
-sudo docker exec -it $CONTAINER_ID /bin/bash
-cd /root
-./wrk -D exp -t 6 -c 6 -d 30 -L -s ./wrk2/scripts/social-network/compose-post.lua http://nginx-web-server:8080/wrk2-api/post/compose -R 50
-```
+- Bookinfo — see [Bookinfo Guide](https://github.com/DeepShield-AI/DeepTrace/blob/main/tests/workload/bookinfo/README.md)
+- Social Network — see [Social Network Guide](https://github.com/DeepShield-AI/DeepTrace/blob/main/tests/workload/socialnetwork/README.md)
 
 ## Step 8: Build and View Traces
 
@@ -147,15 +129,6 @@ sudo docker exec -it deeptrace_server python -m cli.src.cmd assemble
 ✅ **Traces Collected**: Verify traces appear in Elasticsearch  
 ✅ **Web Interface Accessible**: Can login and view data  
 
-## Next Steps
-
-Congratulations! You now have DeepTrace running and collecting traces. Here's what to explore next:
-
-- **[Configuration Guide](./configuration.md)**: Customize DeepTrace for your environment
-- **[Basic Usage](../user-guide/basic-usage.md)**: Learn essential operations
-- **[Architecture Overview](../architecture/overview.md)**: Understand how DeepTrace works
-- **[Troubleshooting](../troubleshooting/common-issues.md)**: Resolve common issues
-
 ## Clean Up
 
 To remove DeepTrace and all components:
@@ -166,14 +139,17 @@ sudo bash scripts/clear.sh
 
 This will stop and remove all containers, networks, and temporary files.
 
+## Next Steps
+
+Congratulations! You now have DeepTrace running and collecting traces. Here's what to explore next:
+
+- **[Configuration Guide](./configuration.md)**: Customize DeepTrace for your environment
+- **[Basic Usage](../user-guide/basic-usage.md)**: Learn essential operations
+- **[Architecture Overview](../architecture/overview.md)**: Understand how DeepTrace works
+- **[Troubleshooting](../troubleshooting/common-issues.md)**: Resolve common issues
+
 ## Need Help?
 
 - **Common Issues**: Check our [troubleshooting guide](../troubleshooting/common-issues.md)
 - **GitHub Issues**: [Report bugs or ask questions](https://github.com/DeepShield-AI/DeepTrace/issues)
 - **Documentation**: Explore the full [documentation](../README.md)
-
----
-
-**Estimated Time**: 10-15 minutes  
-**Difficulty**: Beginner  
-**Prerequisites**: Basic Docker and Linux knowledge

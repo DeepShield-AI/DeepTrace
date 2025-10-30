@@ -23,8 +23,8 @@ DeepTrace can be installed using two primary methods:
 | Component | Requirement |
 |-----------|-------------|
 | **Operating System** | Ubuntu 24.04 LTS (or compatible) |
-| **Kernel Version** | 6.8.0+ with eBPF support |
-| **Memory** | 4GB RAM minimum, 8GB recommended |
+| **Kernel Version** | 4.7.0+ with eBPF support |
+| **Memory** | 8GB recommended |
 | **Storage** | 40GB free disk space |
 | **CPU** | 2 cores minimum, 4+ recommended |
 | **Network** | Internet connectivity for downloads |
@@ -68,13 +68,13 @@ df -h
 free -h
 
 # Verify Docker installation
-docker --version
+sudo docker --version
 ```
 
 ### 2. Network Configuration
 ```bash
 # Test internet connectivity
-ping -c 3 google.com
+ping -c 3 github.com
 
 # Check if required ports are available
 netstat -tuln | grep -E ':(5601|7901|9200|52001)'
@@ -86,7 +86,7 @@ netstat -tuln | grep -E ':(5601|7901|9200|52001)'
 sudo whoami
 
 # Check Docker permissions
-docker ps
+sudo docker ps
 ```
 
 ## Installation Overview
@@ -110,14 +110,13 @@ git clone https://github.com/DeepShield-AI/DeepTrace.git
 cd DeepTrace
 
 # Quick setup with Docker (recommended)
-sudo bash scripts/quick-install.sh
+sudo bash scripts/install_agent.sh
 ```
 
 This script will:
-- Verify system requirements
 - Pull necessary Docker images
 - Set up basic configuration
-- Deploy server and agent components
+- Deploy agent component
 
 ## Deployment Modes
 
@@ -132,11 +131,6 @@ DeepTrace supports multiple deployment configurations:
 - Server cluster with multiple agents
 - Production-ready scalability
 - Advanced configuration options
-
-### Kubernetes Integration
-- Native Kubernetes deployment
-- Helm charts available
-- Automatic service discovery
 
 ## Post-Installation
 
@@ -197,7 +191,3 @@ If you encounter issues during installation:
 - **Review Logs**: Examine installation logs for errors
 - **Consult Documentation**: Check specific installation method guides
 - **Community Support**: Visit our [GitHub Issues](https://github.com/DeepShield-AI/DeepTrace/issues)
-
----
-
-Choose your preferred installation method and follow the detailed guides for step-by-step instructions.
