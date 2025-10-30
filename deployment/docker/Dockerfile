@@ -32,7 +32,7 @@ WORKDIR /workspace
 # prepare dependencies cache
 FROM chef AS planner
 COPY . /DeepTrace
-RUN cd /DeepTrace && \
+RUN cd /DeepTrace/agent && \
     cargo chef prepare --recipe-path recipe.json && \ 
     mv recipe.json /workspace/recipe.json && \
     rm -rf /DeepTrace
