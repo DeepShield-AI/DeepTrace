@@ -1,0 +1,2 @@
+Request, MongoDB { message_length: 230, request_id: 40, response_to: 0, op_code: OpMsg }
+Response, MongoDB { message_length: 285, request_id: 114033465, response_to: 40, op_code: OpMsg }

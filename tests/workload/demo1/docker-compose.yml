@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  service-a:
+    build:
+      context: .
+      dockerfile: service-a.Dockerfile
+    container_name: service-a
+    depends_on:
+      - service-b
+      - service-c
+      - service-d
+  
+  service-b:
+    build:
+      context: .
+      dockerfile: service-b.Dockerfile
+    container_name: service-b
+
+  service-c:
+    build:
+      context: .
+      dockerfile: service-c.Dockerfile
+    container_name: service-c
+
+  service-d:
+    build:
+      context: .
+      dockerfile: service-d.Dockerfile
+    container_name: service-d
+    depends_on:
+      - service-e
+
+  service-e:
+    build:
+      context: .
+      dockerfile: service-e.Dockerfile
+    container_name: service-e
+
+  client:
+    build:
+      context: .
+      dockerfile: client.Dockerfile
+    container_name: client
+    depends_on:
+      - service-a
+    volumes:
+      - ./input.txt:/app/input.txt
+      - ./output.txt:/app/output.txt
+
+
+
+# ./wrk -D exp -t 6 -c 6 -d 3 -L -s ./client.lua http://service-a:8080/ -R 50 > test.txt
+
+
+

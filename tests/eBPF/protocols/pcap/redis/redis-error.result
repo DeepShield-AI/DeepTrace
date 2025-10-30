@@ -1,0 +1,2 @@
+Request, Redis { first: * }
+Response, Redis { first: - }
