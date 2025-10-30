@@ -1,1 +1,0 @@
-docker exec -it social-wrk2 bash -c "cd /root; ./wrk -D exp -t 6 -c 6 -d 3 -L -s ./wrk2/scripts/social-network/compose-post.lua http://nginx-thrift:8080/wrk2-api/post/compose -R 50"

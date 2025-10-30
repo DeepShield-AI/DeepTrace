@@ -1,1 +1,0 @@
-docker exec -it bookinfo-client bash -c "cd /app; python client.py"
