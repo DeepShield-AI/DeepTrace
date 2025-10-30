@@ -10,16 +10,15 @@ if [ ! -x /usr/bin/jq ]; then
     sudo apt-get update
     sudo apt-get install -y jq
 else
-    echo "jq 已安装"
+    echo "jq installed"
 fi
 
-# 检查 docker.io 是否安装
 if [ ! -x /usr/bin/docker ]; then
     echo "installing docker.io..."
     sudo apt-get update
     sudo apt-get install -y docker.io
 else
-    echo "docker.io 已安装"
+    echo "docker.io installed"
 fi
 
 if [ ! -f "$DOCKER_CONFIG" ] || [ ! -s "$DOCKER_CONFIG" ]; then
@@ -57,4 +56,4 @@ export RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup
 
 sudo docker run --privileged --rm -i -v $(pwd):/DeepTrace 47.97.67.233:5000/deepshield/deeptrace bash -c \
 'cd /DeepTrace/agent &&
-cargo build --release'
+cargo xtask build --release'
