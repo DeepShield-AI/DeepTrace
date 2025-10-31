@@ -1,40 +1,68 @@
 [agent]
-name = "agent1"
-workers = 32
-state_index = "state"
+name = "deeptrace"
 
-[server]
-ip  = "0.0.0.0"
-port = 7901
-path = "deeptrace/ws"
+[metric]
+interval = 10
 
-[api]
-address = "0.0.0.0"
-port = 7900
-workers = 1
-ident = "deeptrace"
-
-[sender]
-batch_size = 1024
-
-[span]
-batch_size = 1024
-
-[sender.flat_file]
-mem_buffer_size = 16
-file_buffer_size = 32
-file_size_limit = 1024
-
-[sender.elastic]
-node_url = "http://0.0.0.0:9200"
+[sender.file.metric]
+# path to the file where metrics will be written
+node_url = "http://localhost:9200"
 username = "elastic"
 password = "***"
 request_timeout = 10
 index_name = "agent1"
-bulk_size = 1024
+bulk_size = 64
+
+[sender.file.trace]
+# path to the file where metrics will be written
+path = "metrics.csv"
+rotate = true
+# max size in megabytes of the metrics file before it gets rotated
+max_size = 512
+# max time in days to retain old metrics files
+max_age = 6
+# rotate time in days to rotate the metrics file
+rotate_time = 11
+# data format
+data_format = "%Y%m%d"
+
+# [sender.elastic]
 
 [trace]
-pids = [1, 2, 3]
+name = "trace"
 
-[provenance]
-pids = []
+[trace.span]
+cleanup_interval = 30
+max_sockets = 1024
+
+[ebpf.trace]
+# 0 = off, 1 = debug, 3 = verbose, 4 = stats
+log_level = 1
+pids = [523094]
+max_buffered_events = 128
+enabled_probes = [
+    "sys_enter_read",
+    "sys_exit_read",
+    "sys_enter_readv",
+    "sys_exit_readv",
+    "sys_enter_recvfrom",
+    "sys_exit_recvfrom",
+    "sys_enter_recvmsg",
+    "sys_exit_recvmsg",
+    "sys_enter_recvmmsg",
+    "sys_exit_recvmmsg",
+
+    "sys_enter_write",
+    "sys_exit_write",
+    "sys_enter_writev",
+    "sys_exit_writev",
+    "sys_enter_sendto",
+    "sys_exit_sendto",
+    "sys_enter_sendmsg",
+    "sys_exit_sendmsg",
+    "sys_enter_sendmmsg",
+    "sys_exit_sendmmsg",
+
+    "sys_exit_socket",
+    "sys_enter_close"
+]

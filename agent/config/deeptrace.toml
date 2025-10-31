@@ -6,17 +6,12 @@ interval = 10
 
 [sender.file.metric]
 # path to the file where metrics will be written
-path = "metrics.csv"
-rotate = true
-# max size in megabytes of the metrics file before it gets rotated
-max_size = 512
-# max time in days to retain old metrics files
-max_age = 7
-# rotate time in days to rotate the metrics file
-rotate_time = 11
-# data format
-data_format = "%Y%m%d"
-
+node_url = "http://localhost:9200"
+username = "elastic"
+password = "***"
+request_timeout = 10
+index_name = "agent1"
+bulk_size = 64
 
 [sender.file.trace]
 # path to the file where metrics will be written
