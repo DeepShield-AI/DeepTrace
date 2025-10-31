@@ -3,7 +3,6 @@ use crate::{
 	mysql::MySQL, redis::Redis, rocketmq::RocketMQ, thrift::Thrift, Classification,
 };
 use aya_ebpf::programs::TracePointContext;
-use aya_log_ebpf::info;
 use ebpf_common::{
 	alloc,
 	error::{Result, code::*},
