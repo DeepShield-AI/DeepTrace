@@ -239,17 +239,17 @@ cargo test -- --nocapture
 ### Integration Tests Setup
 
 ```bash
-# Set up test databases
-docker-compose -f docker-compose.test.yml up -d
+# Deploy test workloads
+cd tests/workload/bookinfo
+sudo bash deploy.sh
 
-# Wait for services to be ready
-./scripts/wait-for-services.sh
+# Run tests
+cd tests/workload
+python3 test_span_construct.py
 
-# Run integration tests
-cargo test --test integration_tests
-
-# Clean up test environment
-docker-compose -f docker-compose.test.yml down
+# Cleanup
+cd bookinfo
+sudo bash clear.sh
 ```
 
 ### eBPF Tests Setup
@@ -319,7 +319,7 @@ Create `.vscode/launch.json`:
                     "kind": "bin"
                 }
             },
-            "args": ["--config", "configs/agent.toml"],
+            "args": ["-f", "config/deeptrace.toml"],
             "cwd": "${workspaceFolder}",
             "environment": [
                 {"name": "RUST_LOG", "value": "debug"}
@@ -350,7 +350,7 @@ sudo apt install -y valgrind
 
 # Run memory check
 valgrind --tool=memcheck --leak-check=full \
-    ./target/debug/deeptrace-agent --config configs/agent.toml
+    ./target/debug/deeptrace-agent -f config/deeptrace.toml
 ```
 
 #### Performance Profiling
@@ -360,12 +360,12 @@ valgrind --tool=memcheck --leak-check=full \
 sudo apt install -y linux-perf
 
 # Profile application
-perf record -g ./target/release/deeptrace-agent --config configs/agent.toml
+perf record -g ./target/release/deeptrace-agent -f config/deeptrace.toml
 perf report
 
 # CPU profiling with flamegraph
 cargo install flamegraph
-cargo flamegraph --bin deeptrace-agent -- --config configs/agent.toml
+cargo flamegraph --bin deeptrace-agent -- -f config/deeptrace.toml
 ```
 
 ## Database Setup
@@ -467,9 +467,9 @@ Create `scripts/dev-setup.sh`:
 
 ```bash
 #!/bin/bash
-# Development environment setup script
-
-set -euo pipefail
+# Set up test environment
+# Install required Python packages
+pip3 install requests elasticsearch
 
 echo "Setting up DeepTrace development environment..."
 
@@ -543,8 +543,8 @@ main() {
     
     echo "Development environment setup complete!"
     echo "You can now run:"
-    echo "  cargo run --bin deeptrace-agent -- --config configs/agent.toml"
-    echo "  cargo run --bin deeptrace-server -- --config configs/server.toml"
+    echo "  cargo run --bin deeptrace-agent -- -f config/deeptrace.toml"
+    echo "  cargo run --bin deeptrace-server -- -f config/server.toml"
 }
 
 main "$@"
@@ -611,7 +611,7 @@ export RUST_BACKTRACE=full
 export DEEPTRACE_LOG_LEVEL=trace
 
 # Run with debug output
-cargo run --bin deeptrace-agent -- --config configs/agent.toml 2>&1 | tee debug.log
+cargo run --bin deeptrace-agent -- -f config/deeptrace.toml 2>&1 | tee debug.log
 ```
 
 ### Performance Debugging

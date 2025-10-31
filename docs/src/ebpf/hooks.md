@@ -454,7 +454,3 @@ bpftool prog show id <program_id>
 - Increase ring buffer size
 - Implement backpressure handling
 - Monitor map capacity
-
----
-
-DeepTrace's system hooks provide comprehensive coverage of network operations while maintaining high performance and reliability. The dual-phase approach ensures complete data capture with minimal system impact.

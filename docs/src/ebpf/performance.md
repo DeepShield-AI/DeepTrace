@@ -431,7 +431,3 @@ bpftrace -e 'uprobe:/path/to/ebpf:function_name { @start = nsecs; }
 - **Monitor Continuously**: Track performance metrics in production
 - **Tune Dynamically**: Adjust configuration based on observed performance
 - **Plan for Scale**: Consider performance impact at full deployment scale
-
----
-
-DeepTrace's performance characteristics make it suitable for production deployment with careful tuning and monitoring. The comprehensive data collection capabilities justify the measured overhead for most distributed tracing use cases.

@@ -693,7 +693,3 @@ curl -X PUT "localhost:9200/_snapshot/backup/snapshot_$(date +%Y%m%d)" -H 'Conte
 # Backup configuration
 sudo docker exec deeptrace_server tar -czf /backup/config-$(date +%Y%m%d).tar.gz /app/config/
 ```
-
----
-
-This troubleshooting guide covers the most common issues encountered with DeepTrace. For issues not covered here, check the [GitHub Issues](https://github.com/DeepShield-AI/DeepTrace/issues) or consult the detailed component documentation.

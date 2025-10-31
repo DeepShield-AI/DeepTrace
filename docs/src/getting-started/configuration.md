@@ -1,290 +1,254 @@
 # Configuration Guide
 
-This comprehensive guide covers all aspects of configuring DeepTrace for your specific environment and requirements. Proper configuration is essential for optimal performance and accurate trace collection.
+This comprehensive guide covers all aspects of configuring DeepTrace for your specific environment and requirements. DeepTrace consists of two main components that require separate configuration: the **Server** and the **Agent**.
 
 ## Configuration Overview
 
-DeepTrace uses TOML configuration files to manage settings for both server and agent components. The configuration system is designed to be:
+DeepTrace uses TOML configuration files to manage settings. The configuration system is designed to be:
 
-- **Hierarchical**: Settings can be organized in logical groups
-- **Flexible**: Support for multiple deployment scenarios
+- **Simple**: Straightforward configuration structure
+- **Flexible**: Support for multiple deployment scenarios  
 - **Secure**: Sensitive information can be externalized
 - **Validated**: Configuration is checked at startup
 
 ## Configuration Files
 
-### Main Configuration File
+DeepTrace provides several configuration files:
 
-The primary configuration file is located at:
-```
-server/config/config.toml
-```
+- **Server**: `server/config/config.toml` - Server and agent management configuration
+- **Agent**: `agent/config/deeptrace.toml` - Agent-side configuration (current)
+- **Agent Template**: `agent/config/deeptrace.toml.example` - Agent configuration template
+- **Prism**: `agent/config/prism.toml` - Lightweight monitoring configuration
 
-### Example Configurations
+---
 
-DeepTrace provides several example configurations:
+# Server Configuration
 
-- `deeptrace.toml.example` - Basic configuration template
-- `full.toml` - Complete configuration with all options
+The server configuration manages the DeepTrace server, Elasticsearch integration, and agent deployment settings. The main configuration file is located at `server/config/config.toml`.
 
-## Required Configuration
+## Required Server Configuration
 
-Before deploying DeepTrace, you **must** configure these essential fields:
+The server configuration is simple and requires only essential fields:
 
-### Server Configuration
+### Server Settings
 
 ```toml
 [server]
-# External IP address of the DeepTrace server
+# External IP address of the DeepTrace server (REQUIRED)
 ip = "192.168.1.100"  # Replace with your server's IP
-
-# Server port (default: 7901)
-port = 7901
-
-# WebSocket path for agent connections
-path = "deeptrace/ws"
 ```
 
 ### Elasticsearch Configuration
 
 ```toml
 [elastic]
-# Elasticsearch password (choose a secure password)
+# Elasticsearch password (REQUIRED - choose a secure password)
 elastic_password = "your_secure_password_here"
-
-# Elasticsearch username (default: elastic)
-username = "elastic"
-
-# Elasticsearch port (default: 9200)
-port = 9200
-
-# Connection timeout in seconds
-request_timeout = 10
-
-# Bulk write size for performance optimization
-bulk_size = 1024
-
-# Index name for agent status
-agent_status_index = "agent_status"
 ```
 
-### Agent Configuration
+## Agent Management Configuration
+
+The server manages agent deployments through SSH connections:
+
+### Single Agent Configuration
 
 ```toml
-[[agents.agent_info]]
-# Unique identifier for this agent
-agent_name = "agent-production-1"
-
-# SSH connection details
-user_name = "ubuntu"              # SSH username
-host_ip = "192.168.1.101"        # Agent host IP
-ssh_port = 22                     # SSH port
-host_password = "ssh_password"    # SSH password (consider using SSH keys)
-
-# Worker threads for data processing
-workers = 16
+[[agents]]
+  [agents.agent_info]
+  # Unique identifier for this agent (REQUIRED)
+  agent_name = "agent-1"
+  
+  # SSH connection details (ALL REQUIRED)
+  user_name = "ubuntu"              # SSH username
+  host_ip = "192.168.1.101"        # Agent host IP
+  ssh_port = 22                     # SSH port (usually 22)
+  host_password = "ssh_password"    # SSH password (consider using SSH keys)
 ```
 
-## Optional Configuration
-
-### Server Settings
-
-```toml
-[server]
-ip = "0.0.0.0"
-port = 7901
-path = "deeptrace/ws"
-```
-
-## Advanced Configuration
-
-### Multiple Agents
-
-Configure multiple agents for distributed deployments:
+### Multiple Agents Configuration
 
 ```toml
 # Agent 1 - Web servers
-[[agents.agent_info]]
-agent_name = "web-cluster-1"
-user_name = "ubuntu"
-host_ip = "192.168.1.101"
-ssh_port = 22
-host_password = "password1"
-workers = 8
+[[agents]]
+  [agents.agent_info]
+  agent_name = "agent-1"
+  user_name = "ubuntu"
+  host_ip = "192.168.1.101"
+  ssh_port = 22
+  host_password = "password1"
 
-# Agent 2 - Database servers
-[[agents.agent_info]]
-agent_name = "db-cluster-1"
-user_name = "ubuntu"
-host_ip = "192.168.1.102"
-ssh_port = 22
-host_password = "password2"
-workers = 16
+# Agent 2 - Database servers  
+[[agents]]
+  [agents.agent_info]
+  agent_name = "agent-2"
+  user_name = "ubuntu"
+  host_ip = "192.168.1.102"
+  ssh_port = 22
+  host_password = "password2"
 
 # Agent 3 - Cache servers
-[[agents.agent_info]]
-agent_name = "cache-cluster-1"
-user_name = "ubuntu"
-host_ip = "192.168.1.103"
-ssh_port = 22
-host_password = "password3"
-workers = 4
+[[agents]]
+  [agents.agent_info]
+  agent_name = "agent-3"
+  user_name = "ubuntu"
+  host_ip = "192.168.1.103"
+  ssh_port = 22
+  host_password = "password3"
 ```
 
-### Environment-Specific Settings
+# Agent Configuration
 
-#### Production Configuration
+The agent configuration defines how the DeepTrace agent operates on target systems. The main configuration file is `agent/config/deeptrace.toml`.
+
+## Required Agent Configuration
+
+### Basic Agent Settings
 
 ```toml
-[server]
-ip = "prod-deeptrace.company.com"
-port = 7901
+[agent]
+name = "deeptrace"                # Agent identifier (required)
+```
 
-[elastic]
-elastic_password = "${ELASTIC_PASSWORD}"  # Use environment variable
-port = 9200
-bulk_size = 2048
+## Configuration Modules
+
+### Metric Collection Configuration
+
+```toml
+[metric]
+interval = 10                     # Metric collection interval (seconds)
+sender = "metric"                 # Sender configuration name for metrics
+```
+
+### Data Sending Configuration
+
+#### File-based Storage for Metrics
+
+```toml
+[sender.file.metric]
+path = "metrics.csv"              # File path for metrics storage
+rotate = true                     # Enable file rotation
+max_size = 512                    # Maximum file size (MB)
+max_age = 7                       # Maximum retention (days)
+rotate_time = 10                  # Rotation interval (days)
+data_format = "%Y%m%d"            # Timestamp format for rotation
+```
+
+#### Elasticsearch Sender for Traces
+
+```toml
+[sender.elastic.trace]
+node_urls = "http://localhost:9200"      # Elasticsearch URL
+username = "elastic"                     # Elasticsearch username
+password = "your_password"               # Elasticsearch password
+request_timeout = 10                     # Request timeout (seconds)
+index_name = "agent1"                    # Index name for this agent
+bulk_size = 32                           # Bulk operation size
+```
+
+### Tracing Configuration
+
+```toml
+[trace]
+ebpf = "trace"                    # eBPF configuration name for tracing
+sender = "trace"                  # Sender configuration name for traces
+
+[trace.span]
+cleanup_interval = 30             # Cleanup interval for expired spans (seconds)
+max_sockets = 1024                # Maximum tracked socket count
+```
+
+### eBPF Configuration
+
+```toml
+[ebpf.trace]
+log_level = 1                     # Log level: 0=off, 1=debug, 3=verbose, 4=stats
+pids = [523094]                   # Process IDs to monitor (specific PIDs)
+max_buffered_events = 128         # Maximum events processed per batch
+enabled_probes = [                # List of enabled system call probes
+    "sys_enter_read",
+    "sys_exit_read",
+    "sys_enter_readv",
+    "sys_exit_readv",
+    "sys_enter_recvfrom",
+    "sys_exit_recvfrom",
+    "sys_enter_recvmsg",
+    "sys_exit_recvmsg",
+    "sys_enter_recvmmsg",
+    "sys_exit_recvmmsg",
+    "sys_enter_write",
+    "sys_exit_write",
+    "sys_enter_writev",
+    "sys_exit_writev",
+    "sys_enter_sendto",
+    "sys_exit_sendto",
+    "sys_enter_sendmsg",
+    "sys_exit_sendmsg",
+    "sys_enter_sendmmsg",
+    "sys_exit_sendmmsg",
+    "sys_exit_socket",
+    "sys_enter_close"
+]
+```
+
+## Complete Configuration Examples
+
+### Full-Featured Agent Configuration
+
+```toml
+[agent]
+name = "production-agent"
+
+[metric]
+interval = 5
+sender = "metric"
+
+[sender.file.metric]
+path = "/var/log/deeptrace/metrics.csv"
+rotate = true
+max_size = 256
+max_age = 30
+rotate_time = 7
+data_format = "%Y%m%d"
+
+[sender.elastic.trace]
+node_urls = "http://prod-elastic:9200"
+username = "elastic"
+password = "prod_password"
 request_timeout = 30
+index_name = "production_traces"
+bulk_size = 64
 
-[agents.trace]
-# Monitor specific production services
-include_processes = ["nginx", "app-server", "redis", "postgres"]
+[trace]
+ebpf = "trace"
+sender = "trace"
 
-[agents.sender]
-# Optimized for production throughput
-mem_buffer_size = 64
-file_buffer_size = 128
-batch_size = 2048
-compression = true
+[trace.span]
+cleanup_interval = 30
+max_sockets = 10000
 
-[logging]
-level = "warn"
-file = "/var/log/deeptrace/production.log"
-rotation = "daily"
-max_files = 30
+[ebpf.trace]
+log_level = 1
+enabled_probes = [
+    "sys_enter_read",
+    "sys_exit_read",
+    "sys_enter_recvfrom",
+    "sys_exit_recvfrom",
+    "sys_enter_write",
+    "sys_exit_write",
+    "sys_enter_sendto",
+    "sys_exit_sendto",
+    "sys_exit_socket",
+    "sys_enter_close"
+]
+max_buffered_events = 256
+pids = []  # Monitor no processes
 ```
 
-#### Development Configuration
+# Troubleshooting Configuration
 
-```toml
-[server]
-ip = "localhost"
-port = 7901
+## Common Server Issues
 
-[elastic]
-elastic_password = "dev_password"
-port = 9200
-
-[agents.trace]
-# Monitor all processes in development
-pids = []
-
-[logging]
-level = "debug"
-console = true
-file = "/tmp/deeptrace-dev.log"
-```
-
-### Security Configuration
-
-#### SSH Key Authentication
-
-Instead of passwords, use SSH keys for better security:
-
-```toml
-[[agents.agent_info]]
-agent_name = "secure-agent-1"
-user_name = "deeptrace"
-host_ip = "192.168.1.101"
-ssh_port = 22
-# Remove host_password and configure SSH keys instead
-ssh_key_path = "/home/deeptrace/.ssh/id_rsa"
-```
-
-## Environment Variables
-
-DeepTrace supports environment variable substitution in configuration files:
-
-```toml
-[elastic]
-elastic_password = "${ELASTIC_PASSWORD}"
-username = "${ELASTIC_USER:-elastic}"  # Default value: elastic
-
-[server]
-ip = "${SERVER_IP}"
-port = "${SERVER_PORT:-7901}"  # Default value: 7901
-```
-
-Set environment variables:
-
-```bash
-export ELASTIC_PASSWORD="secure_password"
-export ELASTIC_USER="deeptrace_user"
-export SERVER_IP="192.168.1.100"
-export SERVER_PORT="7901"
-```
-
-## Configuration Validation
-
-DeepTrace validates configuration at startup. Common validation errors:
-
-### Missing Required Fields
-
-```
-Error: Missing required field 'server.ip'
-```
-
-**Solution**: Ensure all required fields are configured.
-
-### Invalid Values
-
-```
-Error: Invalid port number: 99999
-```
-
-**Solution**: Use valid port numbers (1-65535).
-
-### Network Connectivity
-
-```
-Error: Cannot connect to Elasticsearch at localhost:9200
-```
-
-**Solution**: Verify Elasticsearch is running and accessible.
-
-## Configuration Best Practices
-
-### 1. Security
-
-- **Use environment variables** for sensitive information
-- **Restrict network access** to DeepTrace ports
-
-### 2. Performance
-
-- **Tune batch sizes** based on your traffic volume
-- **Adjust worker threads** based on CPU cores
-- **Configure appropriate timeouts** for your network
-- **Enable compression** for network efficiency
-
-### 3. Monitoring
-
-- **Set appropriate log levels** for your environment
-- **Configure log rotation** to prevent disk space issues
-- **Monitor resource usage** and adjust settings accordingly
-- **Set up alerts** for configuration-related errors
-
-### 4. Maintenance
-
-- **Version control** your configuration files
-- **Document custom settings** and their purposes
-- **Test configuration changes** in development first
-- **Keep backups** of working configurations
-
-## Troubleshooting Configuration
-
-### Common Issues
-
-#### Configuration File Not Found
+### Configuration File Not Found
 
 ```bash
 # Check file exists and permissions
@@ -292,24 +256,58 @@ ls -la server/config/config.toml
 chmod 644 server/config/config.toml
 ```
 
-#### Invalid TOML Syntax
+### Invalid TOML Syntax
 
 ```bash
 # Validate TOML syntax
 python3 -c "import toml; toml.load('server/config/config.toml')"
 ```
 
-#### Network Connectivity
+### Agent Connection Issues
+
+```bash
+# Test SSH connectivity to agent
+ssh ubuntu@192.168.1.101 -p 22
+
+# Test DeepTrace server port
+telnet 192.168.1.100 7901
+```
+
+## Common Agent Issues
+
+### Configuration Loading Errors
+
+```bash
+# Check agent configuration syntax
+cd agent/config
+python3 -c "import toml; toml.load('deeptrace.toml')"
+
+# Validate configuration structure
+cargo run --bin prism -- --config-path config/prism.toml --validate-only
+```
+
+### Network Connectivity
 
 ```bash
 # Test server connectivity
 telnet 192.168.1.100 7901
 
 # Test Elasticsearch connectivity
-curl http://localhost:9200/_cluster/health
+curl http://192.168.1.100:9200/_cluster/health
 ```
 
-## Next Steps
+### Permission Issues
+
+```bash
+# Check eBPF capabilities
+sudo setcap cap_sys_admin,cap_net_admin,cap_bpf+ep /path/to/deeptrace
+
+# Check file permissions
+ls -la agent/config/deeptrace.toml
+chmod 644 agent/config/deeptrace.toml
+```
+
+# Next Steps
 
 After configuring DeepTrace:
 

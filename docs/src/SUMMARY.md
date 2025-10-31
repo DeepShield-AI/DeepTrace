@@ -71,9 +71,10 @@
 # Testing & Development
 
 - [Testing Guide](./testing/overview.md)
+- [Prism Testing](./testing/prism.md)
+- [Functional Testing](./testing/functional.md)
+- [Performance Testing](./testing/performance.md)
 - [eBPF Testing](./testing/ebpf.md)
-- [Integration Tests](./testing/integration.md)
-- [Performance Benchmarks](./testing/benchmarks.md)
 - [Development Setup](./testing/development.md)
 
 ---

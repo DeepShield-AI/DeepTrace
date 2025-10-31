@@ -448,7 +448,3 @@ For issues with all-in-one deployment:
 - **Review Logs**: Examine container and application logs
 - **Consult Documentation**: Check specific component guides
 - **Community Support**: Visit [GitHub Issues](https://github.com/DeepShield-AI/DeepTrace/issues)
-
----
-
-The all-in-one deployment provides the fastest way to experience DeepTrace's capabilities. Once familiar with the system, consider distributed deployment for production use cases.

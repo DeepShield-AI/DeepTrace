@@ -467,7 +467,3 @@ perf report
 - Use per-CPU maps where possible
 - Optimize key/value sizes
 - Implement batching for bulk operations
-
----
-
-DeepTrace's eBPF maps provide a robust and efficient foundation for high-performance network tracing, carefully balancing memory usage, performance, and functionality requirements.

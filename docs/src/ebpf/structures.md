@@ -474,7 +474,3 @@ static inline bool validate_data_structure(const struct Data *data) {
     return true;
 }
 ```
-
----
-
-DeepTrace's data structures provide a robust foundation for efficient network tracing, balancing performance, memory usage, and functionality while maintaining compatibility across different kernel versions and architectures.

@@ -4,250 +4,177 @@ DeepTrace uses TOML configuration files for both agent and server components. Th
 
 ## Agent Configuration
 
-The agent configuration file (`agent.toml`) controls span collection, processing, and transmission behavior.
+The agent configuration file (`deeptrace.toml`) controls span collection, processing, and transmission behavior.
 
 ### Complete Schema
 
 ```toml
-[agents]
-# Agent identification
-agent_id = "agent-001"
-hostname = "web-server-01"
+[agent]
+# Agent identification (REQUIRED)
+name = "deeptrace"
 
-[agents.trace]
-# Span collection settings
-batch_size = 1024                    # Number of spans per batch
-flush_interval = 5000                # Flush interval in milliseconds
-sampling_rate = 1.0                  # Sampling rate (0.0-1.0)
-max_queue_size = 10000              # Maximum queued spans
-enable_async = true                  # Enable asynchronous processing
+[metric]
+# Metrics collection settings
+interval = 10                       # Collection interval in seconds
+sender = "metric"                   # Sender configuration name
 
-# Process filtering
-include_processes = ["nginx", "redis-server", "app-server"]
-exclude_processes = ["systemd", "kernel", "ssh"]
-include_pids = [1234, 5678]         # Specific PIDs to monitor
-exclude_pids = [1, 2]               # PIDs to exclude
+[sender.file.metric]
+# File-based metrics storage
+path = "metrics.csv"                # Output file path
+rotate = true                       # Enable file rotation
+max_size = 512                      # Max file size in MB
+max_age = 7                         # Retention period in days
+rotate_time = 10                    # Rotation interval in days
+data_format = "%Y%m%d"              # Date format for rotation
 
-# Protocol filtering
-protocols = ["http", "https", "tcp", "udp"]
-ports = [80, 443, 8080, 3306]      # Specific ports to monitor
+[sender.elastic.trace]
+# Elasticsearch trace storage
+node_urls = "http://localhost:9200" # Elasticsearch URL
+username = "elastic"                # Username
+password = "password"               # Password
+request_timeout = 10                # Request timeout in seconds
+index_name = "agent1"               # Index name
+bulk_size = 32                      # Bulk operation size
 
-[agents.capture]
-# Payload capture settings
-max_payload_size = 1024             # Maximum payload size in bytes
-enable_compression = true           # Enable payload compression
-capture_request = true              # Capture request payloads
-capture_response = true             # Capture response payloads
-truncate_large_payloads = true      # Truncate payloads exceeding max size
+[trace]
+# Tracing configuration
+ebpf = "trace"                      # eBPF configuration name
+sender = "trace"                    # Sender configuration name
 
-# Content filtering
-exclude_content_types = [
-    "image/*",
-    "video/*",
-    "application/octet-stream"
-]
+[trace.span]
+# Span management settings
+cleanup_interval = 30               # Cleanup interval in seconds
+max_sockets = 1024                  # Maximum tracked sockets
 
-[agents.sender]
-# Server communication
-server_url = "http://localhost:7901"
-timeout = 30000                     # Request timeout in milliseconds
-retry_count = 3                     # Number of retries
-retry_delay = 1000                  # Delay between retries in milliseconds
-keep_alive = true                   # Enable HTTP keep-alive
-
-# Buffering
-mem_buffer_size = 16                # Memory buffer size in MB
-disk_buffer_size = 100              # Disk buffer size in MB (0 = disabled)
-disk_buffer_path = "/tmp/deeptrace" # Disk buffer directory
-
-# Batch processing
-batch_timeout = 5000                # Batch timeout in milliseconds
-max_batch_size = 2048               # Maximum batch size
-compression = "gzip"                # Compression algorithm (gzip, lz4, none)
-
-[agents.ebpf]
+[ebpf.trace]
 # eBPF program settings
-ring_buffer_size = 262144           # Ring buffer size (power of 2)
-map_max_entries = 10240             # Maximum map entries
-program_timeout = 30000             # Program load timeout
-enable_debug = false                # Enable eBPF debug mode
-
-# Kernel compatibility
-min_kernel_version = "5.15"         # Minimum required kernel version
-enable_co_re = true                 # Enable CO-RE (Compile Once, Run Everywhere)
-fallback_mode = "disabled"          # Fallback mode (disabled, legacy, userspace)
-
-[logging]
-# Logging configuration
-level = "info"                      # Log level (trace, debug, info, warn, error)
-format = "json"                     # Log format (json, text)
-output = "stdout"                   # Output destination (stdout, stderr, file)
-file_path = "/var/log/deeptrace/agent.log"
-max_file_size = "100MB"             # Maximum log file size
-max_files = 5                       # Maximum number of log files
-enable_rotation = true              # Enable log rotation
-
-[metrics]
-# Metrics collection
-enable = true                       # Enable metrics collection
-port = 9090                         # Metrics server port
-path = "/metrics"                   # Metrics endpoint path
-interval = 30                       # Metrics collection interval in seconds
-
-# Custom metrics
-custom_labels = { environment = "production", region = "us-west-2" }
+log_level = 1                       # Log level (0=off, 1=debug, 3=verbose, 4=stats)
+pids = [523094]                     # Process IDs to monitor
+max_buffered_events = 128           # Max events per batch
+enabled_probes = [                  # Enabled system call probes
+    "sys_enter_read",
+    "sys_exit_read",
+    "sys_enter_readv",
+    "sys_exit_readv",
+    "sys_enter_recvfrom",
+    "sys_exit_recvfrom",
+    "sys_enter_recvmsg",
+    "sys_exit_recvmsg",
+    "sys_enter_recvmmsg",
+    "sys_exit_recvmmsg",
+    "sys_enter_write",
+    "sys_exit_write",
+    "sys_enter_writev",
+    "sys_exit_writev",
+    "sys_enter_sendto",
+    "sys_exit_sendto",
+    "sys_enter_sendmsg",
+    "sys_exit_sendmsg",
+    "sys_enter_sendmmsg",
+    "sys_exit_sendmmsg",
+    "sys_exit_socket",
+    "sys_enter_close"
+]
 ```
 
 ### Configuration Sections
 
-#### [agents.trace]
+#### [agent]
 
-Controls span collection behavior:
+Basic agent identification:
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `batch_size` | integer | 1024 | Number of spans to batch before sending |
-| `flush_interval` | integer | 5000 | Maximum time (ms) to wait before flushing |
-| `sampling_rate` | float | 1.0 | Fraction of requests to trace (0.0-1.0) |
-| `max_queue_size` | integer | 10000 | Maximum spans to queue in memory |
-| `enable_async` | boolean | true | Enable asynchronous span processing |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Unique agent identifier |
 
-#### [agents.capture]
+#### [metric]
 
-Controls payload capture:
+Metrics collection settings:
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `max_payload_size` | integer | 1024 | Maximum payload size to capture (bytes) |
-| `enable_compression` | boolean | true | Compress captured payloads |
-| `capture_request` | boolean | true | Capture request payloads |
-| `capture_response` | boolean | true | Capture response payloads |
+| `interval` | integer | 10 | Collection interval in seconds |
+| `sender` | string | - | Reference to sender configuration |
 
-#### [agents.sender]
+#### [sender.file.*]
 
-Controls server communication:
+File-based data storage:
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `server_url` | string | "http://localhost:7901" | DeepTrace server URL |
-| `timeout` | integer | 30000 | Request timeout (milliseconds) |
-| `retry_count` | integer | 3 | Number of retry attempts |
-| `mem_buffer_size` | integer | 16 | Memory buffer size (MB) |
+| `path` | string | - | Output file path |
+| `rotate` | boolean | true | Enable file rotation |
+| `max_size` | integer | 512 | Maximum file size (MB) |
+| `max_age` | integer | 7 | Retention period (days) |
+| `rotate_time` | integer | 10 | Rotation interval (days) |
+| `data_format` | string | "%Y%m%d" | Date format for rotation |
+
+#### [sender.elastic.*]
+
+Elasticsearch data storage:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `node_urls` | string | - | Elasticsearch URL |
+| `username` | string | - | Authentication username |
+| `password` | string | - | Authentication password |
+| `request_timeout` | integer | 10 | Request timeout (seconds) |
+| `index_name` | string | - | Target index name |
+| `bulk_size` | integer | 32 | Bulk operation size |
+
+#### [trace]
+
+Tracing configuration:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `ebpf` | string | - | Reference to eBPF configuration |
+| `sender` | string | - | Reference to sender configuration |
+
+#### [trace.span]
+
+Span management settings:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `cleanup_interval` | integer | 30 | Cleanup interval (seconds) |
+| `max_sockets` | integer | 1024 | Maximum tracked sockets |
+
+#### [ebpf.*]
+
+eBPF program settings:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `log_level` | integer | 1 | Log level (0-4) |
+| `pids` | array | [] | Process IDs to monitor |
+| `max_buffered_events` | integer | 128 | Max events per batch |
+| `enabled_probes` | array | [] | List of enabled probes |
 
 ## Server Configuration
 
-The server configuration file (`server.toml`) controls trace processing, correlation, and storage.
+The server configuration file (`config.toml`) controls server deployment and agent management.
 
 ### Complete Schema
 
 ```toml
 [server]
-# Server settings
-host = "0.0.0.0"                    # Bind address
-port = 7901                         # Listen port
-workers = 4                         # Number of worker threads
-max_connections = 1000              # Maximum concurrent connections
-request_timeout = 30000             # Request timeout in milliseconds
+# Server settings (REQUIRED)
+ip = "192.168.1.100"                # External IP address of the DeepTrace server
 
-[elasticsearch]
-# Elasticsearch connection
-hosts = ["http://localhost:9200"]   # Elasticsearch hosts
-username = "elastic"                # Username (optional)
-password = "changeme"               # Password (optional)
-index_prefix = "deeptrace"          # Index prefix
-batch_size = 1000                   # Bulk indexing batch size
-flush_interval = 5000               # Flush interval in milliseconds
-max_retries = 3                     # Maximum retry attempts
+[elastic]
+# Elasticsearch settings (REQUIRED)
+elastic_password = "your_password"  # Elasticsearch password
 
-# Index settings
-shards = 1                          # Number of shards per index
-replicas = 0                        # Number of replicas
-refresh_interval = "1s"             # Index refresh interval
-mapping_total_fields_limit = 10000  # Maximum number of fields
-
-# Index lifecycle
-enable_ilm = true                   # Enable Index Lifecycle Management
-hot_phase_duration = "7d"           # Hot phase duration
-warm_phase_duration = "30d"         # Warm phase duration
-delete_phase_duration = "90d"       # Delete phase duration
-
-[correlation]
-# Correlation engine settings
-default_algorithm = "deeptrace"     # Default correlation algorithm
-auto_correlation = true             # Enable automatic correlation
-correlation_interval = 60          # Correlation interval in seconds
-batch_size = 5000                   # Spans per correlation batch
-max_trace_duration = 300000         # Maximum trace duration (ms)
-max_trace_spans = 1000              # Maximum spans per trace
-
-# Algorithm-specific settings
-[correlation.deeptrace]
-window_size = 1000                  # Correlation window (ms)
-similarity_threshold = 0.8          # Minimum similarity score
-max_iterations = 100                # Maximum correlation iterations
-enable_caching = true               # Enable correlation caching
-
-[correlation.fifo]
-batch_size = 1000                   # FIFO batch size
-timeout = 5000                      # Processing timeout (ms)
-
-[api]
-# API server settings
-enable_auth = false                 # Enable API authentication
-api_keys = []                       # Valid API keys
-rate_limit = 100                    # Requests per minute per IP
-burst_limit = 20                    # Burst request limit
-enable_cors = true                  # Enable CORS headers
-cors_origins = ["*"]                # Allowed CORS origins
-
-# WebSocket settings
-enable_websocket = true             # Enable WebSocket endpoints
-websocket_timeout = 300000          # WebSocket timeout (ms)
-max_websocket_connections = 100     # Maximum WebSocket connections
-
-[storage]
-# Data retention
-span_retention_days = 30            # Span retention period
-trace_retention_days = 90           # Trace retention period
-enable_compression = true           # Enable storage compression
-compression_algorithm = "gzip"      # Compression algorithm
-
-# Backup settings
-enable_backup = false               # Enable automatic backups
-backup_interval = "24h"             # Backup interval
-backup_location = "/backup/deeptrace" # Backup directory
-max_backups = 7                     # Maximum backup files
-
-[monitoring]
-# Health checks
-health_check_interval = 30          # Health check interval (seconds)
-component_timeout = 5000            # Component health timeout (ms)
-
-# Metrics
-enable_metrics = true               # Enable metrics collection
-metrics_port = 9091                 # Metrics server port
-metrics_path = "/metrics"           # Metrics endpoint
-
-# Alerting
-enable_alerts = false               # Enable alerting
-alert_webhook = ""                  # Webhook URL for alerts
-alert_thresholds = { error_rate = 0.05, latency_p99 = 5000 }
-
-[logging]
-# Logging configuration
-level = "info"                      # Log level
-format = "json"                     # Log format
-output = "stdout"                   # Output destination
-file_path = "/var/log/deeptrace/server.log"
-max_file_size = "100MB"
-max_files = 10
-enable_rotation = true
-
-# Component-specific logging
-[logging.levels]
-correlation = "debug"               # Correlation engine log level
-elasticsearch = "warn"              # Elasticsearch client log level
-api = "info"                        # API server log level
+# Agent management configuration
+[[agents]]
+  [agents.agent_info]
+  # Agent identification and SSH connection (ALL REQUIRED)
+  agent_name = "agent-1"            # Unique agent identifier
+  user_name = "ubuntu"              # SSH username
+  host_ip = "192.168.1.101"         # Agent host IP address
+  ssh_port = 22                     # SSH port (usually 22)
+  host_password = "ssh_password"    # SSH password
 ```
 
 ### Configuration Sections
@@ -256,34 +183,29 @@ api = "info"                        # API server log level
 
 Basic server settings:
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `host` | string | "0.0.0.0" | Server bind address |
-| `port` | integer | 7901 | Server listen port |
-| `workers` | integer | 4 | Number of worker threads |
-| `max_connections` | integer | 1000 | Maximum concurrent connections |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `ip` | string | Yes | External IP address of the DeepTrace server |
 
-#### [elasticsearch]
+#### [elastic]
 
 Elasticsearch configuration:
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `hosts` | array | ["http://localhost:9200"] | Elasticsearch cluster hosts |
-| `index_prefix` | string | "deeptrace" | Index name prefix |
-| `batch_size` | integer | 1000 | Bulk indexing batch size |
-| `shards` | integer | 1 | Number of shards per index |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `elastic_password` | string | Yes | Elasticsearch authentication password |
 
-#### [correlation]
+#### [[agents]]
 
-Correlation engine settings:
+Agent management configuration (array of agents):
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `default_algorithm` | string | "deeptrace" | Default correlation algorithm |
-| `auto_correlation` | boolean | true | Enable automatic correlation |
-| `correlation_interval` | integer | 60 | Correlation interval (seconds) |
-| `batch_size` | integer | 5000 | Spans per correlation batch |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `agent_name` | string | Yes | Unique agent identifier |
+| `user_name` | string | Yes | SSH username for agent host |
+| `host_ip` | string | Yes | IP address of agent host |
+| `ssh_port` | integer | Yes | SSH port (usually 22) |
+| `host_password` | string | Yes | SSH password for agent host |
 
 ## Environment Variables
 
