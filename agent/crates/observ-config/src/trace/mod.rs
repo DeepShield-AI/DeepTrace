@@ -4,6 +4,7 @@ mod span;
 
 #[derive(Deserialize, Debug)]
 pub struct TraceConfig {
-	pub name: String,
+	pub ebpf: String,
+	pub sender: String,
 	pub span: SpanConfig,
 }

@@ -80,7 +80,7 @@ impl Module for TraceCollector {
 		span_constructor.start()?;
 
 		let config = self.config.load();
-		let ebpf_config = ebpf_config(&config.name);
+		let ebpf_config = ebpf_config(&config.ebpf);
 		let max_buffered_events = ebpf_config.max_buffered_events;
 
 		ebpf::configure_pids(&mut self.ebpf, ebpf_config.pids)?;
@@ -119,7 +119,7 @@ impl Module for TraceCollector {
 
 					for buf in buffers.iter().take(events.read) {
 						let message = Message::decode(buf);
-						// info!("Received message {}", message.pid);
+						info!("Received message {}", message.pid);
 						// info!("Received message {:?}", json!(message));
 						message_sender.send(message).await.expect("Error sending message");
 					}

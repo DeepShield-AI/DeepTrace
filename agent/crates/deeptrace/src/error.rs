@@ -11,4 +11,6 @@ pub enum AgentError {
 	Trace(#[from] observ_trace::TraceError),
 	#[error("Sender module error: {0}")]
 	Sender(#[from] observ_sender::SendError),
+	#[error("Elastic sender error: {0}")]
+	ElasticSender(#[from] observ_sender::elastic::ElasticError),
 }

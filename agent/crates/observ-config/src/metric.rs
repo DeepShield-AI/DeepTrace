@@ -6,6 +6,7 @@ pub struct MetricConfig {
 	/// sample interval in seconds
 	#[serde(deserialize_with = "deserialize_seconds")]
 	pub interval: Duration,
+	pub sender: String,
 }
 
 fn deserialize_seconds<'de, D>(deserializer: D) -> Result<Duration, D::Error>

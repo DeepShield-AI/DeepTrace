@@ -1,10 +1,11 @@
 use super::AgentError;
+use arc_swap::access::Access;
 use codec::encode::json::{JsonEncoder, JsonEncoderBuilder};
 use log::{info, warn};
-use observ_config::Configurator;
+use observ_config::{Configurator, trace_config};
 use observ_core::Module;
 use observ_runtime::handle;
-use observ_sender::{Sender, file::FileSender};
+use observ_sender::{Sender, elastic::ElasticSender, file::FileSender};
 use observ_trace::TraceCollector;
 use tokio::{
 	sync::{mpsc, watch},
@@ -104,13 +105,13 @@ async fn run(
 	configurator.start()?;
 	info!("Starting configurator");
 	let (span_sender, span_receiver) = mpsc::channel(1024);
-	let mut span_transport = Sender::new(
-		"Span transport",
+	let mut trace_sender = Sender::new(
+		"Trace sender",
 		span_receiver,
-		FileSender::new("output/spans.json")?,
+		ElasticSender::new(trace_config().load().sender.clone())?,
 		JsonEncoderBuilder::new().build(),
 	);
-	span_transport.start()?;
+	trace_sender.start()?;
 
 	let mut trace_collector = TraceCollector::new(span_sender)?;
 	trace_collector.start()?;
@@ -127,7 +128,7 @@ async fn run(
 	}
 
 	trace_collector.stop().await?;
-	span_transport.stop().await?;
+	trace_sender.stop().await?;
 	configurator.stop().await?;
 
 	Ok(())
