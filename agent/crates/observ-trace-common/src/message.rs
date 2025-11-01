@@ -124,6 +124,7 @@ pub fn serialize_buffer<S>(i: &Buffer<MAX_PAYLOAD_SIZE>, serializer: S) -> Resul
 where
 	S: serde::Serializer,
 {
+	use core::ffi::CStr;
 	let s = CStr::from_bytes_until_nul(i.as_slice()).unwrap().to_str().unwrap();
 	serializer.serialize_str(s)
 }
