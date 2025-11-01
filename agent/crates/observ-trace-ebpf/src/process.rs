@@ -103,7 +103,7 @@ pub fn try_exit(
 	data.protocol = result.protocol;
 	data.seq = result.seq;
 	data.uuid = result.uuid;
-	// args.extract(&mut data.payload, ret)?;
+	args.extract(&mut data.payload, ret)?;
 
 	map.remove(&id).map_err(|_| MAP_DELETE_FAILED)?;
 
