@@ -1,13 +1,13 @@
 use anyhow::Result;
 use approx::relative_eq;
-use pretty_assertions::assert_eq;
 use observ_cpu::stat::Stat;
 use observ_disk::diskstat::{DISK_SECTOR_SIZE, DiskStat};
-use observ_fixtures::generators::{
-	FakeDiskStats, FakeInterfaces, FakeMemInfo, FakeStat, FakeVmStat,
-};
 use observ_memory::{meminfo::MemInfo, vmstat::VmStat};
 use observ_network::netdev::Interface;
+use pretty_assertions::assert_eq;
+use prism_fixtures::generators::{
+	FakeDiskStats, FakeInterfaces, FakeMemInfo, FakeStat, FakeVmStat,
+};
 use test_utils::convert::clock_ticks;
 use uom::si::{
 	information::{byte, kilobyte},

@@ -14,7 +14,7 @@ observ-disk.workspace = true
 observ-network.workspace = true
 observ-metric-utils.workspace = true
 
-observ-fixtures.workspace = true
+prism-fixtures.workspace = true
 test-utils.workspace = true
 
 anyhow.workspace = true

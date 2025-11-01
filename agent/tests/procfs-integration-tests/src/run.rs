@@ -1,6 +1,6 @@
 use crate::validators::Validator;
 use anyhow::{Result, anyhow};
-use observ_fixtures::generators::Generator;
+use prism_fixtures::generators::Generator;
 use std::{env, fs, path::Path};
 pub(crate) async fn single_test(test_id: usize, session_dir: &str) -> Result<()> {
 	// Create test directory structure: session_dir/test-{id}/procfs/
