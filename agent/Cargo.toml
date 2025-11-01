@@ -4,7 +4,7 @@ members = [
     "crates/*",
     # "libs/*",
     "xtask",
-    "tests/prism-fixtures"
+    "tests/*"
 ]
 exclude = [
     "crates/observ-trace-ebpf",
@@ -13,7 +13,7 @@ exclude = [
     "crates/observ-memory-ebpf",
     "crates/observ-network-ebpf"
 ]
-default-members = ["crates/prism", "crates/deeptrace", "tests/prism-fixtures"]
+default-members = ["crates/prism", "crates/deeptrace", "tests/*"]
 
 [workspace.package]
 authors = ["smore.ioki@gmail.com", "gyt22@mails.tsinghua.edu.cn"]
@@ -58,7 +58,7 @@ codec = { path = "crates/codec" }
 cow = { path = "crates/cow", features = ["serde"] }
 
 # test utils
-observ-fixtures = { path = "tests/observ-fixtures" }
+prism-fixtures = { path = "tests/prism-fixtures" }
 test-utils = { path = "tests/test-utils" }
 
 # other crates
@@ -78,6 +78,7 @@ cfg-if = { version = "1.0.3", default-features = false }
 chrono = { version = "0.4.42", default-features = false, features = ["clock", "serde"] }
 clap = { version = "4.5.48", default-features = false, features = ["color", "derive", "std", "error-context", "help", "usage"] }
 config = { version = "0.15.18", default-features = false, features = ["toml"] }
+crossbeam-channel = { version = "0.5.15", default-features = false }
 csv-core = { version = "0.1.12", default-features = false }
 dashmap = { version = "7.0.0-rc2", default-features = false }
 elasticsearch = { version = "9.1.0-alpha.1", default-features = false }
