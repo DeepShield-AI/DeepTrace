@@ -5,7 +5,7 @@ use crate::{
 };
 use aya_ebpf::{
 	check_bounds_signed,
-	helpers::{bpf_probe_read_kernel_str_bytes, r#gen}
+	helpers::{bpf_probe_read_kernel_str_bytes, r#gen},
 };
 use core::cmp::min;
 

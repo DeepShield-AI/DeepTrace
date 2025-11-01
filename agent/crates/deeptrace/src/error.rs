@@ -13,4 +13,6 @@ pub enum AgentError {
 	Sender(#[from] observ_sender::SendError),
 	#[error("Elastic sender error: {0}")]
 	ElasticSender(#[from] observ_sender::elastic::ElasticError),
+	#[error("Span constructor error: {0}")]
+	SpanConstructor(#[from] observ_trace::span::SpanError),
 }

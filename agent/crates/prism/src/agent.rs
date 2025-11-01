@@ -6,10 +6,7 @@ use observ_core::Module;
 use observ_metric::MetricCollector;
 use observ_runtime::handle;
 use observ_sender::{Sender, file::FileSender};
-use tokio::{
-	sync::{mpsc, watch},
-	task::JoinHandle,
-};
+use tokio::{sync::watch, task::JoinHandle};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub(crate) enum State {
@@ -106,7 +103,7 @@ async fn run(
 	info!("Start configurator");
 	configurator.start()?;
 	info!("Starting configurator");
-	let (metric_sender, metric_receiver) = mpsc::channel(1024);
+	let (metric_sender, metric_receiver) = crossbeam_channel::bounded(1024);
 	let mut metric_transport = Sender::new(
 		"Metric transport",
 		metric_receiver,

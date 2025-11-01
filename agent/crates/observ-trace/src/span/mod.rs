@@ -1,4 +1,5 @@
 use arc_swap::access::Access;
+use crossbeam_channel::{Receiver, Sender};
 use dashmap::DashMap;
 pub use error::SpanError;
 use log::info;
@@ -16,11 +17,7 @@ use std::{
 	},
 	time::{Duration, SystemTime},
 };
-use tokio::{
-	sync::mpsc::{Receiver, Sender},
-	task::JoinHandle,
-	time::Instant,
-};
+use tokio::{task::JoinHandle, time::Instant};
 
 mod error;
 
@@ -88,21 +85,15 @@ impl Cache {
 // we use Option to contain input and output
 pub struct SpanConstructor {
 	config: SpanAccess,
-	input: Option<Receiver<Message>>,
-	output: Option<Sender<Span>>,
+	input: Receiver<Message>,
+	output: Sender<Span>,
 	running: Arc<AtomicBool>,
 	handle: Option<JoinHandle<()>>,
 }
 
 impl SpanConstructor {
 	pub fn new(input: Receiver<Message>, output: Sender<Span>) -> Self {
-		Self {
-			config: span_config(),
-			input: Some(input),
-			output: Some(output),
-			running: Default::default(),
-			handle: None,
-		}
+		Self { config: span_config(), input, output, running: Default::default(), handle: None }
 	}
 }
 
@@ -121,8 +112,8 @@ impl Module for SpanConstructor {
 		info!("Span constructor started");
 
 		let config = self.config.load();
-		let mut input = self.input.take().ok_or(SpanError::MissingReceiver)?;
-		let output = self.output.take().ok_or(SpanError::MissingSender)?;
+		let input = self.input.clone();
+		let output = self.output.clone();
 		let running = Arc::clone(&self.running);
 
 		self.handle = Some(handle().spawn(async move {
@@ -130,7 +121,7 @@ impl Module for SpanConstructor {
 			let cleanup_interval = Duration::from_secs(config.cleanup_interval);
 			let mut last_cleanup = Instant::now();
 			while running.load(Ordering::Relaxed) {
-				if let Some(data) = input.recv().await {
+				if let Ok(data) = input.recv() {
 					let key = SessionKey::new(data.quintuple, data.protocol, data.uuid);
 					let mut entry =
 						cache.inner.entry(key).or_insert(CacheEntry::new(config.max_sockets));
@@ -150,7 +141,6 @@ impl Module for SpanConstructor {
 								{
 									output
 										.send(Span::new(data, prev).await)
-										.await
 										.expect("Failed to send span");
 								},
 								MessageType::Response
@@ -159,7 +149,6 @@ impl Module for SpanConstructor {
 								{
 									output
 										.send(Span::new(prev, data).await)
-										.await
 										.expect("Failed to send span");
 								},
 								_ if data.type_ != MessageType::Unknown => {

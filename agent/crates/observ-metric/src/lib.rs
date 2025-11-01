@@ -1,3 +1,4 @@
+use crossbeam_channel::Sender;
 pub use error::MetricError;
 use host::HostCollector;
 use log::{info, warn};
@@ -13,7 +14,7 @@ use std::{
 	},
 	time::Duration,
 };
-use tokio::{sync::mpsc::Sender, task::JoinHandle, time};
+use tokio::{task::JoinHandle, time};
 use tokio_stream::{StreamExt, wrappers::IntervalStream};
 mod error;
 mod host;
@@ -74,7 +75,7 @@ impl Module for MetricCollector {
 					}
 				}
 				let metrics = mem::take(&mut buffer);
-				output.send(metrics).await.map_err(|_| MetricError::Send)?;
+				output.send(metrics).map_err(|_| MetricError::Send)?;
 				// for metrics in buffer.drain(..) {
 				// 	if output.send(metrics).await.is_err() {
 				// 		warn!("Metric channel closed");

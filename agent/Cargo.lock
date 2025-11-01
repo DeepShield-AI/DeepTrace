@@ -98,6 +98,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
 
 [[package]]
+name = "approx"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cab112f0a86d568ea0e627cc1d6be74a1e9cd55214684db5561995f6dad897c6"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "arc-swap"
 version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -995,6 +1004,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "diff"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56254986775e3233ffa9c4d7d3faaf6d36a2c09d30b20687e9f88bc8bafc16c8"
 
 [[package]]
 name = "digest"
@@ -2333,6 +2348,7 @@ name = "observ-metric"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "crossbeam-channel",
  "log",
  "observ-core",
  "observ-cpu",
@@ -2405,12 +2421,14 @@ dependencies = [
  "bytes 1.10.1",
  "chrono",
  "codec",
+ "crossbeam-channel",
  "elasticsearch 9.1.0-alpha.1",
  "log",
  "observ-config",
  "observ-core",
  "observ-runtime",
  "serde",
+ "serde_json",
  "thiserror 2.0.17",
  "tokio",
 ]
@@ -2424,6 +2442,7 @@ dependencies = [
  "bytes 1.10.1",
  "chrono",
  "codec",
+ "crossbeam-channel",
  "dashmap",
  "ebpf-manager",
  "log",
@@ -2640,6 +2659,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pretty_assertions"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ae130e2f271fbc2ac3a40fb1d07180839cdbbe443c7a27e1e3c13c5cac0116d"
+dependencies = [
+ "diff",
+ "yansi",
+]
+
+[[package]]
 name = "prism"
 version = "0.1.0"
 dependencies = [
@@ -2647,6 +2676,7 @@ dependencies = [
  "arc-swap",
  "clap",
  "codec",
+ "crossbeam-channel",
  "env_logger",
  "log",
  "observ-config",
@@ -2711,6 +2741,31 @@ dependencies = [
  "syn",
  "version_check",
  "yansi",
+]
+
+[[package]]
+name = "procfs-integration-tests"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "approx",
+ "chrono",
+ "clap",
+ "observ-cpu",
+ "observ-disk",
+ "observ-memory",
+ "observ-metric-common",
+ "observ-metric-utils",
+ "observ-network",
+ "pretty_assertions",
+ "prism-fixtures",
+ "rand 0.10.0-rc.0",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "test-utils",
+ "tokio",
+ "uom",
 ]
 
 [[package]]
@@ -3436,6 +3491,14 @@ dependencies = [
  "once_cell",
  "rustix",
  "windows-sys 0.61.0",
+]
+
+[[package]]
+name = "test-utils"
+version = "0.1.0"
+dependencies = [
+ "libc 1.0.0-alpha.1",
+ "uom",
 ]
 
 [[package]]

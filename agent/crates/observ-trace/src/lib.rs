@@ -5,54 +5,41 @@ use aya::{
 	util::online_cpus,
 };
 use bytes::BytesMut;
+use crossbeam_channel::Sender;
 use ebpf_manager::utils::{optimal_page_count, unlock_memory};
 pub use error::TraceError;
-use log::{info, warn};
+use log::{debug, info, warn};
 use observ_config::{TraceAccess, TraceConfig, ebpf_config, trace_config};
 use observ_core::Module;
-use observ_event::span::Span;
 use observ_runtime::handle;
 use observ_trace_common::{Message, maps::EVENT_MAP};
-use span::SpanConstructor;
 use std::sync::{
 	Arc,
 	atomic::{AtomicBool, Ordering},
 };
-use tokio::{
-	sync::mpsc::{self, Sender},
-	task::JoinHandle,
-	time,
-};
+use tokio::{task::JoinHandle, time};
 
 mod ebpf;
 mod error;
-mod span;
+pub mod span;
 
 type Result<T> = std::result::Result<T, TraceError>;
 
 pub struct TraceCollector {
 	config: TraceAccess,
 	ebpf: Ebpf,
-	output: Sender<Span>,
-	span_constructor: Option<SpanConstructor>,
+	output: Sender<Message>,
 	running: Arc<AtomicBool>,
 	handles: Option<Vec<JoinHandle<Result<()>>>>,
 }
 
 impl TraceCollector {
-	pub fn new(output: Sender<Span>) -> Result<Self> {
+	pub fn new(output: Sender<Message>) -> Result<Self> {
 		info!("Initializing Trace Collector");
 		let config = trace_config();
 		unlock_memory();
 		let ebpf = ebpf::prepare_ebpf()?;
-		Ok(Self {
-			config,
-			ebpf,
-			output,
-			span_constructor: None,
-			running: Arc::new(AtomicBool::new(false)),
-			handles: None,
-		})
+		Ok(Self { config, ebpf, output, running: Arc::new(AtomicBool::new(false)), handles: None })
 	}
 }
 
@@ -74,10 +61,6 @@ impl Module for TraceCollector {
 		}
 
 		info!("Starting {} module...", self.name());
-		let (message_sender, message_receiver) = mpsc::channel(1024);
-		let span_sender = self.output.clone();
-		let mut span_constructor = SpanConstructor::new(message_receiver, span_sender);
-		span_constructor.start()?;
 
 		let config = self.config.load();
 		let ebpf_config = ebpf_config(&config.ebpf);
@@ -98,7 +81,7 @@ impl Module for TraceCollector {
 				cpu_id,
 				Some(optimal_page_count(size_of::<Message>(), max_buffered_events as usize)),
 			)?;
-			let message_sender = message_sender.clone();
+			let output = self.output.clone();
 			let run = Arc::clone(&running);
 
 			let handle = handle().spawn(async move {
@@ -119,16 +102,15 @@ impl Module for TraceCollector {
 
 					for buf in buffers.iter().take(events.read) {
 						let message = Message::decode(buf);
-						info!("Received message {}", message.pid);
+						debug!("Received message {}", message.pid);
 						// info!("Received message {:?}", json!(message));
-						message_sender.send(message).await.expect("Error sending message");
+						output.send(message).expect("Error sending message");
 					}
 				}
 				Ok(())
 			});
 			handles.push(handle);
 		}
-		self.span_constructor.replace(span_constructor);
 		self.handles.replace(handles);
 		Ok(())
 	}
@@ -145,9 +127,6 @@ impl Module for TraceCollector {
 			for thread in threads {
 				thread.abort();
 			}
-		}
-		if let Some(mut constructor) = self.span_constructor.take() {
-			constructor.stop().await?;
 		}
 		info!("{} stopped.", self.name());
 		Ok(())

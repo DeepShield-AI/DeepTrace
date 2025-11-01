@@ -10,7 +10,7 @@ use aya_ebpf::{
 	helpers::{bpf_get_current_pid_tgid, r#gen::bpf_ktime_get_ns},
 	programs::TracePointContext,
 };
-use aya_log_ebpf::info;
+use aya_log_ebpf::debug;
 use ebpf_common::{
 	alloc,
 	buffer::Buffer,
@@ -53,7 +53,7 @@ pub fn try_exit(
 
 	if !(0 < ret && ret <= MAX_PAYLOAD_SIZE as i64) {
 		map.remove(&id).map_err(|_| MAP_DELETE_FAILED)?;
-		info!(ctx, "invalid ret: {}", ret);
+		debug!(ctx, "invalid ret: {}", ret);
 		return Err(SYSCALL_PAYLOAD_LENGTH_INVALID);
 	}
 

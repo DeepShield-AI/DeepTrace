@@ -1,6 +1,6 @@
 use crate::{
-	cassandra::Cassandra, dns::DNS, http1::HTTP1, memcached::Memcached, mongodb::MongoDB,
-	mysql::MySQL, redis::Redis, rocketmq::RocketMQ, thrift::Thrift, Classification,
+	Classification, cassandra::Cassandra, dns::DNS, http1::HTTP1, memcached::Memcached,
+	mongodb::MongoDB, mysql::MySQL, redis::Redis, rocketmq::RocketMQ, thrift::Thrift,
 };
 use aya_ebpf::programs::TracePointContext;
 use ebpf_common::{

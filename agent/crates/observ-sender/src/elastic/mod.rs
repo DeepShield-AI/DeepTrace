@@ -8,9 +8,11 @@ use elasticsearch::{
 	},
 };
 pub use error::ElasticError;
+use log::info;
 use observ_config::{ElasticSenderConfig, elastic_sender_config};
 use observ_core::{Sendable, Sender};
 use serde::Serialize;
+use serde_json::json;
 use std::time::Duration;
 
 mod error;
@@ -42,19 +44,15 @@ impl ElasticSender {
 impl<S: Sendable + Serialize> Sender<S> for ElasticSender {
 	type Error = ElasticError;
 	async fn send(&mut self, item: BytesMut) -> Result<(), Self::Error> {
-		self.buf.push(BytesMut::from(
-			format!(
-				r#"{{
-					"index": {{
-						"_index": "{}"
-					}}
-				}}"#,
-				self.config.index_name
-			)
-			.as_bytes(),
-		));
+		let index = json!({
+			"index": {
+				"_index": self.config.index_name,
+			}
+		})
+		.to_string();
+		self.buf.push(BytesMut::from(index.as_bytes()));
 		self.buf.push(item);
-		if self.buf.len() > self.config.bulk_size * 1024 {
+		if self.buf.len() > self.config.bulk_size * 2 {
 			<Self as Sender<S>>::flush(self).await?;
 		}
 		Ok(())
@@ -62,13 +60,9 @@ impl<S: Sendable + Serialize> Sender<S> for ElasticSender {
 
 	async fn flush(&mut self) -> Result<(), Self::Error> {
 		let bulk_body = self.buf.drain(..).collect();
-		let response = self
-			.client
-			.bulk(BulkParts::Index(self.config.index_name.as_str()))
-			.body(bulk_body)
-			.send()
-			.await?;
+		let response = self.client.bulk(BulkParts::None).body(bulk_body).send().await?;
 		let status = response.status_code();
+		info!("Elastic response: {}", status);
 		if !status.is_success() {
 			let err = response.text().await?;
 

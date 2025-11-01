@@ -23,6 +23,7 @@ observ-metric-utils.workspace = true
 observ-network.workspace = true
 observ-runtime.workspace = true
 
+crossbeam-channel.workspace = true
 log.workspace = true
 thiserror.workspace = true
 tokio.workspace = true

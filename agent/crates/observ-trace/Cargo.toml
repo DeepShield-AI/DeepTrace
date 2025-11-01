@@ -25,6 +25,7 @@ arc-swap.workspace = true
 aya.workspace = true
 bytes.workspace = true
 chrono.workspace = true
+crossbeam-channel.workspace = true
 dashmap.workspace = true
 log.workspace = true
 lru.workspace = true

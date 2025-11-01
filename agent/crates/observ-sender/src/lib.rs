@@ -1,5 +1,6 @@
 use bytes::BytesMut;
 use codec::encode::Encoder;
+use crossbeam_channel::{Receiver, RecvError};
 pub use error::SendError;
 use log::{info, warn};
 use observ_core::{Module, Sendable};
@@ -8,7 +9,7 @@ use std::sync::{
 	Arc,
 	atomic::{AtomicBool, Ordering},
 };
-use tokio::{sync::mpsc::Receiver, task::JoinHandle};
+use tokio::task::JoinHandle;
 pub mod elastic;
 mod error;
 pub mod file;
@@ -20,7 +21,7 @@ where
 	E: Encoder<T>,
 {
 	name: &'static str,
-	receiver: Option<Receiver<T>>,
+	receiver: Receiver<T>,
 	encoder: Option<E>,
 	sender: Option<S>,
 	running: Arc<AtomicBool>,
@@ -37,7 +38,7 @@ where
 		Self {
 			name,
 			running: Arc::new(AtomicBool::new(false)),
-			receiver: Some(receiver),
+			receiver,
 			sender: Some(sender),
 			encoder: Some(encoder),
 			handle: None,
@@ -67,21 +68,21 @@ where
 		}
 		let name = self.name.to_string();
 		let running = Arc::clone(&self.running);
-		let mut receiver = self.receiver.take().unwrap();
+		let receiver = self.receiver.clone();
 		let mut sender = self.sender.take().unwrap();
 		let mut encoder = self.encoder.take().unwrap();
 		self.handle = Some(handle().spawn(async move {
 			while running.load(Ordering::Relaxed) {
-				match receiver.recv().await {
-					Some(message) => {
+				match receiver.recv() {
+					Ok(message) => {
 						// debug!("Sending message");
 						let mut encoded = BytesMut::new();
 						encoder.encode(message, &mut encoded)?;
 						// debug!("Encoded message: {encoded:?}");
 						sender.send(encoded).await?;
 					},
-					None => {
-						warn!("Receiver disconnected, stopping transport.");
+					Err(RecvError) => {
+						warn!("Sender receiver disconnected.");
 						break;
 					},
 				}

@@ -6,7 +6,7 @@ use observ_config::{Configurator, trace_config};
 use observ_core::Module;
 use observ_runtime::handle;
 use observ_sender::{Sender, elastic::ElasticSender, file::FileSender};
-use observ_trace::TraceCollector;
+use observ_trace::{TraceCollector, span::SpanConstructor};
 use tokio::{
 	sync::{mpsc, watch},
 	task::JoinHandle,
@@ -104,16 +104,17 @@ async fn run(
 	info!("Start configurator");
 	configurator.start()?;
 	info!("Starting configurator");
-	let (span_sender, span_receiver) = mpsc::channel(1024);
-	let mut trace_sender = Sender::new(
-		"Trace sender",
-		span_receiver,
-		ElasticSender::new(trace_config().load().sender.clone())?,
-		JsonEncoderBuilder::new().build(),
-	);
+	let (message_sender, message_receiver) = crossbeam_channel::bounded(1024);
+	let (span_sender, span_receiver) = crossbeam_channel::bounded(1024);
+	let sender = ElasticSender::new(trace_config().load().sender.clone())?;
+	let mut trace_sender =
+		Sender::new("Trace sender", span_receiver, sender, JsonEncoderBuilder::new().build());
 	trace_sender.start()?;
 
-	let mut trace_collector = TraceCollector::new(span_sender)?;
+	let mut span_constructor = SpanConstructor::new(message_receiver, span_sender);
+	span_constructor.start()?;
+
+	let mut trace_collector = TraceCollector::new(message_sender)?;
 	trace_collector.start()?;
 
 	let _ = state_tx.send(State::Running);
@@ -128,6 +129,7 @@ async fn run(
 	}
 
 	trace_collector.stop().await?;
+	span_constructor.stop().await?;
 	trace_sender.stop().await?;
 	configurator.stop().await?;
 
