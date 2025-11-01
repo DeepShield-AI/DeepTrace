@@ -56,4 +56,4 @@ export RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup
 
 sudo docker run --privileged --rm -i -v $(pwd):/DeepTrace 47.97.67.233:5000/deepshield/deeptrace bash -c \
 'cd /DeepTrace/agent &&
-cargo xtask build --release'
+cargo xtask build --profile release'

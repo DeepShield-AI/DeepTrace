@@ -2,4 +2,4 @@
 set -euo pipefail
 
 cd ./agent
-./target/release/agent -f ./config/default.toml > /dev/null 2>&1 & disown
+RUST_LOG=info ./target/x86_64-unknown-linux-gnu/release/deeptrace -c config/deeptrace.toml > /dev/null 2>&1 & disown
