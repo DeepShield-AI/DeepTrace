@@ -1,42 +1,83 @@
 [elastic]  # Elasticsearch related configuration
 elastic_password = "xxx"         # Elasticsearch user password
-port = 9200                      # Elasticsearch service port
-kibana_password = "xxx"          # Kibana user password
-bulk_size = 1024                 # Bulk write size
-request_timeout = 10             # Request timeout (seconds)
-agent_status_index = "agent_status"  # Agent status index name
-username = "elastic"             # Elasticsearch username
 
 [server]
 ip  = "xxx"                      # The external IP address of the host running the DeepTrace server
-port = 7901                      # DeepTrace server port
-path = "deeptrace/ws"            # DeepTrace websocket path
+
 
 # ========== agent1 configuration ==========
 [[agents]]
-  [agents.agent_info]  # Basic agent information
-  agent_name = "xxx"           # Agent name (unique identifier)
+  [agents.agent]
+  name = "xxx"              # Agent name
   user_name = "xxx"            # Username for SSH login
-  host_ip = "xxx"              # Agent host IP address
-  ssh_port = "xxx"             # SSH port
-  host_password = "xxx"        # Host password
-  deeptrace_port = 52001       # DeepTrace service port
-  workers = 16                 # Number of worker threads
+  host_ip = "xxx"        # Agent host IP address
+  ssh_port = "xxx"                 # SSH port
+  host_password = "xxx"     # Host password
 
-  [agents.span]
-  batch_size = 1024            # Batch size for span data
+  [agents.metric]
+  interval = 10
+  sender = "metric"
 
-  [agents.sender]  # Data sending related configuration
-  mem_buffer_size = 16         # Memory buffer size
-  file_buffer_size = 32        # File buffer size
-  file_size_limit = 1024       # File size limit
-  batch_size = 1024            # Batch sending size
+  [agents.sender.elastic.trace]
+  # path to the file where metrics will be written
+  node_url = "http://localhost:9200"
+  username = "elastic"
+  password = "***"
+  request_timeout = 10
+  index_name = "agent1"
+  bulk_size = 64
 
-  [agents.trace]  # eBPF configuration
-  pids = [3056354, 3056217, 3056210]  # List of process PIDs to be traced
+  [agents.sender.file.metric]
+  # path to the file where metrics will be written
+  path = "metrics.csv"
+  rotate = true
+  # max size in megabytes of the metrics file before it gets rotated
+  max_size = 512
+  # max time in days to retain old metrics files
+  max_age = 6
+  # rotate time in days to rotate the metrics file
+  rotate_time = 11
+  # data format
+  data_format = "%Y%m%d"
 
-  [agents.api]  # Agent API service configuration
-  port = 7899                   # API service port
-  address = "0.0.0.0"           # API listening address
-  workers = 1                   # Number of API service threads
-  ident = "deeptrace"           # Service identifier
+  # [sender.elastic]
+
+  [agents.trace]
+  ebpf = "trace"
+  sender = "trace"
+
+  [agents.trace.span]
+  cleanup_interval = 30
+  max_sockets = 1024
+
+  [agents.ebpf.trace]
+  # 0 = off, 1 = debug, 3 = verbose, 4 = stats
+  log_level = 1
+  pids = [523094]
+  max_buffered_events = 128
+  enabled_probes = [
+      "sys_enter_read",
+      "sys_exit_read",
+      "sys_enter_readv",
+      "sys_exit_readv",
+      "sys_enter_recvfrom",
+      "sys_exit_recvfrom",
+      "sys_enter_recvmsg",
+      "sys_exit_recvmsg",
+      "sys_enter_recvmmsg",
+      "sys_exit_recvmmsg",
+
+      "sys_enter_write",
+      "sys_exit_write",
+      "sys_enter_writev",
+      "sys_exit_writev",
+      "sys_enter_sendto",
+      "sys_exit_sendto",
+      "sys_enter_sendmsg",
+      "sys_exit_sendmsg",
+      "sys_enter_sendmmsg",
+      "sys_exit_sendmmsg",
+
+      "sys_exit_socket",
+      "sys_enter_close"
+  ]

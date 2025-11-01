@@ -6,8 +6,8 @@ ip  = "xxx"                      # The external IP address of the host running t
 
 # ========== agent1 configuration ==========
 [[agents]]
-  [agents.agent_info]  # Basic agent information
-  agent_name = "xxx"           # Agent name
+  [agents.agent]  # Basic agent information
+  name = "xxx"           # Agent name
   user_name = "xxx"            # Username for SSH login
   host_ip = "xxx"              # Agent host IP address
   ssh_port = "xxx"             # SSH port

@@ -4,6 +4,7 @@ import requests
 from database.src.utils import es_write_agent_config
 import time
 import threading
+import toml
 
 
 # 管理agent状态：alive、处理延迟、条目、
@@ -20,19 +21,13 @@ class Agent:
         self.server_config = server_config
         self.agent_config = agent_config
         self.agent_info = agent_config['agent_info']
-        self.sender = agent_config['sender']
-        self.trace = agent_config['trace']
         self.elastic_config = elastic_config
-        self.api = agent_config['api']
-
         self.agent_name = self.agent_info['agent_name']
         self.host_ip = self.agent_info['host_ip']
         self.ssh_port = self.agent_info['ssh_port']
         self.host_password = self.agent_info['host_password']
         self.user_name = self.agent_info['user_name']
-        # self.code_path = self.expand_path(self.agent_info['code_path'])
         self.code_path = '/tmp'
-        # es_write_agent_config(self.agent_config, self.elastic_config, self.server_config)
         
 
 
@@ -71,61 +66,39 @@ class Agent:
 
 
     def sync_config(self):
-        toml_content = f"""
-[agent]
-name = "{self.agent_name}"
-workers = {self.agent_info['workers']}
-state_index = "{self.elastic_config['agent_status_index']}"
-# channel_size = 4096
+        toml_dict = {'agent': {'name': self.agent_name}}
 
-[server]
-ip  = "{self.server_config['ip']}"
-port = {self.server_config['port']}
-path = "{self.server_config['path']}"
+        # 复制存在的区块
+        for key in ('metric', 'sender', 'trace', 'ebpf'):
+            val = self.agent_config.get(key)
+            if val is not None:
+                toml_dict[key] = val
 
-[api]
-address = "{self.api['address']}"
-port = {self.api['port']}
-workers = {self.api['workers']}
-ident = "{self.api['ident']}"
+        # 处理可能存在的顶级 span 区块，放到 trace.span 中
+        if 'span' in self.agent_config:
+            if 'trace' not in toml_dict:
+                toml_dict['trace'] = {}
+            toml_dict['trace']['span'] = self.agent_config['span']
+        
+        toml_dict['sender']['elastic']['trace']['node_url'] = f"http://{self.elastic_config['address']}:{self.elastic_config['port']}"
+        toml_dict['sender']['elastic']['trace']['password'] = self.elastic_config['elastic_password']
+        toml_dict['sender']['elastic']['trace']['index_name'] = f'spans_{self.agent_name}'
 
-[sender]
-batch_size = {self.sender['batch_size']}
+        # 生成 TOML 内容
+        toml_content = toml.dumps(toml_dict)
+        # print(toml_content)
 
-[span]
-batch_size = {self.agent_config['span']['batch_size']}
-
-[sender.flat_file]
-mem_buffer_size = {self.sender['mem_buffer_size']}
-file_buffer_size = {self.sender['file_buffer_size']}
-file_size_limit = {self.sender['file_size_limit']}
-
-[sender.elastic]
-node_url = "http://{self.server_config['ip']}:{self.elastic_config['port']}"
-username = "{self.elastic_config['username']}"
-password = "{self.elastic_config['elastic_password']}"
-request_timeout = {self.elastic_config['request_timeout']}
-index_name = "{self.sender['index_name']}"
-bulk_size = {self.elastic_config['bulk_size']}
-
-[trace]
-pids = {self.trace['pids']}
-
-[provenance]
-pids = []
-"""
-        print(toml_content)
         # 目标文件路径
-        remote_file_path = f"{self.code_path}/DeepTrace/agent/config/default.toml"
+        remote_file_path = f"{self.code_path}/DeepTrace/agent/config/deeptrace.toml"
 
         try:
             # 将 toml_content 写入到远程主机的目标文件
             self.connect()
             sftp = self.ssh_client.open_sftp()
             
-            tmp_file = f"/tmp/default.toml"
-            with sftp.file(tmp_file, 'w') as remote_file:
-                remote_file.write(toml_content.strip())
+            tmp_file = f"/tmp/deeptrace.toml"
+            with sftp.file(tmp_file, 'wb') as remote_file:
+                remote_file.write(toml_content.encode('utf-8'))
             sftp.close()
             
             move_cmd = f"echo {self.host_password} | sudo -S mv {tmp_file} {remote_file_path}"
@@ -217,11 +190,11 @@ pids = []
                 self.trace['pids'] = []
                 return 
             print(f'{self.agent_name}: 获取进程成功')
-            self.trace['pids'] = [
+            self.agent_config['ebpf']['trace']['pids'] = [
                 int(pid) for pid in output.strip().split('\n')
                 if pid.strip().isdigit()
             ]
-            print(f'{self.agent_name}: 进程列表 {self.trace["pids"]}')
+            print(f'{self.agent_name}: 进程列表 {self.agent_config["ebpf"]["trace"]["pids"]}')
             return output
 
     def run(self):
@@ -344,7 +317,7 @@ pids = []
         try:
             pods_json = json.loads(output)
         except Exception as e:
-            print(f"{self.agent_name}: 解析 pod json 失败: {str(e)}")
+            # print(f"{self.agent_name}: 解析 pod json 失败: {str(e)}")
             return []
 
         for pod in pods_json.get("items", []):
