@@ -1,6 +1,9 @@
+
+import copy
 import toml
 
 config_path = './config/config.toml'
+default_path = './config/full.toml'
 
 def read_db_config():
     with open(config_path, "r") as f:
@@ -14,65 +17,91 @@ def read_db_config():
     
     return elastic_pwd, server_ip
 
+def _deep_merge(default: dict, override: dict) -> dict:
+    """
+    递归合并：override 中的值覆盖 default。list/primitive 类型直接替换。
+    """
+    result = copy.deepcopy(default) if default is not None else {}
+    for k, v in (override or {}).items():
+        if k in result and isinstance(result[k], dict) and isinstance(v, dict):
+            result[k] = _deep_merge(result[k], v)
+        else:
+            result[k] = copy.deepcopy(v)
+    return result
+
 def load_agents():
     from controller.src.agent import Agent
+
+    # 读取默认模板和用户配置
+    default_conf = {}
+
+    with open(default_path, 'r') as f:
+        default_conf = toml.load(f)
+
     with open(config_path, 'r') as f:
-        config = toml.load(f)
-    elastic_config = config.get('elastic', {})
-    if 'port' not in elastic_config:
-        elastic_config['port'] = 9200
-    if 'username' not in elastic_config:
-        elastic_config['username'] = 'elastic'
-    if 'request_timeout' not in elastic_config:
-        elastic_config['request_timeout'] = 10
-    if 'bulk_size' not in elastic_config:
-        elastic_config['bulk_size'] = 10
-    if 'agent_status_index' not in elastic_config:
-        elastic_config['agent_status_index'] = 'agent_status'
-    server_config = config.get('server', {})
+        user_conf = toml.load(f)
+
+
+    server_config = user_conf.get('server', {})
+
+        # elastic defaults (保留 elastic 部分默认项)
+    elastic_config = user_conf.get('elastic', {})
+    elastic_config['address'] = server_config.get('ip', 'localhost')
+    elastic_config.setdefault('port', 9200)
+    elastic_config.setdefault('username', 'elastic')
+    elastic_config.setdefault('request_timeout', 10)
+    elastic_config.setdefault('bulk_size', 10)
+
     agent_dict = {}
-    if 'path' not in server_config:
-        server_config['path'] = 'deeptrace/ws'
-    if 'port' not in server_config:
-        server_config['port'] = 7901
-    for agent_config in config.get('agents', []):
-        if 'deeptrace_port' not in agent_config['agent_info']:
-            agent_config['agent_info']['deeptrace_port'] = 52001
-        if 'workers' not in agent_config['agent_info']:
-            agent_config['agent_info']['workers'] = 16
-        if 'span' not in agent_config:
-            agent_config['span'] = {'batch_size': 10}
-        if 'sender' not in agent_config:
-            agent_config['sender'] = {'index_name': f"spans_{agent_config['agent_info']['agent_name']}",
-                                      'mem_buffer_size': 1,
-                                      'file_buffer_size': 32,
-                                      'file_size_limit': 1024,
-                                      'batch_size': 10}
-        else:
-            if 'index_name' not in agent_config['sender']:
-                agent_config['sender']['index_name'] = f"spans_{agent_config['agent_info']['agent_name']}"
-            if 'mem_buffer_size' not in agent_config['sender']:
-                agent_config['sender']['mem_buffer_size'] = 1
-            if 'file_buffer_size' not in agent_config['sender']:
-                agent_config['sender']['file_buffer_size'] = 32
-            if 'file_size_limit' not in agent_config['sender']:
-                agent_config['sender']['file_size_limit'] = 1024
-            if 'batch_size' not in agent_config['sender']:
-                agent_config['sender']['batch_size'] = 1024
-        if 'trace' not in agent_config:
-            agent_config['trace'] = {'pids': []}
-        if 'api' not in agent_config:
-            agent_config['api'] = {'port': 7899, 'address': '0.0.0.0', 'workers': 1, 'ident': 'deeptrace'}
-        else:
-            if 'port' not in agent_config['api']:
-                agent_config['api']['port'] = 7899
-            if 'address' not in agent_config['api']:
-                agent_config['api']['address'] = '0.0.0.0'
-            if 'workers' not in agent_config['api']:
-                agent_config['api']['workers'] = 1
-            if 'ident' not in agent_config['api']:
-                agent_config['api']['ident'] = 'deeptrace'
-        agent_dict[agent_config['agent_info']['agent_name']] = Agent(agent_config, elastic_config, server_config)
+
+    # 选择默认模板中的第一个 agents 项作为模板（如果存在）
+    default_agents = default_conf.get('agents', [])
+    default_template = default_agents[0] if default_agents else {}
+
+    for user_item in user_conf.get('agents', []):
+        # 用户项必须包含 agent 区块
+        if 'agent' not in user_item:
+            raise KeyError(f"每个 [[agents]] 项必须包含 [agents.agent] 区块，问题项：{user_item}")
+
+        # 合并：基于默认模板合并用户项（用户覆盖默认）
+        merged_item = _deep_merge(default_template, user_item)
+
+        raw_agent = merged_item.get('agent', {})
+        # 名称支持 agent_name 或 name
+        agent_name = raw_agent.get('agent_name') or raw_agent.get('name')
+        host_password = raw_agent.get('host_password')
+        host_ip = raw_agent.get('host_ip')
+
+        # 必填字段检查
+        if not agent_name:
+            raise KeyError(f"agents 配置缺少必填字段 agent_name/name: {raw_agent}")
+        if not host_password:
+            raise KeyError(f"agents 配置缺少必填字段 host_password: {raw_agent}")
+        if not host_ip:
+            raise KeyError(f"agents 配置缺少必填字段 host_ip: {raw_agent}")
+
+        # 构造 agent_info（使用合并后的值）
+        agent_info = {
+            'agent_name': agent_name,
+            'host_password': host_password,
+            'host_ip': host_ip,
+        }
+        if 'user_name' in raw_agent:
+            agent_info['user_name'] = raw_agent['user_name']
+        if 'ssh_port' in raw_agent:
+            try:
+                agent_info['ssh_port'] = int(raw_agent['ssh_port'])
+            except Exception:
+                agent_info['ssh_port'] = raw_agent['ssh_port']
+
+        # 组装 agent_config：从合并后的 item 中保留存在的区块（metric/sender/trace/ebpf/span/api）
+        agent_config = {'agent_info': agent_info}
+        for key in ('metric', 'sender', 'trace', 'ebpf', 'api', 'span'):
+            if key in merged_item:
+                agent_config[key] = merged_item[key]
+
+        agent_dict[agent_name] = Agent(agent_config, elastic_config, server_config)
+
     return agent_dict
 
 def get_server_mode():
