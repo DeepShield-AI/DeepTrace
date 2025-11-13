@@ -52,8 +52,8 @@ pub fn try_exit(
 	};
 
 	if !(0 < ret && ret <= MAX_PAYLOAD_SIZE as i64) {
-		map.remove(&id).map_err(|_| MAP_DELETE_FAILED)?;
 		debug!(ctx, "invalid ret: {}", ret);
+		map.remove(&id).map_err(|_| MAP_DELETE_FAILED)?;
 		return Err(SYSCALL_PAYLOAD_LENGTH_INVALID);
 	}
 

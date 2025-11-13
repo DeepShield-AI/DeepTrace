@@ -68,10 +68,11 @@ graph TB
         end
     end
     
-    AGENT1 --> SERVER
-    AGENT2 --> SERVER
-    AGENTN --> SERVER
+    AGENT1 --> ES
+    AGENT2 --> ES
+    AGENTN --> ES
     
+    ES --> SERVER
     SERVER --> CORRELATOR
     CORRELATOR --> ASSEMBLER
     ASSEMBLER --> ES
@@ -103,20 +104,20 @@ The agent is deployed on each host and is responsible for:
 - **Process Filtering**: Monitors only relevant applications
 
 #### Communication
-- **Secure Transmission**: Encrypted data transfer to server
-- **Batch Processing**: Efficient bulk data transmission
-- **Heartbeat Monitoring**: Maintains connection health
-- **Configuration Sync**: Receives updates from server
+- **Direct Storage**: Sends constructed spans directly to Elasticsearch
+- **Batch Processing**: Efficient bulk data transmission to storage
+- **Connection Management**: Maintains Elasticsearch connection health
+- **Configuration Management**: Receives configuration from management interface
 
 ### 2. DeepTrace Server
 
 The server provides centralized processing and management:
 
 #### Span Management
-- **Data Ingestion**: Receives spans from multiple agents
-- **Validation**: Ensures data integrity and completeness
-- **Storage**: Persists spans in Elasticsearch
-- **Indexing**: Creates efficient query indexes
+- **Data Retrieval**: Pulls spans from Elasticsearch for processing
+- **Validation**: Ensures data integrity and completeness during retrieval
+- **Query Optimization**: Efficiently queries spans for correlation
+- **Batch Processing**: Processes spans in optimized batches
 
 #### Correlation Engine
 - **Algorithm Selection**: Multiple correlation strategies
@@ -167,16 +168,14 @@ sequenceDiagram
     participant App as Application
     participant eBPF as eBPF Program
     participant Agent as DeepTrace Agent
-    participant Server as DeepTrace Server
     participant ES as Elasticsearch
     
     App->>eBPF: Network System Call
     eBPF->>eBPF: Extract Metadata
-    eBPF->>Agent: Send Span Data
+    eBPF->>Agent: Send Raw Data
+    Agent->>Agent: Construct Span
     Agent->>Agent: Process & Buffer
-    Agent->>Server: Batch Transmission
-    Server->>Server: Validate & Enrich
-    Server->>ES: Store Span
+    Agent->>ES: Store Span Directly
 ```
 
 ### 2. Correlation Flow
@@ -188,13 +187,13 @@ sequenceDiagram
     participant ES as Elasticsearch
     participant Assembler as Trace Assembler
     
-    Server->>Correlator: Trigger Correlation
-    Correlator->>ES: Query Uncorrelated Spans
-    ES->>Correlator: Return Span Data
-    Correlator->>Correlator: Apply Algorithm
-    Correlator->>ES: Store Correlations
-    Correlator->>Assembler: Trigger Assembly
-    Assembler->>ES: Build Traces
+    Server->>ES: Query Uncorrelated Spans
+    ES->>Server: Return Span Data
+    Server->>Correlator: Process Spans
+    Correlator->>Correlator: Apply Correlation Algorithm
+    Correlator->>Assembler: Send Correlated Spans
+    Assembler->>Assembler: Build Complete Traces
+    Assembler->>ES: Store Assembled Traces
 ```
 
 ### 3. Query Flow
@@ -237,7 +236,8 @@ graph TB
         WEB[Web UI]
         
         APPS --> AGENT
-        AGENT --> SERVER
+        AGENT --> ES
+        ES --> SERVER
         SERVER --> ES
         ES --> WEB
     end
@@ -274,9 +274,13 @@ graph TB
         ESN[(ES Node N)]
     end
     
-    HOST1 --> LB
-    HOST2 --> LB
-    HOSTN --> LB
+    HOST1 --> ES1
+    HOST2 --> ES2
+    HOSTN --> ESN
+    
+    ES1 --> LB
+    ES2 --> LB
+    ESN --> LB
     
     LB --> SERVER1
     LB --> SERVER2
@@ -318,7 +322,8 @@ graph TB
     end
     
     PODS -.-> AGENTS
-    AGENTS --> SERVERS
+    AGENTS --> ES_CLUSTER
+    ES_CLUSTER --> SERVERS
     SERVERS --> ES_CLUSTER
     CONFIG --> SERVERS
     SECRETS --> SERVERS
@@ -424,14 +429,6 @@ graph TB
 | **Data Transmission** | 1-5ms | < 10ms |
 | **Correlation** | 100-500ms | < 1s |
 | **Query Response** | 10-100ms | < 200ms |
-
-### 3. Resource Usage
-
-| Component | CPU Usage | Memory Usage | Network Usage |
-|-----------|-----------|--------------|---------------|
-| **Agent** | 2-5% | 50-200MB | 1-10MB/s |
-| **Server** | 10-30% | 1-4GB | 10-100MB/s |
-| **Elasticsearch** | 20-60% | 4-16GB | 5-50MB/s |
 
 ---
 

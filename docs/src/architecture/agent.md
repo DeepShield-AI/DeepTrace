@@ -1,10 +1,10 @@
 # Agent Architecture
 
-The DeepTrace Agent is a lightweight, high-performance component responsible for collecting distributed tracing data from applications without requiring code modifications. This document provides a detailed overview of the agent's architecture, components, and operational principles.
+The DeepTrace Agent is a lightweight, high-performance Rust-based component responsible for collecting distributed tracing data from applications without requiring code modifications. This document provides a detailed overview of the agent's architecture, components, and operational principles based on the actual implementation.
 
 ## Overview
 
-The DeepTrace Agent operates as a system-level service that uses eBPF (Extended Berkeley Packet Filter) technology to transparently capture network communications and system calls. It processes this raw data into structured spans and transmits them to the DeepTrace Server for correlation and analysis.
+The DeepTrace Agent operates as a system-level service that uses eBPF (Extended Berkeley Packet Filter) technology to transparently capture network communications and system calls. It processes this raw data into structured spans and transmits them directly to Elasticsearch for storage and later processing by the DeepTrace Server.
 
 ## Architecture Diagram
 
@@ -18,61 +18,53 @@ graph TB
     
     subgraph "DeepTrace Agent"
         subgraph "eBPF Layer"
-            KPROBE[Kernel Probes]
-            UPROBE[User Probes]
-            TRACEPOINT[Tracepoints]
-            RINGBUF[Ring Buffer]
+            TRACE_MODULE[TraceModule/TraceCollector]
+            EBPF_PROGS[eBPF Programs]
+            SYSCALLS[System Call Hooks]
         end
         
         subgraph "Processing Layer"
-            COLLECTOR[Span Collector]
-            PROCESSOR[Data Processor]
-            CORRELATOR[Local Correlator]
-            FILTER[Filter Engine]
+            SPAN_CONSTRUCTOR[SpanConstructor]
+            MESSAGE_QUEUE[Message Queue]
         end
         
-        subgraph "Transport Layer"
-            BUFFER[Memory Buffer]
-            SENDER[Batch Sender]
-            RETRY[Retry Logic]
+        subgraph "Sender Layer"
+            SENDER_PROCESS[SenderProcess]
+            ELASTIC_SENDER[ElasticSender]
+            FILE_SENDER[FlatFile]
         end
         
         subgraph "Management Layer"
-            CONFIG[Configuration Manager]
-            HEALTH[Health Monitor]
-            METRICS[Metrics Collector]
-            API[Control API]
+            CONFIGURATOR[Configurator]
+            SYNCHRONIZER[Synchronizer]
+            METRIC_COLLECTOR[MetricCollector]
+            API_SERVER[Rocket API Server]
         end
     end
     
     subgraph "External Systems"
-        SERVER[DeepTrace Server]
-        MONITOR[Monitoring System]
+        ES[(Elasticsearch)]
+        CONFIG_API[Configuration API]
     end
     
-    APP1 --> KPROBE
-    APP2 --> UPROBE
-    APP3 --> TRACEPOINT
+    APP1 --> SYSCALLS
+    APP2 --> SYSCALLS
+    APP3 --> SYSCALLS
     
-    KPROBE --> RINGBUF
-    UPROBE --> RINGBUF
-    TRACEPOINT --> RINGBUF
+    SYSCALLS --> EBPF_PROGS
+    EBPF_PROGS --> TRACE_MODULE
+    TRACE_MODULE --> MESSAGE_QUEUE
+    MESSAGE_QUEUE --> SPAN_CONSTRUCTOR
+    SPAN_CONSTRUCTOR --> SENDER_PROCESS
+    SENDER_PROCESS --> ELASTIC_SENDER
+    SENDER_PROCESS --> FILE_SENDER
+    ELASTIC_SENDER --> ES
     
-    RINGBUF --> COLLECTOR
-    COLLECTOR --> PROCESSOR
-    PROCESSOR --> CORRELATOR
-    CORRELATOR --> FILTER
-    FILTER --> BUFFER
-    BUFFER --> SENDER
-    SENDER --> SERVER
-    
-    CONFIG --> PROCESSOR
-    CONFIG --> FILTER
-    CONFIG --> SENDER
-    
-    HEALTH --> METRICS
-    METRICS --> MONITOR
-    API --> CONFIG
+    CONFIGURATOR --> SPAN_CONSTRUCTOR
+    CONFIGURATOR --> SENDER_PROCESS
+    SYNCHRONIZER --> API_SERVER
+    API_SERVER --> CONFIG_API
+    METRIC_COLLECTOR --> FILE_SENDER
 ```
 
 ## Core Components
@@ -81,217 +73,201 @@ graph TB
 
 The eBPF layer provides the foundation for non-intrusive data collection:
 
-#### Kernel Probes (kprobes)
-- **Purpose**: Intercept kernel function calls
-- **Target Functions**: `tcp_sendmsg`, `tcp_recvmsg`, `tcp_connect`, `tcp_close`
-- **Data Captured**: Network I/O operations, connection lifecycle events
-- **Performance Impact**: Minimal overhead (~1-3% CPU)
+#### TraceModule/TraceCollector
+- **Purpose**: Main eBPF program management and data collection
+- **Implementation**: Rust-based eBPF program loader and manager
+- **Target Processes**: Configurable via PIDs in configuration
+- **Data Collection**: Network system calls and socket operations
 
-#### User Probes (uprobes)
-- **Purpose**: Intercept user-space function calls
-- **Target Functions**: SSL/TLS library functions, HTTP parsers
-- **Data Captured**: Encrypted traffic metadata, application-level protocols
-- **Dynamic Attachment**: Automatically detects and attaches to relevant processes
+#### System Call Hooks
+- **Monitored Calls**: 
+  - **Read Operations**: `sys_enter_read`, `sys_exit_read`, `sys_enter_readv`, `sys_exit_readv`
+  - **Receive Operations**: `sys_enter_recvfrom`, `sys_exit_recvfrom`, `sys_enter_recvmsg`, `sys_exit_recvmsg`, `sys_enter_recvmmsg`, `sys_exit_recvmmsg`
+  - **Write Operations**: `sys_enter_write`, `sys_exit_write`, `sys_enter_writev`, `sys_exit_writev`
+  - **Send Operations**: `sys_enter_sendto`, `sys_exit_sendto`, `sys_enter_sendmsg`, `sys_exit_sendmsg`, `sys_enter_sendmmsg`, `sys_exit_sendmmsg`
+  - **Socket Operations**: `sys_exit_socket`, `sys_enter_close`
+- **Configuration**: Enabled probes are configurable via `enabled_probes` array
+- **Logging**: Configurable log levels (0=off, 1=debug, 3=verbose, 4=stats)
 
-#### Tracepoints
-- **Purpose**: Leverage kernel's built-in instrumentation points
-- **Target Events**: Socket creation/destruction, process lifecycle
-- **Data Captured**: System-level events and metadata
-- **Stability**: More stable than kprobes across kernel versions
-
-#### Ring Buffer
-- **Purpose**: Efficient data transfer from kernel to user space
-- **Size**: Configurable (default: 256KB per CPU)
-- **Performance**: Lock-free, high-throughput data structure
-- **Overflow Handling**: Configurable drop or block behavior
+#### eBPF Configuration
+- **Buffer Management**: `max_buffered_events` (default: 128)
+- **Process Filtering**: Target specific PIDs for monitoring
+- **Probe Selection**: Granular control over which system calls to monitor
 
 ### 2. Processing Layer
 
 The processing layer transforms raw eBPF events into structured spans:
 
-#### Span Collector
-```rust
-pub struct SpanCollector {
-    ring_buffer: RingBuffer,
-    event_handlers: HashMap<EventType, Box<dyn EventHandler>>,
-    span_builder: SpanBuilder,
-}
+#### SpanConstructor
+- **Purpose**: Converts raw eBPF messages into structured spans
+- **Input**: Receives messages from TraceModule via crossbeam channels
+- **Output**: Sends constructed spans to SenderProcess
+- **Implementation**: Rust-based message processing with configurable buffering
+- **Configuration**: 
+  - `cleanup_interval`: Span cleanup timing (default: 30 seconds)
+  - `max_sockets`: Maximum tracked sockets (default: 1024)
 
-impl SpanCollector {
-    pub fn collect_events(&mut self) -> Result<Vec<RawEvent>, CollectionError> {
-        let mut events = Vec::new();
-        
-        while let Some(event) = self.ring_buffer.poll()? {
-            if let Some(handler) = self.event_handlers.get(&event.event_type) {
-                if let Some(processed_event) = handler.process(event)? {
-                    events.push(processed_event);
-                }
-            }
-        }
-        
-        Ok(events)
-    }
-}
-```
+#### Message Queue System
+- **Channel Type**: Crossbeam unbounded/bounded channels
+- **Message Flow**: `TraceModule → SpanConstructor → SenderProcess`
+- **Buffer Sizes**: Configurable bounded channels (default: 1024)
+- **Backpressure**: Automatic handling via channel capacity
 
-#### Data Processor
-- **Protocol Detection**: Automatically identifies HTTP, gRPC, MySQL, Redis protocols
-- **Payload Extraction**: Captures request/response payloads with size limits
-- **Metadata Enrichment**: Adds process information, timestamps, and context
-- **Data Sanitization**: Removes sensitive information based on configuration
+#### Data Processing Features
+- **Socket Tracking**: Maintains socket state across system calls
+- **Request/Response Correlation**: Matches network I/O operations
+- **Metadata Extraction**: Process IDs, timestamps, connection details
+- **Span Lifecycle Management**: Automatic cleanup of completed spans
 
-#### Local Correlator
-- **Request/Response Matching**: Correlates outgoing requests with incoming responses
-- **Connection Tracking**: Maintains connection state across multiple spans
-- **Temporal Ordering**: Ensures proper span timing and relationships
-- **Memory Management**: Efficient cleanup of completed correlations
+### 3. Sender Layer
 
-#### Filter Engine
-```rust
-pub struct FilterEngine {
-    process_filters: Vec<ProcessFilter>,
-    protocol_filters: Vec<ProtocolFilter>,
-    content_filters: Vec<ContentFilter>,
-}
+The sender layer handles data output to various destinations:
 
-impl FilterEngine {
-    pub fn should_capture(&self, span: &Span) -> bool {
-        self.process_filters.iter().all(|f| f.matches(span)) &&
-        self.protocol_filters.iter().any(|f| f.matches(span)) &&
-        self.content_filters.iter().all(|f| f.allows(span))
-    }
-}
-```
+#### SenderProcess
+- **Purpose**: Generic sender framework for different output types
+- **Implementation**: Configurable sender that can use different backends
+- **Channel Integration**: Receives spans from SpanConstructor via channels
+- **Supported Backends**: Elasticsearch and File output
 
-### 3. Transport Layer
+#### ElasticSender
+- **Purpose**: Direct Elasticsearch integration for span storage
+- **Configuration**:
+  - `node_url`: Elasticsearch endpoint (e.g., "http://localhost:9200")
+  - `username/password`: Authentication credentials
+  - `index_name`: Target index for spans
+  - `bulk_size`: Batch size for bulk operations (default: 64)
+  - `request_timeout`: HTTP timeout (default: 10 seconds)
+- **Features**: Bulk indexing, connection management, error handling
 
-The transport layer handles reliable delivery of spans to the server:
-
-#### Memory Buffer
-- **Structure**: Circular buffer with configurable size
-- **Persistence**: Optional disk-based overflow buffer
-- **Compression**: Configurable compression algorithms (gzip, lz4)
-- **Batching**: Automatic batching based on size and time thresholds
-
-#### Batch Sender
-```rust
-pub struct BatchSender {
-    client: HttpClient,
-    buffer: VecDeque<Span>,
-    config: SenderConfig,
-    retry_queue: RetryQueue,
-}
-
-impl BatchSender {
-    pub async fn send_batch(&mut self) -> Result<(), SendError> {
-        if self.buffer.len() >= self.config.batch_size || 
-           self.last_send.elapsed() >= self.config.batch_timeout {
-            
-            let batch = self.create_batch();
-            match self.client.send(batch).await {
-                Ok(_) => self.buffer.clear(),
-                Err(e) => self.retry_queue.push(batch, e),
-            }
-        }
-        
-        Ok(())
-    }
-}
-```
-
-#### Retry Logic
-- **Exponential Backoff**: Configurable retry intervals with jitter
-- **Circuit Breaker**: Prevents overwhelming failed servers
-- **Dead Letter Queue**: Persistent storage for failed batches
-- **Health-based Routing**: Automatic failover to backup servers
+#### FlatFile Sender
+- **Purpose**: File-based output for debugging and backup
+- **Configuration**:
+  - `path`: Output file path
+  - `rotate`: Enable log rotation
+  - `max_size`: Maximum file size before rotation (MB)
+  - `max_age`: Retention period (days)
+  - `rotate_time`: Rotation interval (days)
+  - `data_format`: Date format for file naming
+- **Features**: Automatic rotation, compression, structured output
 
 ### 4. Management Layer
 
 The management layer provides operational capabilities:
 
-#### Configuration Manager
-- **Hot Reload**: Dynamic configuration updates without restart
-- **Validation**: Schema validation and dependency checking
-- **Environment Override**: Environment variable support
-- **Default Fallback**: Sensible defaults for all configuration options
+#### Configurator
+- **Purpose**: Dynamic configuration management with file watching
+- **Features**:
+  - File system watching for configuration changes
+  - Automatic reload on configuration file modifications
+  - Retry logic for handling file write delays
+  - Configuration validation and error handling
+- **Implementation**: Uses `notify` crate for file system events
+- **Configuration Path**: Configurable via command line (`-c` flag)
 
-#### Health Monitor
-```rust
-pub struct HealthMonitor {
-    components: HashMap<String, Box<dyn HealthCheck>>,
-    status: Arc<RwLock<HealthStatus>>,
-}
+#### Synchronizer
+- **Purpose**: Agent state synchronization and API management
+- **Features**: Rocket-based HTTP API server for configuration updates
+- **API Endpoints**: `/api/config/update` for dynamic configuration
+- **Configuration**: 
+  - `address`: API server bind address
+  - `port`: API server port
+  - `workers`: Number of worker threads
+  - `ident`: Server identification string
 
-impl HealthMonitor {
-    pub async fn check_health(&self) -> HealthStatus {
-        let mut overall_status = HealthStatus::Healthy;
-        let mut component_statuses = HashMap::new();
-        
-        for (name, checker) in &self.components {
-            let status = checker.check().await;
-            component_statuses.insert(name.clone(), status.clone());
-            
-            if status.is_unhealthy() {
-                overall_status = HealthStatus::Unhealthy;
-            }
-        }
-        
-        HealthStatus {
-            overall: overall_status,
-            components: component_statuses,
-            timestamp: Utc::now(),
-        }
-    }
-}
-```
-
-#### Metrics Collector
-- **Performance Metrics**: CPU usage, memory consumption, network I/O
-- **Business Metrics**: Spans collected, correlation rate, error rate
-- **eBPF Metrics**: Program load status, map utilization, event rates
-- **Export Formats**: Prometheus, StatsD, JSON
+#### MetricCollector
+- **Purpose**: System and application metrics collection
+- **Configuration**:
+  - `interval`: Collection interval in seconds
+  - `sender`: Target sender for metrics (references sender configuration)
+- **Output**: Sends metrics to configured sender (typically file-based)
+- **Metrics**: CPU usage, memory usage, span counts, system statistics
 
 ## Data Flow
 
 ### 1. Event Capture
 ```
-Application → System Call → eBPF Program → Ring Buffer → User Space
+Application → System Call → eBPF Hook → TraceModule → Message Channel
 ```
 
 ### 2. Span Construction
 ```
-Raw Event → Protocol Detection → Payload Extraction → Span Building
+Message Channel → SpanConstructor → Span Building → Span Channel
 ```
 
-### 3. Local Processing
+### 3. Data Output
 ```
-Span → Filtering → Local Correlation → Enrichment → Buffering
-```
-
-### 4. Transmission
-```
-Buffer → Batching → Compression → HTTP Transport → Server
+Span Channel → SenderProcess → ElasticSender → Elasticsearch
+                            → FlatFile → Local Files
 ```
 
-## Performance Characteristics
+### 4. Configuration Management
+```
+Config File → Configurator → Dynamic Reload → Component Updates
+```
 
-### Resource Usage
+## Configuration Structure
 
-| Component | CPU Impact | Memory Usage | Network Overhead |
-|-----------|------------|--------------|------------------|
-| eBPF Programs | 1-3% | 10-50MB | None |
-| Span Processing | 2-5% | 50-200MB | None |
-| Data Transmission | 1-2% | 10-50MB | 1-5% of app traffic |
-| **Total** | **4-10%** | **70-300MB** | **1-5%** |
+The agent uses a TOML-based configuration system with the following structure:
 
-### Scalability Limits
+### Core Configuration Sections
 
-| Metric | Typical | Maximum | Bottleneck |
-|--------|---------|---------|------------|
-| Spans/second | 10,000 | 100,000 | CPU processing |
-| Concurrent connections | 1,000 | 10,000 | Memory usage |
-| Payload size | 1KB | 64KB | Network bandwidth |
-| Buffer size | 16MB | 1GB | Available memory |
+#### Agent Configuration
+```toml
+[agent]
+name = "deeptrace"  # Agent identifier
+```
+
+#### eBPF Configuration
+```toml
+[ebpf.trace]
+log_level = 1  # 0=off, 1=debug, 3=verbose, 4=stats
+pids = [523094]  # Target process IDs
+max_buffered_events = 128
+enabled_probes = [
+    "sys_enter_read", "sys_exit_read",
+    "sys_enter_write", "sys_exit_write",
+    # ... additional system call hooks
+]
+```
+
+#### Trace Configuration
+```toml
+[trace]
+ebpf = "trace"  # References ebpf configuration
+sender = "trace"  # References sender configuration
+
+[trace.span]
+cleanup_interval = 30  # Span cleanup interval (seconds)
+max_sockets = 1024     # Maximum tracked sockets
+```
+
+#### Sender Configuration
+```toml
+# Elasticsearch sender
+[sender.elastic.trace]
+node_url = "http://localhost:9200"
+username = "elastic"
+password = "***"
+request_timeout = 10
+index_name = "agent1"
+bulk_size = 64
+
+# File sender
+[sender.file.metric]
+path = "metrics.csv"
+rotate = true
+max_size = 512  # MB
+max_age = 6     # days
+rotate_time = 11  # days
+data_format = "%Y%m%d"
+```
+
+#### Metrics Configuration
+```toml
+[metric]
+interval = 10    # Collection interval (seconds)
+sender = "metric" # References sender configuration
+```
 
 ## Security Considerations
 
@@ -312,124 +288,94 @@ Buffer → Batching → Compression → HTTP Transport → Server
 - **Network Communication**: Standard HTTPS security
 - **Configuration**: File system permissions and validation
 
-## Deployment Patterns
+## Deployment and Usage
 
-### Sidecar Pattern
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: app-with-deeptrace
-spec:
-  template:
-    spec:
-      containers:
-      - name: application
-        image: myapp:latest
-      - name: deeptrace-agent
-        image: deeptrace/agent:latest
-        securityContext:
-          capabilities:
-            add: ["SYS_ADMIN"]
-        volumeMounts:
-        - name: config
-          mountPath: /etc/deeptrace
-```
-
-### DaemonSet Pattern
-```yaml
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: deeptrace-agent
-spec:
-  template:
-    spec:
-      hostNetwork: true
-      hostPID: true
-      containers:
-      - name: deeptrace-agent
-        image: deeptrace/agent:latest
-        securityContext:
-          privileged: true
-```
-
-### Systemd Service
-```ini
-[Unit]
-Description=DeepTrace Agent
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/deeptrace-agent --config /etc/deeptrace/agent.toml
-Restart=always
-RestartSec=5
-User=root
-
-[Install]
-WantedBy=multi-user.target
-```
-
-## Troubleshooting
-
-### Common Issues
-
-#### eBPF Program Load Failures
+### Command Line Usage
 ```bash
-# Check kernel version
-uname -r
+# Basic usage with default configuration
+cargo run --release
 
-# Verify eBPF support
-ls /sys/fs/bpf/
+# Specify custom configuration file
+cargo run --release -- -c /path/to/config.toml
 
-# Check loaded programs
-sudo bpftool prog list | grep deeptrace
-
-# Debug program loading
-sudo dmesg | grep bpf
+# With sudo privileges (required for eBPF)
+sudo cargo run --release -- -c config/deeptrace.toml
 ```
 
-#### High Resource Usage
-```bash
-# Monitor agent performance
-top -p $(pgrep deeptrace-agent)
+### Configuration File Location
+- **Default Path**: `config/deeptrace.toml`
+- **Custom Path**: Specified via `-c` command line argument
+- **Example Configuration**: `config/deeptrace.toml.example`
 
-# Check eBPF map usage
-sudo bpftool map show
+### Runtime Requirements
+- **Privileges**: Root or CAP_BPF capability for eBPF program loading
+- **Kernel Version**: Linux kernel with eBPF support
+- **Dependencies**: Rust runtime, libbpf, Elasticsearch (for data storage)
 
-# Analyze memory allocation
-valgrind --tool=massif ./deeptrace-agent
+### Process Management
+- **Startup**: Agent initializes all modules sequentially
+- **Shutdown**: Graceful shutdown on SIGINT (Ctrl+C)
+- **State Management**: Atomic state management for clean shutdown
+- **Error Handling**: Comprehensive error handling with logging
+
+## API Endpoints
+
+The agent provides a REST API for configuration management:
+
+### Configuration Update
+```http
+POST /api/config/update
+Content-Type: application/json
+
+{
+  "agent": {
+    "name": "deeptrace",
+    "workers": 4
+  },
+  "sender": {
+    "elastic": {
+      "node_url": "http://localhost:9200",
+      "username": "elastic",
+      "password": "password",
+      "index_name": "spans",
+      "bulk_size": 64
+    }
+  },
+  "trace": {
+    "pids": [1234, 5678]
+  }
+}
 ```
 
-#### Missing Spans
-```bash
-# Verify process filtering
-curl http://localhost:7899/processes
-
-# Check eBPF attachment
-sudo bpftool prog show | grep -A5 deeptrace
-
-# Monitor event rates
-curl http://localhost:7899/metrics | grep span_rate
+### API Configuration
+```toml
+# API server settings (part of synchronizer)
+address = "0.0.0.0"  # Bind address
+port = 8080          # API port
+workers = 1          # Worker threads
+ident = "deeptrace"  # Server identification
 ```
 
-## Best Practices
+## Module Architecture
 
-### Configuration
-1. **Start Conservative**: Begin with default settings and tune gradually
-2. **Monitor Impact**: Continuously monitor application performance
-3. **Filter Aggressively**: Exclude unnecessary processes and protocols
-4. **Batch Efficiently**: Optimize batch sizes for your network conditions
+The agent follows a modular architecture with the following key modules:
 
-### Operations
-1. **Health Monitoring**: Implement comprehensive health checks
-2. **Log Analysis**: Monitor agent logs for errors and warnings
-3. **Capacity Planning**: Plan for peak traffic scenarios
-4. **Graceful Updates**: Use rolling updates to minimize disruption
+### Core Modules
+1. **TraceModule/TraceCollector**: eBPF program management and data collection
+2. **SpanConstructor**: Raw event processing and span construction
+3. **SenderProcess**: Data output management with pluggable backends
+4. **MetricCollector**: System metrics collection and reporting
+5. **Configurator**: Dynamic configuration management
+6. **Synchronizer**: API server and state synchronization
 
-### Security
-1. **Least Privilege**: Use capabilities instead of root when possible
-2. **Network Security**: Secure communication channels with TLS
-3. **Data Governance**: Implement data retention and privacy policies
-4. **Access Control**: Restrict access to agent configuration and APIs
+### Module Lifecycle
+- **Initialization**: Sequential module startup with dependency management
+- **Runtime**: Asynchronous operation with channel-based communication
+- **Shutdown**: Graceful shutdown with proper resource cleanup
+- **Error Handling**: Per-module error handling with system-wide error propagation
+
+### Inter-Module Communication
+- **Channels**: Crossbeam channels for high-performance message passing
+- **Configuration**: Shared configuration via Arc<ArcSwap<Config>>
+- **State Management**: Atomic state management for coordination
+- **Error Propagation**: Structured error handling across module boundaries
