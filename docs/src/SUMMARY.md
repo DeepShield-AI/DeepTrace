@@ -26,6 +26,7 @@
   - [Social Network](./user-guide/workloads/social-network.md)
 - [Trace Analysis](./user-guide/trace-analysis.md)
 - [Web Interface](./user-guide/web-interface.md)
+- [Database Management](./user-guide/database.md)
 
 ---
 
