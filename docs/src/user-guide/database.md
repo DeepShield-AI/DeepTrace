@@ -290,7 +290,7 @@ This guide demonstrates the deployment of a multi-node Elasticsearch cluster (in
   ```
 - Log in using the `elastic` username and password to verify the availability of the Kibana visualization interface.
 
-![Kibana Frontend Interface](../../assets/images/db.png)
+![Kibana Frontend Interface](../assets/images/db.png)
 
 #### 4. Client Read/Write Data Test
 Below is an example Python script to test data read/write operations:

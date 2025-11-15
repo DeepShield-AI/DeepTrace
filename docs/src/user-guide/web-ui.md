@@ -93,14 +93,14 @@ To deploy the frontend, follow these steps:
 ### Trace Chain Tracking Module
 Real-time tracking of service call chains, presenting data such as request count, error count, and response latency through charts. Supports filtering by response status, endpoint, and application protocol. Users can view detailed information about specific call chains (e.g., topology, latency, number of spans), aiding in identifying issues in service calls.
 
-![Trace Chain Tracking Module](../../assets/images/1.png)  <!-- Replace # with the actual image link -->
+![Trace Chain Tracking Module](../assets/images/1.png)  <!-- Replace # with the actual image link -->
 
 ### Trace Chain Topology Module
 Displays the relationships between service nodes in the form of a topology graph, showing metrics such as QPS, average latency, and error rate for each service. This helps analyze the health and dependencies of service calls, making it easier to identify abnormal service nodes.
 
-![Trace Chain Topology Module](../../assets/images/2.png)  <!-- Replace # with the actual image link -->
+![Trace Chain Topology Module](../assets/images/2.png)  <!-- Replace # with the actual image link -->
 
 ### Collector Management Module
 Manages the list and basic information of collectors (e.g., CPU cores, running status, system version). Supports operations such as registration, enabling, and disabling. This module provides data collection support for monitoring functions like call chain tracking and metric collection.
 
-![Collector Management Module](../../assets/images/3.png)  <!-- Replace # with the actual image link -->
+![Collector Management Module](../assets/images/3.png)

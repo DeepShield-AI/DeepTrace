@@ -7,7 +7,6 @@ title = "DeepTrace Documentation"
 description = "Comprehensive documentation for DeepTrace - A non-intrusive distributed tracing framework for microservices"
 
 [build]
-extra-watch-dirs = ["assets"]
 build-dir = "book"
 create-missing = true
 
