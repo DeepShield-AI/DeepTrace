@@ -137,9 +137,8 @@ DeepTrace supports multiple deployment configurations:
 After successful installation:
 
 1. **Verify Services**: Ensure all components are running
-2. **Access Web Interface**: Connect to the management dashboard
-3. **Configure Monitoring**: Set up application monitoring
-4. **Test Functionality**: Generate sample traces
+2. **Access Elasticsearch Web Interface**: Connect to the management dashboard
+3. **Test Functionality**: Generate sample traces
 
 ## Troubleshooting Installation
 

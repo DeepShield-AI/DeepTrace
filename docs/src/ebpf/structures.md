@@ -1,107 +1,197 @@
 # Data Structures
 
-DeepTrace's eBPF implementation relies on carefully designed data structures to efficiently capture, store, and transmit network trace information. This document provides comprehensive details about each structure and its role in the tracing system.
+DeepTrace's eBPF implementation uses Rust-based data structures built with the Aya framework. These structures efficiently capture, store, and transmit network trace information between eBPF programs and user space.
 
 ## Structure Design Principles
 
 DeepTrace's data structures are designed with several key principles:
 
-1. **Memory Efficiency**: Minimize memory footprint while preserving essential information
+1. **Type Safety**: Leverage Rust's type system for memory safety
 2. **Performance**: Optimize for fast access and minimal copying
-3. **Compatibility**: Ensure cross-platform and kernel version compatibility
-4. **Extensibility**: Allow for future protocol and feature additions
+3. **Aya Integration**: Native integration with Aya framework features
+4. **Cross-Boundary Compatibility**: Seamless data sharing between eBPF and user space
+5. **Protocol Awareness**: Support for L7 protocol inference and correlation
 
 ## Core Enumeration Types
 
-### `SyscallName` Enum
+### `Syscall` Enum
 
 Identifies the specific system call being monitored:
 
 ```rust
-#[repr(u32)]
-pub enum SyscallName {
-    Read = 0,
-    RecvMsg = 1,
-    RecvMMsg = 2,
-    ReadV = 3,
-    RecvFrom = 4,
-    Write = 5,
-    SendMsg = 6,
-    SendMMsg = 7,
-    SendTo = 8,
-    WriteV = 9,
-    Unknown = 255,
+#[cfg_attr(feature = "user", derive(serde::Serialize))]
+#[repr(u8)]
+pub enum Syscall {
+    // Ingress operations
+    Read,
+    ReadV,
+    RecvFrom,
+    RecvMsg,
+    RecvMMsg,
+    
+    // Egress operations
+    Write,
+    WriteV,
+    SendTo,
+    SendMsg,
+    SendMMsg,
+    
+    Unknown,
 }
 ```
 
 **Usage**: 
-- Debugging and logging
-- Protocol-specific processing
+- System call identification in traces
 - Performance analysis by syscall type
+- Protocol-specific processing logic
+- Serialization to JSON for user space
 
-**Memory Layout**: 4 bytes (u32)
+**Memory Layout**: 1 byte (u8)
 
-### `SyscallType` Enum
+### `Direction` Enum
 
 Categorizes system calls by data flow direction:
 
 ```rust
-#[repr(u32)]
-pub enum SyscallType {
-    Ingress = 0,  // Incoming data (read operations)
-    Egress = 1,   // Outgoing data (write operations)
+#[cfg_attr(feature = "user", derive(serde::Serialize))]
+#[derive(Clone, Copy, PartialEq)]
+#[repr(u8)]
+pub enum Direction {
+    Ingress,  // Incoming data (read operations)
+    Egress,   // Outgoing data (write operations)
+    Unknown,
 }
 ```
 
 **Purpose**:
 - Distinguish request vs response processing
 - Enable directional filtering
-- Support correlation algorithms
+- Support span correlation algorithms
+- Request/response matching
 
-**Memory Layout**: 4 bytes (u32)
+**Memory Layout**: 1 byte (u8)
 
-### `Buffer` Enum
+### `Buffer` Structure
 
-Represents different buffer types for system call data:
+A compile-time sized buffer for safe data handling:
 
 ```rust
+// From ebpf-common/src/buffer.rs
 #[repr(C)]
-pub enum Buffer {
-    Normal(NormalBuffer),
-    Vectored(VectoredBuffer),
-    Msg(MsgBuffer),
+#[derive(Clone, Copy)]
+pub struct Buffer<const N: usize> {
+    buf: [u8; N],
+    len: usize,
 }
 ```
 
-**Buffer Types**:
+**Key Features**:
+- **Compile-time Size**: Size known at compile time for safety
+- **Bounds Checking**: Automatic bounds checking for all operations
+- **Zero-Copy**: Efficient slice operations without copying
+- **Generic Size**: Can be instantiated with any size `N`
 
-#### `NormalBuffer`
+**Common Instantiations**:
 ```rust
-#[repr(C)]
-pub struct NormalBuffer {
-    pub ptr: u64,     // Buffer pointer
-    pub len: u32,     // Buffer length
-    pub _padding: u32,
+pub type TaskCommBuffer = Buffer<TASK_COMM_LEN>;     // 16 bytes
+pub type PayloadBuffer = Buffer<MAX_PAYLOAD_SIZE>;   // 4096 bytes  
+pub type InferBuffer = Buffer<MAX_INFER_SIZE>;       // Variable size
+```
+
+**Methods**:
+```rust
+impl<const N: usize> Buffer<N> {
+    pub fn new() -> Self;
+    pub fn as_slice(&self) -> &[u8];
+    pub fn from_slice(slice: &[u8]) -> Self;
+    pub fn len(&self) -> usize;
+    pub fn read_user_at(&mut self, ptr: *mut u8, size: u32) -> Result<()>;
+    pub fn fill_from_iovec<const IOV_MAX: usize>(&mut self, iovec: iovec, vlen: u32, max_size: Option<usize>) -> Result<()>;
+    pub fn fill_from_mmsghdr<const IOVLEN_MAX: usize>(&mut self, mmsg: mmsghdr, vlen: u32, max_size: Option<usize>) -> Result<()>;
 }
 ```
 
-#### `VectoredBuffer`
+### Protocol Enumerations
+
+#### `L7Protocol` Enum
+
+Identifies Layer 7 application protocols:
+
 ```rust
-#[repr(C)]
-pub struct VectoredBuffer {
-    pub iov_ptr: u64,    // iovec array pointer
-    pub iov_count: u32,  // Number of iovec entries
-    pub total_len: u32,  // Total data length
+// From observ-trace-common/src/protocols/l7.rs
+#[cfg_attr(feature = "user", derive(Eq, Hash, serde::Serialize))]
+#[derive(FromPrimitive, IntoPrimitive, PartialEq, Copy, Clone)]
+#[repr(u8)]
+pub enum L7Protocol {
+    #[default]
+    Unknown = 0,
+    
+    // HTTP
+    HTTP1 = 20,
+    Http2 = 21,
+    
+    // RPC
+    Dubbo = 40,
+    Grpc = 41,
+    SofaRPC = 43,
+    FastCGI = 44,
+    Brpc = 45,
+    Tars = 46,
+    SomeIp = 47,
+    Thrift = 48,
+    
+    // SQL
+    MySQL = 60,
+    PostgreSQL = 61,
+    Oracle = 62,
+    
+    // NoSQL
+    Redis = 80,
+    MongoDB = 81,
+    Memcached = 82,
+    Cassandra = 83,
+    
+    // MQ
+    Kafka = 100,
+    MQTT = 101,
+    AMQP = 102,
+    OpenWire = 103,
+    NATS = 104,
+    Pulsar = 105,
+    ZMTP = 106,
+    RocketMQ = 107,
+    
+    // INFRA
+    DNS = 120,
+    TLS = 121,
+    Ping = 122,
+    
+    Custom = 127,
+    Max = 255,
 }
 ```
 
-#### `MsgBuffer`
+#### `L4Protocol` Enum
+
+Identifies Layer 4 transport protocols:
+
 ```rust
-#[repr(C)]
-pub struct MsgBuffer {
-    pub msg_ptr: u64,       // msghdr pointer
-    pub msg_namelen: u32,   // Address length
-    pub msg_controllen: u32, // Control data length
+// From observ-trace-common/src/protocols/l4.rs
+#[cfg_attr(feature = "user", derive(serde::Serialize, Hash, Eq))]
+#[derive(Clone, Copy, PartialEq)]
+#[repr(u16)]
+pub enum L4Protocol {
+    IPPROTO_IP = 0,      // Dummy protocol for TCP
+    IPPROTO_ICMP = 1,    // Internet Control Message Protocol
+    IPPROTO_IGMP = 2,    // Internet Group Management Protocol
+    IPPROTO_IPIP = 4,    // IPIP tunnels
+    IPPROTO_TCP = 6,     // Transmission Control Protocol
+    IPPROTO_EGP = 8,     // Exterior Gateway Protocol
+    IPPROTO_PUP = 12,    // PUP protocol
+    IPPROTO_UDP = 17,    // User Datagram Protocol
+    // ... more protocols
+    IPPROTO_RAW = 255,   // Raw IP packets
+    IPPROTO_MPTCP = 262, // Multipath TCP connection
 }
 ```
 
@@ -112,42 +202,65 @@ pub struct MsgBuffer {
 The network flow identifier that uniquely identifies a connection:
 
 ```rust
-#[repr(C)]
+#[cfg_attr(feature = "user", derive(serde::Serialize, Hash, Eq, PartialEq))]
 #[derive(Clone, Copy)]
+#[repr(C)]
 pub struct Quintuple {
-    pub src_addr: u32,    // Source IP address (network byte order)
-    pub dst_addr: u32,    // Destination IP address (network byte order)
-    pub src_port: u16,    // Source port (network byte order)
-    pub dst_port: u16,    // Destination port (network byte order)
-    pub protocol: u16,    // Protocol family (AF_INET, etc.)
-    pub _padding: u16,    // Alignment padding
+    pub src_addr: u32,           // Source IP address
+    pub dst_addr: u32,           // Destination IP address
+    pub src_port: u16,           // Source port
+    pub dst_port: u16,           // Destination port
+    pub l4_protocol: L4Protocol, // L4 protocol (TCP/UDP)
+    #[cfg_attr(feature = "user", serde(skip))]
+    padding: u16,                // Alignment padding
 }
 ```
 
 **Key Features**:
 - **Unique Flow Identification**: Distinguishes different network connections
 - **Bidirectional Support**: Same quintuple for both directions of a flow
-- **Protocol Agnostic**: Works with TCP, UDP, and other protocols
+- **Protocol Awareness**: Includes L4 protocol information
+- **Serialization Support**: JSON serialization for user space
 - **Hash-Friendly**: Optimized for use as hash map keys
 
 **Memory Layout**: 16 bytes total
 
-**Usage Example**:
-```c
-// Extract quintuple from socket
-static inline int extract_quintuple(int fd, struct Quintuple *qt) {
-    struct tcp_sock *tcp_sk = get_tcp_sock_from_fd(fd);
-    if (!tcp_sk) return -1;
-    
-    qt->src_addr = tcp_sk->inet_conn.icsk_inet.inet_saddr;
-    qt->dst_addr = tcp_sk->inet_conn.icsk_inet.inet_daddr;
-    qt->src_port = tcp_sk->inet_conn.icsk_inet.inet_sport;
-    qt->dst_port = tcp_sk->inet_conn.icsk_inet.inet_dport;
-    qt->protocol = tcp_sk->inet_conn.icsk_inet.sk.__sk_common.skc_family;
-    
-    return 0;
+**Constructor**:
+```rust
+impl Quintuple {
+    pub fn new(
+        src_addr: u32,
+        dst_addr: u32,
+        src_port: u16,
+        dst_port: u16,
+        l4_protocol: u16,
+    ) -> Quintuple {
+        // Implementation handles protocol conversion
+    }
 }
 ```
+
+**Usage Example**:
+```rust
+// From observ-trace-ebpf/src/utils.rs
+#[inline(always)]
+pub fn quintuple_from_sock(tcp_sock: tcp_sock) -> Result<Quintuple> {
+    let src_addr = core_read_kernel!(tcp_sock, inet_conn, icsk_inet, inet_saddr)?.to_be();
+    let sock_common = core_read_kernel!(tcp_sock, inet_conn, icsk_inet, sk, __sk_common)?;
+    let dst_addr = sock_common.skc_daddr().ok_or(READ_SKC_DADDR_FAILED)?.to_be();
+    let src_port = core_read_kernel!(tcp_sock, inet_conn, icsk_inet, inet_sport)?.to_be();
+    let dst_port = sock_common.skc_dport().ok_or(READ_SKC_DPORT_FAILED)?.to_be();
+    let skc_family = sock_common.skc_family().ok_or(READ_SKC_FAMILY_FAILED)?;
+    Ok(Quintuple::new(src_addr, dst_addr, src_port, dst_port, skc_family))
+}
+```
+
+**Key Features**:
+- **CO-RE Support**: Uses `core_read_kernel!` macro for safe kernel memory access
+- **Error Handling**: Returns `Result<Quintuple>` with specific error codes
+- **Byte Order**: Converts to big-endian (network byte order) with `.to_be()`
+- **Type Safety**: Uses Rust's type system and Option types for safety
+- **Memory Safety**: Safe kernel structure field access through CO-RE
 
 ### `Args` Structure
 
@@ -156,10 +269,29 @@ Stores system call context during the entry phase:
 ```rust
 #[repr(C)]
 pub struct Args {
-    pub fd: u32,           // File descriptor
-    pub seq: u32,          // TCP sequence number at entry
-    pub timestamp: u64,    // Entry timestamp (nanoseconds)
-    pub buffer: Buffer,    // Buffer information
+    pub fd: u64,           // File descriptor
+    pub enter_time: u64,   // Entry timestamp (nanoseconds)
+    pub buffer: SysBufPtr, // Buffer information
+    pub enter_seq: u32,    // TCP sequence number at entry
+    pub padding: u32,      // Alignment padding
+}
+```
+
+**Constructors**:
+```rust
+impl Args {
+    pub fn from_ubuf(fd: u64, buf: *mut u8, count: u32, timestamp: u64, enter_seq: u32) -> Self;
+    pub fn from_msg(fd: u64, vec: iovec, vlen: u32, timestamp: u64, enter_seq: u32) -> Self;
+    pub fn from_mmsg(fd: u64, mmsg: mmsghdr, vlen: u32, timestamp: u64, enter_seq: u32) -> Self;
+}
+```
+
+**Buffer Types**:
+```rust
+pub enum SysBufPtr {
+    Ubuf(*mut u8, u32),    // User buffer
+    Msg(iovec, u32),       // Message vector
+    MMsg(mmsghdr, u32),    // Multiple messages
 }
 ```
 
@@ -169,7 +301,7 @@ pub struct Args {
 3. **Retrieved**: When system call exits
 4. **Destroyed**: After data extraction
 
-**Memory Layout**: 32 bytes (with padding)
+**Memory Layout**: 32 bytes total
 
 **Key Fields**:
 - `fd`: Links to socket information
@@ -177,300 +309,211 @@ pub struct Args {
 - `timestamp`: Calculates syscall latency
 - `buffer`: Handles different buffer types
 
-### `Data` Structure
+### `Message` Structure
 
 The complete trace record sent to user space:
 
 ```rust
+#[cfg_attr(feature = "user", derive(serde::Serialize))]
 #[repr(C)]
-pub struct Data {
+pub struct Message {
     // Process Information
-    pub tgid: u32,              // Thread Group ID (process ID)
-    pub pid: u32,               // Thread ID
+    pub tgid: u32,                    // Thread Group ID (process ID)
+    pub pid: u32,                     // Thread ID
     
     // Timing Information
-    pub enter_seq: u32,         // TCP sequence at entry
-    pub exit_seq: u32,          // TCP sequence at exit
-    pub timestamp_ns: u64,      // Exit timestamp (nanoseconds)
+    pub enter_seq: u32,               // TCP sequence at entry
+    pub exit_seq: u32,                // TCP sequence at exit
+    pub timestamp_ns: u64,            // Exit timestamp (nanoseconds)
     
-    // System Call Information
-    pub len: u32,               // Actual data length transferred
-    pub syscall: SyscallName,   // System call identifier
-    pub direction: SyscallType, // Ingress/Egress direction
+    // Correlation Information
+    #[cfg_attr(feature = "user", serde(skip))]
+    pub seq: u32,                     // Sequence for correlation
+    #[cfg_attr(feature = "user", serde(skip))]
+    pub uuid: u32,                    // Unique identifier for correlation
     
     // Network Information
-    pub quintuple: Quintuple,   // Network flow identifier
+    #[cfg_attr(feature = "user", serde(flatten))]
+    pub quintuple: Quintuple,         // Network flow identifier
+    
+    // System Call Information
+    pub syscall: Syscall,             // System call identifier
+    pub direction: Direction,         // Ingress/Egress direction
+    
+    // Protocol Information
+    #[cfg_attr(feature = "user", serde(rename(serialize = "type")))]
+    pub type_: MessageType,           // Request/Response type
+    pub protocol: L7Protocol,         // L7 protocol (HTTP, gRPC, etc.)
     
     // Process Information
-    pub comm: [u8; TASK_CMD_LEN], // Process name (16 bytes)
+    #[cfg_attr(feature = "user", serde(serialize_with = "serialize_comm"))]
+    pub comm: Buffer<TASK_COMM_LEN>,  // Process name (16 bytes)
     
     // Payload Data
-    pub buf: [u8; MAX_PAYLOAD_SIZE], // Actual network data
+    #[cfg_attr(feature = "user", serde(serialize_with = "serialize_buffer"))]
+    pub payload: Buffer<MAX_PAYLOAD_SIZE>, // Actual network data
 }
 ```
 
-**Constants**:
+### `MessageType` Enum
+
+Classifies message types for correlation:
+
 ```rust
-pub const TASK_CMD_LEN: usize = 16;      // Linux task command length
-pub const MAX_PAYLOAD_SIZE: usize = 4096; // Maximum captured payload
-```
-
-**Memory Layout**: ~4.2KB total
-
-**Field Details**:
-
-#### Process Identification
-- `tgid`: Process ID for correlation
-- `pid`: Thread ID for fine-grained tracking
-- `comm`: Process name for debugging
-
-#### Timing and Sequencing
-- `enter_seq`/`exit_seq`: TCP sequence numbers for ordering
-- `timestamp_ns`: High-resolution timing
-
-#### Network Context
-- `quintuple`: Complete flow identification
-- `direction`: Request vs response classification
-
-#### Payload Data
-- `buf`: Actual network data for protocol parsing
-- `len`: Actual data length (may be less than buffer size)
-
-## Auxiliary Structures
-
-### Kernel Structure Wrappers
-
-DeepTrace uses eBPF maps to safely access kernel structures:
-
-#### `TASK_STRUCT` Map
-```c
-struct {
-    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-    __uint(max_entries, 1);
-    __type(key, u32);
-    __type(value, struct task_struct);
-} TASK_STRUCT SEC(".maps");
-```
-
-**Purpose**: Safe access to process information
-**Size**: 13,696 bytes (kernel-dependent)
-
-#### `TCP_SOCK` Map
-```c
-struct {
-    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-    __uint(max_entries, 1);
-    __type(key, u32);
-    __type(value, struct tcp_sock);
-} TCP_SOCK SEC(".maps");
-```
-
-**Purpose**: Access TCP socket state
-**Size**: 2,304 bytes (kernel-dependent)
-
-#### `FILE` Map
-```c
-struct {
-    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-    __uint(max_entries, 1);
-    __type(key, u32);
-    __type(value, struct file);
-} FILE SEC(".maps");
-```
-
-**Purpose**: File descriptor information
-**Size**: 232 bytes
-
-## Memory Management
-
-### Stack Space Optimization
-
-eBPF has a 512-byte stack limit, so large structures use per-CPU maps:
-
-```c
-// Instead of stack allocation:
-// struct tcp_sock sock; // Too large for stack!
-
-// Use per-CPU map:
-static inline struct tcp_sock* get_tcp_sock_buffer(void) {
-    u32 key = 0;
-    return bpf_map_lookup_elem(&TCP_SOCK, &key);
+// From observ-trace-common/src/message.rs
+#[cfg_attr(feature = "user", derive(serde::Serialize))]
+#[derive(Clone, Copy, PartialEq)]
+#[repr(u8)]
+pub enum MessageType {
+    Unknown = 0,
+    Request = 1,
+    Response = 2,
 }
 ```
 
-### Alignment and Padding
+### `SocketInfo` Structure
 
-All structures use explicit padding for consistent memory layout:
+Socket metadata for correlation and protocol inference:
 
 ```rust
+// From observ-trace-common/src/socket.rs
+#[derive(Clone, Copy)]
 #[repr(C)]
-pub struct AlignedStruct {
-    pub field1: u32,
-    pub _padding1: u32,  // Explicit padding
-    pub field2: u64,     // Naturally aligned
+pub struct SocketInfo {
+    pub uuid: u32,
+    pub exit_seq: u32,
+    pub seq: u32,
+    pub direction: Direction,
+    pub pre_direction: Direction,
+    pub l7protocol: L7Protocol,
+    padding: u8,
+    pub prev_buf: Buffer<MAX_INFER_SIZE>,
 }
 ```
 
-### Memory Safety
+**Key Fields**:
+- **uuid**: Unique identifier for correlation
+- **exit_seq**: TCP sequence number at exit
+- **seq**: Current sequence number
+- **direction**: Current data flow direction
+- **pre_direction**: Previous data flow direction
+- **l7protocol**: Detected Layer 7 protocol
+- **prev_buf**: Buffer for protocol inference
 
-DeepTrace implements several safety mechanisms:
+**Usage**:
+- Protocol detection and caching
+- TCP sequence tracking
+- Request/response correlation
+- Multi-message protocol handling
 
-#### Bounds Checking
-```c
-static inline int safe_copy_payload(void *dst, const void *src, size_t len) {
-    if (len > MAX_PAYLOAD_SIZE) {
-        len = MAX_PAYLOAD_SIZE;
+## Constants and Configuration
+
+### Buffer Sizes
+
+```rust
+// From observ-trace-common/src/constants.rs
+pub const MAX_PID_NUMBERS: u32 = 256;        // Maximum monitored PIDs
+pub const MAX_INFER_SIZE: usize = 1024;      // Protocol inference buffer
+pub const MAX_PAYLOAD_SIZE: usize = 4096;    // Maximum captured payload
+pub const TASK_COMM_LEN: usize = 16;         // Linux task command length
+```
+
+### Memory Layout Summary
+
+| Structure | Size | Purpose |
+|-----------|------|---------|
+| `Syscall` | 1 byte | System call identification |
+| `Direction` | 1 byte | Data flow direction |
+| `MessageType` | 1 byte | Request/Response classification |
+| `L7Protocol` | 1 byte | Layer 7 protocol |
+| `L4Protocol` | 2 bytes | Layer 4 protocol |
+| `Quintuple` | 16 bytes | Network flow identifier |
+| `Args` | 32 bytes | System call context |
+| `Message` | ~4.2KB | Complete trace record |
+| `SocketInfo` | Variable | Socket metadata |
+| `Buffer<N>` | N + 8 bytes | Generic buffer |
+
+## Type Safety and Validation
+
+### Rust Type System Benefits
+
+DeepTrace leverages Rust's type system for safety:
+
+```rust
+// Compile-time size validation
+const _: () = assert!(core::mem::size_of::<Message>() <= 8192);
+
+// Type-safe protocol handling
+impl L7Protocol {
+    pub fn is_http(&self) -> bool {
+        matches!(self, L7Protocol::HTTP1 | L7Protocol::Http2)
     }
-    return bpf_probe_read_user(dst, len, src);
-}
-```
-
-#### Null Pointer Checks
-```c
-static inline bool validate_buffer_ptr(const struct Args *args) {
-    if (!args) return false;
     
-    switch (args->buffer.type) {
-        case BUFFER_NORMAL:
-            return args->buffer.normal.ptr != 0;
-        case BUFFER_VECTORED:
-            return args->buffer.vectored.iov_ptr != 0;
-        case BUFFER_MSG:
-            return args->buffer.msg.msg_ptr != 0;
-        default:
-            return false;
+    pub fn is_rpc(&self) -> bool {
+        matches!(self, L7Protocol::Grpc | L7Protocol::Dubbo | L7Protocol::Thrift)
     }
 }
 ```
 
-## Protocol-Specific Extensions
+### Memory Safety Features
 
-### HTTP Structure Extensions
+- **Bounds Checking**: Automatic array bounds checking
+- **Null Safety**: Option types prevent null pointer dereferences
+- **Lifetime Management**: RAII ensures proper cleanup
+- **Type Safety**: Strong typing prevents type confusion
 
-For HTTP protocol parsing:
+### Serialization Support
 
-```rust
-#[repr(C)]
-pub struct HttpMetadata {
-    pub method: [u8; 8],        // HTTP method (GET, POST, etc.)
-    pub status_code: u16,       // Response status code
-    pub content_length: u32,    // Content-Length header
-    pub is_request: bool,       // Request vs response flag
-    pub _padding: [u8; 3],      // Alignment
-}
-```
-
-### gRPC Structure Extensions
-
-For gRPC protocol support:
+User space structures support JSON serialization:
 
 ```rust
-#[repr(C)]
-pub struct GrpcMetadata {
-    pub service_name: [u8; 64], // gRPC service name
-    pub method_name: [u8; 64],  // gRPC method name
-    pub status_code: u32,       // gRPC status code
-    pub message_type: u8,       // Request/Response/Stream
-    pub _padding: [u8; 3],      // Alignment
+// Automatic JSON serialization
+#[cfg_attr(feature = "user", derive(serde::Serialize))]
+pub struct Message {
+    // Fields with custom serialization
+    #[cfg_attr(feature = "user", serde(serialize_with = "serialize_comm"))]
+    pub comm: Buffer<TASK_COMM_LEN>,
+    
+    // Fields excluded from serialization
+    #[cfg_attr(feature = "user", serde(skip))]
+    pub uuid: u32,
 }
 ```
 
-## Serialization and Wire Format
+## Performance Optimizations
 
-### Network Byte Order
+### Memory Layout
 
-All network-related fields use network byte order:
+- **Cache-Friendly**: Hot fields placed first
+- **Alignment**: Proper alignment for optimal access
+- **Padding**: Explicit padding for consistent layout
+- **Size Optimization**: Minimal memory footprint
 
-```c
-static inline void host_to_network_quintuple(struct Quintuple *qt) {
-    qt->src_addr = htonl(qt->src_addr);
-    qt->dst_addr = htonl(qt->dst_addr);
-    qt->src_port = htons(qt->src_port);
-    qt->dst_port = htons(qt->dst_port);
-}
-```
-
-### Versioning Support
-
-Structures include version fields for backward compatibility:
+### Zero-Copy Operations
 
 ```rust
-#[repr(C)]
-pub struct DataHeader {
-    pub version: u16,           // Structure version
-    pub size: u16,              // Total structure size
-    pub checksum: u32,          // Data integrity check
+// Zero-copy slice access
+impl<const N: usize> Buffer<N> {
+    pub fn as_slice(&self) -> &[u8] {
+        &self.buf[..min(self.len(), N)]
+    }
+}
+
+// Direct encoding without copying
+impl Message {
+    pub fn encode(&self) -> &[u8] {
+        unsafe {
+            core::slice::from_raw_parts(
+                (self as *const Self) as *const u8,
+                core::mem::size_of::<Message>(),
+            )
+        }
+    }
 }
 ```
 
-## Performance Considerations
+## Next Steps
 
-### Cache-Friendly Layout
-
-Structures are organized for optimal cache performance:
-
-```rust
-// Hot fields first (frequently accessed)
-#[repr(C)]
-pub struct OptimizedData {
-    // Hot path fields
-    pub timestamp_ns: u64,
-    pub len: u32,
-    pub syscall: SyscallName,
-    
-    // Warm fields
-    pub quintuple: Quintuple,
-    
-    // Cold fields (less frequently accessed)
-    pub comm: [u8; 16],
-    pub buf: [u8; 4096],
-}
-```
-
-### Memory Pool Usage
-
-For high-frequency allocations:
-
-```c
-// Pre-allocated structure pool
-struct data_pool {
-    struct Data entries[POOL_SIZE];
-    u32 next_free;
-    spinlock_t lock;
-};
-```
-
-## Debugging and Introspection
-
-### Debug Information
-
-Structures include debug fields in development builds:
-
-```rust
-#[cfg(debug_assertions)]
-#[repr(C)]
-pub struct DebugInfo {
-    pub allocation_time: u64,
-    pub source_file: [u8; 32],
-    pub source_line: u32,
-}
-```
-
-### Structure Validation
-
-Runtime validation for structure integrity:
-
-```c
-static inline bool validate_data_structure(const struct Data *data) {
-    // Check magic numbers
-    if (data->magic != DATA_MAGIC) return false;
-    
-    // Validate ranges
-    if (data->len > MAX_PAYLOAD_SIZE) return false;
-    
-    // Check enum values
-    if (data->syscall >= SyscallName_MAX) return false;
-    
-    return true;
-}
-```
+- **[System Hooks](./hooks.md)**: Learn about eBPF program implementation
+- **[Memory Maps](./maps.md)**: Understand eBPF map usage
+- **[Performance Analysis](./performance.md)**: Optimize eBPF performance

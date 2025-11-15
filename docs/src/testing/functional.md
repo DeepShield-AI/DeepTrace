@@ -121,44 +121,61 @@ RUST_LOG=info cargo xtask build --profile release -c config/deeptrace.toml
 
 In another terminal:
 ```bash
-cd tests/workload/protocols
+# For Redis
+cd tests/workload/redis
+python3 client.py
 
-# Create Python virtual environment
-python3 -m venv env
-source env/bin/activate
+# For MongoDB
+cd tests/workload/mongodb
+python3 client.py
 
-# Install required packages
-pip install redis python-binary-memcached pymongo aiohttp
-
-# Generate traffic for specific protocol
-cd {protocol}  # redis, mongodb, or memcached
+# For Memcached
+cd tests/workload/memcached
 python3 client.py
 ```
 
 #### Terminate and Analyze
 
 1. Terminate the eBPF program after ~5 seconds of traffic generation
-2. Output file will be generated based on your configuration (check the configured file path in `sender.file.*` sections)
+2. Spans will be sent directly to Elasticsearch based on your configuration
 
 ### Result Validation
 
+Validate protocol detection by querying Elasticsearch:
+
 ```bash
-cd tests/eBPF/protocols
+# Query spans by protocol
+curl -X GET "http://localhost:9200/spans_*/_search" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "query": {
+      "term": {
+        "protocol": "Redis"
+      }
+    },
+    "size": 10
+  }'
 
-# Process raw data
-python3 parse_ebpf.py --protocol {protocol}
-
-# Calculate accuracy metrics
-python3 check.py --protocol {protocol}
+# Aggregate by protocol
+curl -X GET "http://localhost:9200/spans_*/_search" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "size": 0,
+    "aggs": {
+      "protocols": {
+        "terms": {
+          "field": "protocol"
+        }
+      }
+    }
+  }'
 ```
 
-Expected output shows accuracy metrics:
-```plaintext
-Protocol: Redis
-Accuracy: 95.2%
-Total Requests: 1000
-Correctly Identified: 952
-```
+Or use Kibana:
+1. Navigate to `http://localhost:5601`
+2. Go to Discover
+3. Filter by protocol field
+4. Verify correct protocol detection
 
 ## Span Construction Testing
 
@@ -169,25 +186,22 @@ Span construction testing validates DeepTrace's ability to correlate network tra
 #### Start Workload Services
 
 ```bash
-cd DeepTrace
-docker-compose -f deployment/docker/Workload.yaml up -d
+# Deploy using provided docker-compose file
+cd deployment/docker
+docker-compose -f Workload.yaml up -d
 
 # Verify services are running
 docker ps
 ```
 
-Expected output:
-```plaintext
-a69c7abafa85   memcached:1.6.7   "docker-entrypoint.s…"   7 hours ago   Up 7 hours   0.0.0.0:11211->11211/tcp   memcached-workload
-a27b67cd869a   mongo:5.0.15      "docker-entrypoint.s…"   7 hours ago   Up 7 hours   0.0.0.0:27017->27017/tcp   mongo-workload
-631c9e145055   redis:6.2.4       "docker-entrypoint.s…"   7 hours ago   Up 7 hours   0.0.0.0:6379->6379/tcp     redis-workload
-```
+Expected output shows Redis, MongoDB, and Memcached containers running.
 
-#### Initialize DeepTrace
+#### Initialize DeepTrace Agent
 
 ```bash
-chmod +x ./scripts/run_agent.sh
-./scripts/run.sh
+# Start the agent
+cd agent
+RUST_LOG=info cargo xtask run --release -c config/deeptrace.toml
 ```
 
 ### Test Execution
@@ -195,15 +209,15 @@ chmod +x ./scripts/run_agent.sh
 #### Generate Test Spans
 
 ```bash
-cd tests
+cd tests/workload
 
-# Setup Python environment
-python3 -m venv workload/env
-source workload/env/bin/activate
-pip install redis python-binary-memcached
+# Setup Python environment (if not already done)
+python3 -m venv env
+source env/bin/activate
+pip install redis python-binary-memcached pymongo
 
 # Generate synthetic workload patterns
-python3 -m workload.prepare_spans
+python3 prepare_spans.py
 ```
 
 Expected output:
@@ -214,10 +228,10 @@ memcached workload completed successfully.
 
 #### Stop Collection
 
-Use Ctrl+C in DeepTrace container to:
-- Finalize trace data
-- Generate span artifacts
-- Clean up tracing resources
+Use Ctrl+C to stop the DeepTrace agent:
+- Spans are automatically sent to Elasticsearch
+- eBPF programs are unloaded
+- Resources are cleaned up
 
 ### Span Validation
 

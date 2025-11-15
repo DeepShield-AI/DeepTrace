@@ -24,8 +24,8 @@ Uses dual-phase transaction inference with API affinity and persistent field sim
 
 DeepTrace consists of two main components:
 
-- **Agent**: Deployed on each host, responsible for non-intrusive request collection through eBPF
-- **Server**: Runs in Kubernetes clusters, handles trace reconstruction and provides query services
+- **Agent**: Deployed on each host, responsible for non-intrusive request collection and span correlation through eBPF
+- **Server**: Runs in Kubernetes clusters, handles trace assembly from correlated spans and provides query services
 
 ```mermaid
 graph TB

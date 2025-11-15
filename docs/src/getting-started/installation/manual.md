@@ -319,32 +319,6 @@ rm -rf target/
 sudo apt-get clean
 ```
 
-## Performance Optimization
-
-### Compiler Optimizations
-
-For maximum performance:
-
-```bash
-# Set optimization flags
-export RUSTFLAGS="-C target-cpu=native -C opt-level=3"
-
-# Build with link-time optimization
-cargo xtask build --profile release-lto
-```
-
-### Link-Time Optimization
-
-Create a custom profile in `Cargo.toml`:
-
-```toml
-[profile.release-lto]
-inherits = "release"
-lto = true
-codegen-units = 1
-panic = "abort"
-```
-
 ## Development Setup
 
 For ongoing development work:

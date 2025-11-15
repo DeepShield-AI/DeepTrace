@@ -24,7 +24,7 @@ cd DeepTrace
 
 ## Step 2: Quick Configuration
 
-- **To deploy DeepTrace, you must fill in the following fields in the [configuration file](https://github.com/DeepShield-AI/DeepTrace/blob/main/server/config/config.toml)(DeepTrace/server/config/config.toml) in order to run it.** These required fields are presented in the configuration file in the format of **xxx**. In all-in-one mode, the `server.ip` and `agents.agent_info.host_ip` values are identical.  
+- **To deploy DeepTrace, you must fill in the following fields in the `server/config/config.toml` in order to run it.** These required fields are presented in the configuration file in the format of **xxx**. In all-in-one mode, the `server.ip` and `agents.agent_info.host_ip` values are identical.  
 
 Edit the configuration file and fill in these **required** fields:
 
@@ -59,7 +59,7 @@ sudo docker ps | grep deeptrace
 
 You should see containers running for `deeptrace_server` and `elasticsearch`.
 
-## Step 4: Access Web Interface
+## Step 4: Access Elasticsearch Web Interface
 
 Open your browser and navigate to:
 ```
@@ -72,10 +72,9 @@ http://YOUR_SERVER_IP:5601
 
 ## Step 5: Deploy a Microservice Application
 
-To generate traces, deploy a microservice application on the host:
+To generate traces, deploy a test microservice application:
 
-- Bookinfo — see [Bookinfo Guide](https://github.com/DeepShield-AI/DeepTrace/blob/main/tests/workload/bookinfo/README.md)
-- Social Network — see [Social Network Guide](https://github.com/DeepShield-AI/DeepTrace/blob/main/tests/workload/socialnetwork/README.md)
+**Choose an application**: See [Workload Applications](../user-guide/workloads.md) for detailed deployment instructions.
 
 ## Step 6: Install and Start Agent
 
@@ -97,11 +96,9 @@ The agent will automatically:
 
 ## Step 7: Generate Sample Traffic
 
-If you deployed the microservice application, generate some traffic:
-Refer to the following documents for sending requests:
+Generate traffic to your deployed microservice application:
 
-- Bookinfo — see [Bookinfo Guide](https://github.com/DeepShield-AI/DeepTrace/blob/main/tests/workload/bookinfo/README.md)
-- Social Network — see [Social Network Guide](https://github.com/DeepShield-AI/DeepTrace/blob/main/tests/workload/socialnetwork/README.md)
+**Follow the traffic generation instructions** in [Workload Applications](../user-guide/workloads.md) for your chosen application.
 
 ## Step 8: Build and View Traces
 
@@ -117,7 +114,7 @@ sudo docker exec -it deeptrace_server python -m cli.src.cmd assemble
 
 ## Step 9: Explore Your Traces
 
-1. **Web Interface**: Visit `http://YOUR_SERVER_IP:5601`
+1. **Elasticsearch Web Interface**: Visit `http://YOUR_SERVER_IP:5601`
 2. **Navigate to Discover**: Click on "Discover" in the left sidebar
 3. **Select Index**: Choose the trace index pattern
 4. **View Traces**: Explore collected traces with rich metadata
@@ -127,7 +124,7 @@ sudo docker exec -it deeptrace_server python -m cli.src.cmd assemble
 ✅ **Server Running**: `sudo docker ps | grep deeptrace_server`  
 ✅ **Agent Connected**: Check agent status in web interface  
 ✅ **Traces Collected**: Verify traces appear in Elasticsearch  
-✅ **Web Interface Accessible**: Can login and view data  
+✅ **Elasticsearch Web Interface Accessible**: Can login and view data  
 
 ## Clean Up
 

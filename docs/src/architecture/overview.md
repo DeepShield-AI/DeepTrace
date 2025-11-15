@@ -52,7 +52,6 @@ graph TB
     subgraph "DeepTrace Infrastructure"
         subgraph "Server Cluster"
             SERVER[DeepTrace Server]
-            CORRELATOR[Span Correlator]
             ASSEMBLER[Trace Assembler]
             API[Query API]
         end
@@ -73,8 +72,7 @@ graph TB
     AGENTN --> ES
     
     ES --> SERVER
-    SERVER --> CORRELATOR
-    CORRELATOR --> ASSEMBLER
+    SERVER --> ASSEMBLER
     ASSEMBLER --> ES
     
     SERVER --> API
@@ -99,6 +97,7 @@ The agent is deployed on each host and is responsible for:
 
 #### Local Processing
 - **Span Construction**: Builds individual request/response spans
+- **Span Correlation**: Correlates related spans using transaction semantics
 - **Data Compression**: Reduces transmission overhead
 - **Local Buffering**: Handles temporary network issues
 - **Process Filtering**: Monitors only relevant applications
@@ -113,22 +112,16 @@ The agent is deployed on each host and is responsible for:
 
 The server provides centralized processing and management:
 
-#### Span Management
-- **Data Retrieval**: Pulls spans from Elasticsearch for processing
+#### Data Management
+- **Data Retrieval**: Pulls correlated spans from Elasticsearch for assembly
 - **Validation**: Ensures data integrity and completeness during retrieval
-- **Query Optimization**: Efficiently queries spans for correlation
+- **Query Optimization**: Efficiently queries spans for trace assembly
 - **Batch Processing**: Processes spans in optimized batches
 
-#### Correlation Engine
-- **Algorithm Selection**: Multiple correlation strategies
-- **Transaction Analysis**: Identifies logical request flows
-- **Similarity Computation**: Calculates span relationships
-- **Confidence Scoring**: Assigns correlation confidence levels
-
 #### Trace Assembly
-- **Graph Construction**: Builds trace dependency graphs
+- **Graph Construction**: Builds trace dependency graphs from correlated spans
 - **Path Analysis**: Identifies complete request paths
-- **Optimization**: Removes redundant or incorrect correlations
+- **Optimization**: Removes redundant or incorrect trace connections
 - **Validation**: Ensures trace completeness and accuracy
 
 ### 3. Storage Layer
@@ -161,7 +154,7 @@ The server provides centralized processing and management:
 
 ## Data Flow Architecture
 
-### 1. Span Collection Flow
+### 1. Span Collection and Correlation Flow
 
 ```mermaid
 sequenceDiagram
@@ -174,24 +167,22 @@ sequenceDiagram
     eBPF->>eBPF: Extract Metadata
     eBPF->>Agent: Send Raw Data
     Agent->>Agent: Construct Span
+    Agent->>Agent: Correlate Spans
     Agent->>Agent: Process & Buffer
-    Agent->>ES: Store Span Directly
+    Agent->>ES: Store Correlated Spans
 ```
 
-### 2. Correlation Flow
+### 2. Trace Assembly Flow
 
 ```mermaid
 sequenceDiagram
     participant Server as DeepTrace Server
-    participant Correlator as Span Correlator
     participant ES as Elasticsearch
     participant Assembler as Trace Assembler
     
-    Server->>ES: Query Uncorrelated Spans
-    ES->>Server: Return Span Data
-    Server->>Correlator: Process Spans
-    Correlator->>Correlator: Apply Correlation Algorithm
-    Correlator->>Assembler: Send Correlated Spans
+    Server->>ES: Query Correlated Spans
+    ES->>Server: Return Correlated Span Data
+    Server->>Assembler: Process Correlated Spans
     Assembler->>Assembler: Build Complete Traces
     Assembler->>ES: Store Assembled Traces
 ```
@@ -417,8 +408,8 @@ graph TB
 | Component | Metric | Typical Value |
 |-----------|--------|---------------|
 | **Agent** | Spans/second | 10,000-50,000 |
-| **Server** | Ingestion rate | 100,000-500,000 |
-| **Correlation** | Spans/minute | 1,000,000+ |
+| **Agent Correlation** | Spans/minute | 1,000,000+ |
+| **Server** | Assembly rate | 100,000-500,000 |
 | **Storage** | Write throughput | 10,000-50,000 docs/sec |
 
 ### 2. Latency Metrics
@@ -426,8 +417,9 @@ graph TB
 | Operation | Typical Latency | Target SLA |
 |-----------|----------------|------------|
 | **Span Collection** | 0.1-0.5ms | < 1ms |
+| **Span Correlation** | 1-10ms | < 50ms |
 | **Data Transmission** | 1-5ms | < 10ms |
-| **Correlation** | 100-500ms | < 1s |
+| **Trace Assembly** | 100-500ms | < 1s |
 | **Query Response** | 10-100ms | < 200ms |
 
 ---

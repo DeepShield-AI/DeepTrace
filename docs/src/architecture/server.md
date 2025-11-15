@@ -1,13 +1,13 @@
 # Server Architecture
 
-The DeepTrace Server is a Python-based distributed system responsible for managing agents, processing spans from Elasticsearch, performing trace correlation and assembly, and providing management interfaces. This document provides a detailed overview of the server's architecture, components, and operational principles based on the actual implementation.
+The DeepTrace Server is a Python-based distributed system responsible for managing agents, processing correlated spans from Elasticsearch, performing trace assembly, and providing management interfaces. This document provides a detailed overview of the server's architecture, components, and operational principles based on the actual implementation.
 
 ## Overview
 
 The DeepTrace Server operates as a centralized control and processing system that:
 1. **Manages Agent Lifecycle**: Deploys, configures, and monitors distributed agents
-2. **Processes Span Data**: Retrieves spans from Elasticsearch for correlation
-3. **Performs Trace Assembly**: Correlates spans into complete distributed traces
+2. **Processes Correlated Span Data**: Retrieves correlated spans from Elasticsearch for assembly
+3. **Performs Trace Assembly**: Assembles correlated spans into complete distributed traces
 4. **Provides Management Interface**: Offers APIs and tools for system administration
 
 ## Architecture Diagram
@@ -23,8 +23,6 @@ graph TB
         
         subgraph "Data Processing"
             SPAN_POLLER[Span Poller]
-            CORRELATOR[Inter Association]
-            DEEPTRACE_ALG[DeepTrace Algorithm]
             ASSEMBLER[Trace Assembler]
         end
         
@@ -52,9 +50,7 @@ graph TB
     
     SPAN_POLLER --> ES_CLIENT
     ES_CLIENT --> ES
-    SPAN_POLLER --> CORRELATOR
-    CORRELATOR --> DEEPTRACE_ALG
-    DEEPTRACE_ALG --> ASSEMBLER
+    SPAN_POLLER --> ASSEMBLER
     ASSEMBLER --> ES_CLIENT
     
     CONFIG_PARSER --> TOML_CONFIG
@@ -126,29 +122,23 @@ The server implements a sophisticated data processing pipeline:
   - Queue-based processing
   - Error handling and retry logic
 
-#### Correlation Engine
+#### Trace Assembly Engine
 ```python
-def span2trace(spans):
-    # Step 1: Inter-service association
-    spans = inter_association(spans, 
-                            client_ingress='ComposePost', 
-                            tuple_used=False)
+def span2trace(correlated_spans):
+    # Step 1: Process correlated spans
+    spans = process_correlated_spans(correlated_spans)
     
-    # Step 2: DeepTrace algorithm
-    span_dict = deeptrace.deeptrace(spans)
+    # Step 2: Span merging
+    span_list = span_merge(spans)
     
-    # Step 3: Span merging
-    span_list = span_merge(span_dict)
-    
-    # Step 4: Trace assembly
+    # Step 3: Trace assembly
     trace_num = assemble_trace_from_spans(span_list, 'traces')
 ```
 
 #### Processing Components
-1. **Inter Association**: Cross-service span correlation
-2. **DeepTrace Algorithm**: Core correlation logic
-3. **Span Merge**: Consolidates related spans
-4. **Trace Assembler**: Builds complete trace structures
+1. **Span Processing**: Processes correlated spans from agents
+2. **Span Merge**: Consolidates related spans
+3. **Trace Assembler**: Builds complete trace structures from correlated spans
 
 ### 3. Storage Interface
 
@@ -208,7 +198,7 @@ Configuration → Agent Creation → SSH Connection → Remote Operations
 
 ### 2. Span Processing Flow
 ```
-Elasticsearch → Span Polling → Queue → Correlation → Assembly → Storage
+Elasticsearch → Span Polling → Queue → Assembly → Storage
 ```
 
 ### 3. Deployment Flow
@@ -221,7 +211,7 @@ Config Parsing → Agent Initialization → Code Clone → Installation → Conf
 The server supports different operational modes:
 
 ### Automatic Mode
-- **Default Operation**: Continuous span processing and correlation
+- **Default Operation**: Continuous correlated span processing
 - **Background Processing**: Automated trace assembly
 - **Health Monitoring**: Continuous agent health checks
 
@@ -291,8 +281,8 @@ def test_agents(agents):
 ## Performance Characteristics
 
 ### Processing Capacity
-- **Span Throughput**: Processes thousands of spans per minute
-- **Correlation Performance**: Efficient correlation algorithms
+- **Span Throughput**: Processes thousands of correlated spans per minute
+- **Assembly Performance**: Efficient trace assembly algorithms
 - **Storage Performance**: Optimized Elasticsearch operations
 - **Agent Management**: Concurrent agent operations
 

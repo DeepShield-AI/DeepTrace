@@ -281,9 +281,6 @@ telnet 192.168.1.100 7901
 # Check agent configuration syntax
 cd agent/config
 python3 -c "import toml; toml.load('deeptrace.toml')"
-
-# Validate configuration structure
-cargo run --bin prism -- --config-path config/prism.toml --validate-only
 ```
 
 ### Network Connectivity

@@ -116,6 +116,7 @@ The processing layer transforms raw eBPF events into structured spans:
 #### Data Processing Features
 - **Socket Tracking**: Maintains socket state across system calls
 - **Request/Response Correlation**: Matches network I/O operations
+- **Span Correlation**: Correlates related spans using transaction semantics
 - **Metadata Extraction**: Process IDs, timestamps, connection details
 - **Span Lifecycle Management**: Automatic cleanup of completed spans
 

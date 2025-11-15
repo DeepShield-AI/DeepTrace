@@ -1,649 +1,492 @@
-# Server API Reference
+# Server Management Reference
 
-The DeepTrace Server provides a comprehensive API for trace correlation, analysis, and management. This API serves as the central hub for processing spans collected by agents and providing analytical insights.
+**Note**: The DeepTrace Server is not an API server. It is a Python-based management tool for:
 
-## Base URL
+1. **Agent Deployment**: Deploy agents to remote hosts via SSH
+2. **Agent Management**: Start, stop, and configure agents remotely  
+3. **Configuration Sync**: Synchronize agent configurations
+4. **Infrastructure Setup**: Deploy Elasticsearch and Kibana
+5. **Trace Processing**: Span correlation and trace assembly
+6. **Analytics**: Service metrics and call graph construction
 
-```
-http://localhost:7901
-```
+## Server Architecture
 
-## Authentication
+The DeepTrace Server is a Python application that:
+- Manages multiple agents via SSH connections
+- Deploys and configures Elasticsearch/Kibana
+- Synchronizes agent configurations
+- Performs span correlation using various algorithms
+- Assembles traces from correlated spans
+- Generates service metrics and call graphs
 
-The Server API supports optional authentication via API keys. Configure authentication in the server configuration file.
+There is no HTTP API exposed by the server. All operations are performed via:
+- **CLI Scripts**: Python command-line tools (`python server/cli/src/cmd.py`)
+- **Configuration Files**: TOML-based configuration
+- **SSH**: Remote agent management
+
+## Server Configuration
+
+The server is configured via `server/config/config.toml`:
 
 ```toml
-[api]
-enable_auth = true
-api_keys = ["your-api-key-here"]
+[server]
+# External IP address of the DeepTrace server
+ip = "192.168.1.100"
+
+[elastic]
+# Elasticsearch password
+elastic_password = "your_password"
+
+# Agent management (can have multiple agents)
+[[agents]]
+  [agents.agent_info]
+  agent_name = "agent-1"
+  user_name = "ubuntu"
+  host_ip = "192.168.1.101"
+  ssh_port = 22
+  host_password = "ssh_password"
+
+[[agents]]
+  [agents.agent_info]
+  agent_name = "agent-2"
+  user_name = "ubuntu"
+  host_ip = "192.168.1.102"
+  ssh_port = 22
+  host_password = "ssh_password"
 ```
 
-When authentication is enabled, include the API key in requests:
+## CLI Commands
 
-```
-Authorization: Bearer your-api-key-here
-```
+### Agent Management
 
-## Endpoints
+#### Install Agents
 
-### Health and Status
+Deploy agent binaries and configurations to remote hosts:
 
-#### GET /health
-
-Returns the health status of the server.
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "uptime": 7200,
-  "version": "0.1.0",
-  "components": {
-    "elasticsearch": "healthy",
-    "correlation_engine": "healthy",
-    "api_server": "healthy"
-  }
-}
+```bash
+python server/cli/src/cmd.py agent install
 ```
 
-#### GET /status
+**Operations**:
+- Copies agent binary to remote host
+- Creates necessary directories
+- Deploys configuration files
+- Sets up permissions
 
-Returns detailed status information about the server.
+#### Start Agents
 
-**Response:**
-```json
-{
-  "server": {
-    "status": "running",
-    "pid": 23456,
-    "start_time": "2024-01-15T08:30:00Z",
-    "config_file": "/etc/deeptrace/server.toml"
-  },
-  "elasticsearch": {
-    "status": "connected",
-    "cluster_name": "deeptrace",
-    "nodes": 1,
-    "indices": 5,
-    "documents": 125420
-  },
-  "correlation": {
-    "algorithm": "deeptrace",
-    "spans_processed": 98750,
-    "traces_generated": 12340,
-    "correlation_rate": 89.5
-  },
-  "performance": {
-    "cpu_usage": 15.2,
-    "memory_usage": 256.8,
-    "disk_usage": 12.4,
-    "network_io": 45.6
-  }
-}
+Start all configured agents:
+
+```bash
+python server/cli/src/cmd.py agent run
 ```
 
-### Span Management
+**Operations**:
+- Executes agent start script via SSH
+- Verifies agent process is running
+- Checks eBPF programs are loaded
 
-#### POST /spans
+#### Stop Agents
 
-Receive spans from agents (internal endpoint).
+Stop all running agents:
 
-**Request Body:**
-```json
-{
-  "spans": [
-    {
-      "trace_id": "abc123def456",
-      "span_id": "span789",
-      "parent_span_id": "parent456",
-      "service_name": "user-service",
-      "operation_name": "GET /api/users",
-      "start_time": "2024-01-15T10:15:30.123Z",
-      "end_time": "2024-01-15T10:15:30.456Z",
-      "duration": 333,
-      "tags": {
-        "http.method": "GET",
-        "http.url": "/api/users",
-        "http.status_code": 200
-      },
-      "process": {
-        "pid": 1234,
-        "hostname": "web-server-01"
-      }
-    }
-  ]
-}
+```bash
+python server/cli/src/cmd.py agent stop
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "spans_received": 1,
-  "spans_processed": 1,
-  "processing_time": 15
-}
+**Operations**:
+- Sends stop signal to agent process
+- Cleans up eBPF programs
+- Verifies agent has stopped
+
+#### Test Agent Connections
+
+Test SSH connectivity to all agents:
+
+```bash
+python server/cli/src/cmd.py agent test
 ```
 
-#### GET /spans/search
+**Operations**:
+- Tests SSH connection to each agent host
+- Verifies credentials
+- Reports connection status
 
-Search for spans with advanced filtering.
+#### Sync Agent Configuration
 
-**Query Parameters:**
-- `q` (string): Full-text search query
-- `service` (string): Filter by service name
-- `operation` (string): Filter by operation name
-- `trace_id` (string): Filter by trace ID
-- `start_time` (ISO 8601): Start time filter
-- `end_time` (ISO 8601): End time filter
-- `min_duration` (int): Minimum duration in microseconds
-- `max_duration` (int): Maximum duration in microseconds
-- `tags` (string): Tag filters (format: key:value)
-- `limit` (int): Maximum results (default: 100, max: 1000)
-- `offset` (int): Pagination offset
+Synchronize configuration from server to agents:
 
-**Example:**
-```
-GET /spans/search?service=user-service&min_duration=1000&tags=http.status_code:500&limit=50
+```bash
+python server/cli/src/cmd.py agent sync
 ```
 
-**Response:**
-```json
-{
-  "spans": [
-    {
-      "trace_id": "abc123def456",
-      "span_id": "span789",
-      "service_name": "user-service",
-      "operation_name": "GET /api/users",
-      "start_time": "2024-01-15T10:15:30.123Z",
-      "duration": 1500,
-      "tags": {
-        "http.method": "GET",
-        "http.status_code": 500,
-        "error": true
-      }
-    }
-  ],
-  "total": 1,
-  "limit": 50,
-  "offset": 0,
-  "query_time": 25
-}
+**Operations**:
+- Generates agent-specific configuration
+- Updates Elasticsearch connection settings
+- Copies configuration to remote hosts
+- Optionally restarts agents
+
+#### Install Workload Applications
+
+Deploy workload applications (BookInfo, Social Network) to agent hosts:
+
+```bash
+python server/cli/src/cmd.py agent install_app
 ```
 
-### Trace Management
+#### Uninstall Workload Applications
 
-#### GET /traces
+Remove workload applications from agent hosts:
 
-Retrieve assembled traces.
-
-**Query Parameters:**
-- `service` (string): Filter by service name
-- `operation` (string): Filter by root operation
-- `start_time` (ISO 8601): Start time filter
-- `end_time` (ISO 8601): End time filter
-- `min_duration` (int): Minimum trace duration
-- `max_duration` (int): Maximum trace duration
-- `min_spans` (int): Minimum number of spans
-- `max_spans` (int): Maximum number of spans
-- `has_errors` (bool): Filter traces with errors
-- `limit` (int): Maximum results (default: 50)
-- `offset` (int): Pagination offset
-
-**Response:**
-```json
-{
-  "traces": [
-    {
-      "trace_id": "abc123def456",
-      "root_span": {
-        "span_id": "root123",
-        "service_name": "api-gateway",
-        "operation_name": "GET /api/users"
-      },
-      "start_time": "2024-01-15T10:15:30.123Z",
-      "end_time": "2024-01-15T10:15:31.456Z",
-      "duration": 1333,
-      "span_count": 8,
-      "service_count": 4,
-      "has_errors": false,
-      "services": ["api-gateway", "user-service", "database", "cache"]
-    }
-  ],
-  "total": 1,
-  "limit": 50,
-  "offset": 0
-}
+```bash
+python server/cli/src/cmd.py agent uninstall_app
 ```
 
-#### GET /traces/{trace_id}
+### Span Correlation
 
-Get detailed information about a specific trace.
+#### Run Correlation Algorithm
 
-**Response:**
-```json
-{
-  "trace_id": "abc123def456",
-  "spans": [
-    {
-      "span_id": "root123",
-      "parent_span_id": null,
-      "service_name": "api-gateway",
-      "operation_name": "GET /api/users",
-      "start_time": "2024-01-15T10:15:30.123Z",
-      "end_time": "2024-01-15T10:15:31.456Z",
-      "duration": 1333,
-      "tags": {
-        "http.method": "GET",
-        "http.url": "/api/users",
-        "http.status_code": 200
-      },
-      "children": ["span456", "span789"]
-    },
-    {
-      "span_id": "span456",
-      "parent_span_id": "root123",
-      "service_name": "user-service",
-      "operation_name": "query_users",
-      "start_time": "2024-01-15T10:15:30.200Z",
-      "end_time": "2024-01-15T10:15:30.800Z",
-      "duration": 600,
-      "tags": {
-        "db.statement": "SELECT * FROM users",
-        "db.type": "postgresql"
-      },
-      "children": []
-    }
-  ],
-  "metadata": {
-    "total_spans": 8,
-    "total_duration": 1333,
-    "service_count": 4,
-    "error_count": 0
-  }
-}
+Correlate spans using a specific algorithm:
+
+```bash
+# Using FIFO algorithm
+python server/cli/src/cmd.py asso algo fifo
+
+# Using DeepTrace algorithm
+python server/cli/src/cmd.py asso algo deeptrace
 ```
 
-### Correlation Management
+**Available Algorithms**:
+- **fifo**: First-In-First-Out correlation
+- **deeptrace**: Advanced transaction-based correlation
 
-#### POST /correlation/run
+**Operations**:
+- Reads spans from Elasticsearch
+- Performs inter-service association
+- Applies selected correlation algorithm
+- Writes correlated spans back to Elasticsearch
 
-Trigger span correlation process.
+### Trace Assembly
 
-**Request Body:**
-```json
-{
-  "algorithm": "deeptrace",
-  "parameters": {
-    "window_size": 1000,
-    "similarity_threshold": 0.8,
-    "max_iterations": 100
-  },
-  "time_range": {
-    "start": "2024-01-15T10:00:00Z",
-    "end": "2024-01-15T11:00:00Z"
-  }
-}
+#### Assemble Traces
+
+Assemble complete traces from correlated spans:
+
+```bash
+python server/cli/src/cmd.py assemble
 ```
 
-**Response:**
-```json
-{
-  "job_id": "corr_job_123",
-  "status": "started",
-  "algorithm": "deeptrace",
-  "estimated_duration": 120,
-  "spans_to_process": 15420
-}
+**Operations**:
+- Reads correlated spans from Elasticsearch
+- Groups spans by trace ID
+- Constructs trace hierarchy
+- Stores assembled traces
+
+### Database Management
+
+#### Clear Database
+
+Clear all data from Elasticsearch:
+
+```bash
+python server/cli/src/cmd.py db clear
 ```
 
-#### GET /correlation/jobs/{job_id}
+**Warning**: This operation deletes all spans and traces from Elasticsearch.
 
-Get correlation job status.
+### Trace Testing
 
-**Response:**
-```json
-{
-  "job_id": "corr_job_123",
-  "status": "completed",
-  "algorithm": "deeptrace",
-  "start_time": "2024-01-15T10:30:00Z",
-  "end_time": "2024-01-15T10:32:15Z",
-  "duration": 135,
-  "results": {
-    "spans_processed": 15420,
-    "traces_generated": 1890,
-    "correlation_rate": 92.3,
-    "errors": 0
-  }
-}
+#### Test Correlation and Assembly
+
+Test the complete trace processing pipeline with a specific algorithm:
+
+```bash
+# Test with FIFO
+python server/cli/src/cmd.py trace test fifo
+
+# Test with DeepTrace
+python server/cli/src/cmd.py trace test deeptrace
+
+# Test with other algorithms
+python server/cli/src/cmd.py trace test vpath
+python server/cli/src/cmd.py trace test wap5
+python server/cli/src/cmd.py trace test traceweaver_v1
+python server/cli/src/cmd.py trace test traceweaver_v2
 ```
 
-#### GET /correlation/algorithms
+**Available Algorithms**:
+- **fifo**: First-In-First-Out
+- **deeptrace**: Transaction-based correlation
+- **vpath**: Virtual path-based correlation
+- **wap5**: WAP5 algorithm
+- **traceweaver_v1**: TraceWeaver version 1
+- **traceweaver_v2**: TraceWeaver version 2
 
-List available correlation algorithms.
+### Service Analytics
 
-**Response:**
-```json
-{
-  "algorithms": [
-    {
-      "name": "deeptrace",
-      "description": "Advanced transaction-based correlation",
-      "parameters": {
-        "window_size": {
-          "type": "integer",
-          "default": 1000,
-          "description": "Correlation window in milliseconds"
-        },
-        "similarity_threshold": {
-          "type": "float",
-          "default": 0.8,
-          "description": "Minimum similarity score"
-        }
-      }
-    },
-    {
-      "name": "fifo",
-      "description": "Simple first-in-first-out correlation",
-      "parameters": {
-        "batch_size": {
-          "type": "integer",
-          "default": 1000,
-          "description": "Processing batch size"
-        }
-      }
-    }
-  ]
-}
+#### Get Service Metrics
+
+Calculate and display service-level metrics:
+
+```bash
+python server/cli/src/cmd.py service metrics
 ```
 
-### Analytics
+**Metrics Provided**:
+- Request count per service
+- Error rates
+- Average latency
+- P95/P99 latencies
+- Throughput
 
-#### GET /analytics/services
+### Call Graph Construction
 
-Get service-level analytics.
+#### Construct Service Call Graph
 
-**Query Parameters:**
-- `start_time` (ISO 8601): Start time for analysis
-- `end_time` (ISO 8601): End time for analysis
-- `service` (string): Filter by specific service
+Build a call graph from traces:
 
-**Response:**
-```json
-{
-  "services": [
-    {
-      "name": "user-service",
-      "request_count": 5420,
-      "error_count": 12,
-      "error_rate": 0.22,
-      "avg_duration": 245.6,
-      "p95_duration": 890.2,
-      "p99_duration": 1250.8,
-      "throughput": 90.3
-    },
-    {
-      "name": "order-service",
-      "request_count": 3200,
-      "error_count": 8,
-      "error_rate": 0.25,
-      "avg_duration": 156.3,
-      "p95_duration": 450.1,
-      "p99_duration": 780.5,
-      "throughput": 53.3
-    }
-  ],
-  "time_range": {
-    "start": "2024-01-15T10:00:00Z",
-    "end": "2024-01-15T11:00:00Z"
-  }
-}
+```bash
+python server/cli/src/cmd.py graph construct
 ```
 
-#### GET /analytics/operations
+**Operations**:
+- Analyzes service dependencies from traces
+- Constructs directed graph of service calls
+- Calculates edge weights (call frequency)
+- Exports graph visualization
 
-Get operation-level analytics.
+## Python API
 
-**Response:**
-```json
-{
-  "operations": [
-    {
-      "service": "user-service",
-      "operation": "GET /api/users",
-      "request_count": 2100,
-      "error_count": 5,
-      "error_rate": 0.24,
-      "avg_duration": 189.4,
-      "p95_duration": 567.8,
-      "p99_duration": 890.2
-    }
-  ]
-}
-```
-
-#### GET /analytics/topology
-
-Get service dependency topology.
-
-**Response:**
-```json
-{
-  "nodes": [
-    {
-      "id": "api-gateway",
-      "name": "API Gateway",
-      "type": "service",
-      "request_count": 8500,
-      "error_rate": 0.15
-    },
-    {
-      "id": "user-service",
-      "name": "User Service",
-      "type": "service",
-      "request_count": 5420,
-      "error_rate": 0.22
-    }
-  ],
-  "edges": [
-    {
-      "source": "api-gateway",
-      "target": "user-service",
-      "request_count": 5420,
-      "avg_duration": 245.6,
-      "error_rate": 0.22
-    }
-  ]
-}
-```
-
-### Configuration
-
-#### GET /config
-
-Get current server configuration.
-
-**Response:**
-```json
-{
-  "server": {
-    "host": "0.0.0.0",
-    "port": 7901,
-    "workers": 4
-  },
-  "elasticsearch": {
-    "hosts": ["http://localhost:9200"],
-    "index_prefix": "deeptrace",
-    "batch_size": 1000
-  },
-  "correlation": {
-    "default_algorithm": "deeptrace",
-    "auto_correlation": true,
-    "correlation_interval": 60
-  }
-}
-```
-
-#### PUT /config
-
-Update server configuration.
-
-**Request Body:**
-```json
-{
-  "correlation": {
-    "default_algorithm": "fifo",
-    "correlation_interval": 30
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Configuration updated successfully",
-  "restart_required": false
-}
-```
-
-## WebSocket API
-
-### Real-time Span Streaming
-
-Connect to receive real-time span updates:
-
-```
-ws://localhost:7901/ws/spans
-```
-
-**Message Format:**
-```json
-{
-  "type": "span",
-  "data": {
-    "trace_id": "abc123def456",
-    "span_id": "span789",
-    "service_name": "user-service",
-    "operation_name": "GET /api/users",
-    "timestamp": "2024-01-15T10:15:30.123Z"
-  }
-}
-```
-
-### Real-time Trace Updates
-
-Connect to receive trace completion notifications:
-
-```
-ws://localhost:7901/ws/traces
-```
-
-**Message Format:**
-```json
-{
-  "type": "trace_completed",
-  "data": {
-    "trace_id": "abc123def456",
-    "span_count": 8,
-    "duration": 1333,
-    "services": ["api-gateway", "user-service", "database"]
-  }
-}
-```
-
-## Error Responses
-
-Standard error response format:
-
-```json
-{
-  "error": {
-    "code": "CORRELATION_FAILED",
-    "message": "Correlation algorithm failed to process spans",
-    "details": {
-      "algorithm": "deeptrace",
-      "spans_processed": 1250,
-      "error_details": "Insufficient memory for correlation matrix"
-    }
-  }
-}
-```
-
-## Examples
-
-### Python Client Example
+### Agent Management API
 
 ```python
-import requests
-import json
-from datetime import datetime, timedelta
+from controller.src.utils import *
+from config.parse_config import load_agents
 
-class DeepTraceServerClient:
-    def __init__(self, base_url="http://localhost:7901", api_key=None):
-        self.base_url = base_url
-        self.headers = {}
-        if api_key:
-            self.headers["Authorization"] = f"Bearer {api_key}"
-    
-    def search_spans(self, service=None, operation=None, limit=100):
-        params = {"limit": limit}
-        if service:
-            params["service"] = service
-        if operation:
-            params["operation"] = operation
-        
-        response = requests.get(
-            f"{self.base_url}/spans/search",
-            params=params,
-            headers=self.headers
-        )
-        return response.json()
-    
-    def get_trace(self, trace_id):
-        response = requests.get(
-            f"{self.base_url}/traces/{trace_id}",
-            headers=self.headers
-        )
-        return response.json()
-    
-    def run_correlation(self, algorithm="deeptrace"):
-        data = {
-            "algorithm": algorithm,
-            "time_range": {
-                "start": (datetime.now() - timedelta(hours=1)).isoformat() + "Z",
-                "end": datetime.now().isoformat() + "Z"
-            }
-        }
-        response = requests.post(
-            f"{self.base_url}/correlation/run",
-            json=data,
-            headers=self.headers
-        )
-        return response.json()
-    
-    def get_service_analytics(self):
-        response = requests.get(
-            f"{self.base_url}/analytics/services",
-            headers=self.headers
-        )
-        return response.json()
+# Load agent configurations
+agents = load_agents()
 
-# Usage
-client = DeepTraceServerClient(api_key="your-api-key")
+# Install agents
+install_agents(agents)
 
-# Search for error spans
-error_spans = client.search_spans(tags="error:true", limit=10)
-print(f"Found {len(error_spans['spans'])} error spans")
+# Start agents
+start_agents(agents)
 
-# Get service analytics
-analytics = client.get_service_analytics()
-for service in analytics['services']:
-    print(f"{service['name']}: {service['error_rate']:.2%} error rate")
+# Stop agents
+stop_agents(agents)
 
-# Run correlation
-job = client.run_correlation()
-print(f"Correlation job started: {job['job_id']}")
+# Test agent connections
+test_agents(agents)
+
+# Sync configuration
+sync_agent_config(agents)
+
+# Install workload
+install_workload(agents)
+
+# Uninstall workload
+uninstall_workload(agents)
 ```
+
+### Span Correlation API
+
+```python
+from database.src.utils import es_read_agent_span_list
+from trace.association.src.cross import inter_association
+from trace.association.src import fifo, deeptrace
+
+# Load agents
+agents = load_agents()
+
+# Read spans from Elasticsearch
+spans = es_read_agent_span_list(agents)
+
+# Perform inter-service association
+spans = inter_association(
+    spans, 
+    client_ingress='ComposePost',
+    tuple_used=True,
+    clock_skew=False
+)
+
+# Apply correlation algorithm
+span_dict = fifo.fifo(spans)
+# or
+span_dict = deeptrace.deeptrace(spans)
+```
+
+### Trace Assembly API
+
+```python
+from trace.assemble.src.utils import assemble_trace_from_db
+
+# Assemble traces from database
+traces = assemble_trace_from_db()
+```
+
+### Service Metrics API
+
+```python
+from service.src.metric import service_metrics
+
+# Calculate service metrics
+metrics = service_metrics()
+```
+
+### Call Graph API
+
+```python
+from callgraph.src.graph import construct_graph
+
+# Construct service call graph
+graph = construct_graph()
+```
+
+## Data Access
+
+### Elasticsearch Queries
+
+Spans and traces are stored in Elasticsearch. Access them via:
+
+```bash
+# Query spans from specific agent
+curl -X GET "http://localhost:9200/spans_agent1/_search" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "query": {
+      "match_all": {}
+    },
+    "size": 10
+  }'
+
+# Query all spans
+curl -X GET "http://localhost:9200/spans_*/_search" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "query": {
+      "range": {
+        "timestamp": {
+          "gte": "now-1h"
+        }
+      }
+    }
+  }'
+
+# Query correlated spans
+curl -X GET "http://localhost:9200/correlated_spans/_search"
+
+# Query assembled traces
+curl -X GET "http://localhost:9200/traces/_search"
+```
+
+### Kibana Visualization
+
+Access data through Kibana:
+1. Navigate to `http://localhost:5601`
+2. Create index patterns:
+   - `spans_*` for raw spans
+   - `correlated_spans` for correlated spans
+   - `traces` for assembled traces
+3. Use Discover to explore data
+4. Create visualizations and dashboards
+
+## Workflow Examples
+
+### Complete Deployment Workflow
+
+```bash
+# 1. Configure server
+vim server/config/config.toml
+
+# 2. Install agents
+python server/cli/src/cmd.py agent install
+
+# 3. Sync configuration
+python server/cli/src/cmd.py agent sync
+
+# 4. Start agents
+python server/cli/src/cmd.py agent run
+
+# 5. Install workload application
+python server/cli/src/cmd.py agent install_app
+
+# 6. Wait for spans to be collected...
+
+# 7. Run correlation
+python server/cli/src/cmd.py asso algo deeptrace
+
+# 8. Assemble traces
+python server/cli/src/cmd.py assemble
+
+# 9. Generate metrics
+python server/cli/src/cmd.py service metrics
+
+# 10. Construct call graph
+python server/cli/src/cmd.py graph construct
+```
+
+### Testing Workflow
+
+```bash
+# 1. Clear existing data
+python server/cli/src/cmd.py db clear
+
+# 2. Start agents
+python server/cli/src/cmd.py agent run
+
+# 3. Generate test traffic
+# (application-specific)
+
+# 4. Test correlation and assembly
+python server/cli/src/cmd.py trace test deeptrace
+
+# 5. View results in Kibana
+# Navigate to http://localhost:5601
+```
+
+## Troubleshooting
+
+### Agent Connection Issues
+
+```bash
+# Test SSH connectivity
+python server/cli/src/cmd.py agent test
+
+# Check SSH credentials in config
+vim server/config/config.toml
+
+# Verify network connectivity
+ping <agent_host_ip>
+```
+
+### Correlation Issues
+
+```bash
+# Check if spans exist in Elasticsearch
+curl http://localhost:9200/spans_*/_count
+
+# Verify span structure
+curl http://localhost:9200/spans_agent1/_search?size=1
+
+# Check correlation algorithm logs
+# (logs are printed to stdout)
+```
+
+### Database Issues
+
+```bash
+# Check Elasticsearch health
+curl http://localhost:9200/_cluster/health
+
+# Verify indices exist
+curl http://localhost:9200/_cat/indices
+
+# Clear and restart
+python server/cli/src/cmd.py db clear
+```
+
+## Next Steps
+
+- **[Agent API](./agent.md)**: Agent management and monitoring
+- **[Configuration Schema](./configuration.md)**: Detailed configuration options
+- **[Data Formats](./data-formats.md)**: Span and trace data structures

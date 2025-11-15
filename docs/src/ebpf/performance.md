@@ -120,107 +120,101 @@ Testing with a 10-service microservices application:
 
 ### 1. Efficient Data Extraction
 
-#### Selective Payload Capture
+#### Process Filtering
 
-```c
-static inline int extract_payload_smart(struct args_t *args, struct Data *data, size_t len) {
-    // Only capture payload for monitored protocols
-    if (!is_monitored_protocol(data->quintuple.dst_port)) {
-        data->buf[0] = '\0';
-        return 0;
-    }
-    
-    // Limit payload size based on protocol
-    size_t max_payload = get_protocol_payload_limit(data->quintuple.dst_port);
-    size_t copy_len = len > max_payload ? max_payload : len;
-    
-    return bpf_probe_read_user(data->buf, copy_len, args->buffer);
+DeepTrace uses efficient PID-based filtering to reduce overhead:
+
+```rust
+// From utils.rs - Actual implementation
+#[inline(always)]
+pub(crate) fn is_filtered_pid() -> bool {
+    let tgid = (bpf_get_current_pid_tgid() >> 32) as u32;
+    unsafe { PIDS.get_ptr(&tgid) }.is_some()
 }
 ```
 
-#### Protocol-Aware Optimization
+**Benefits**:
+- **Early Exit**: Skip processing for non-monitored processes
+- **O(1) Lookup**: Hash map provides constant-time PID checks
+- **Memory Efficient**: Only stores monitored PIDs
 
-```c
-static inline bool should_capture_full_payload(u16 port, char *buf, size_t len) {
-    switch (port) {
-        case 80:   // HTTP
-        case 8080:
-            return is_http_request_response(buf, len);
-        case 6379: // Redis
-            return is_redis_command(buf, len);
-        case 27017: // MongoDB
-            return is_mongodb_operation(buf, len);
-        default:
-            return false;
-    }
-}
+#### Payload Size Optimization
+
+```rust
+// From ebpf-common/src/constants.rs
+pub const MAX_PAYLOAD_SIZE: usize = 4096;    // Maximum captured payload
+pub const MAX_INFER_SIZE: usize = 1024;      // Protocol inference buffer
 ```
+
+**Strategy**:
+- **Limited Capture**: Only capture necessary payload for protocol inference
+- **Two-Stage Processing**: Small buffer for inference, larger for full payload
+- **Configurable Limits**: Adjustable based on requirements
 
 ### 2. Map Operation Optimization
 
-#### Batch Operations
+#### Efficient Map Usage
 
-```c
-// Batch multiple operations to reduce map access overhead
-struct batch_data {
-    struct Data entries[BATCH_SIZE];
-    u32 count;
-};
+DeepTrace uses Aya's type-safe maps for optimal performance:
 
-static inline int flush_batch_data(struct batch_data *batch) {
-    for (u32 i = 0; i < batch->count; i++) {
-        bpf_ringbuf_output(&Message, &batch->entries[i], sizeof(struct Data), 0);
-    }
-    batch->count = 0;
-    return 0;
-}
+```rust
+// From maps.rs - Actual map definitions
+#[map(name = "PIDS")]
+pub(crate) static mut PIDS: HashMap<u32, u32> = HashMap::with_max_entries(MAX_PID_NUMBERS, 0);
+
+#[map(name = "EVENTS")]
+pub(crate) static mut EVENTS: PerfEventByteArray = PerfEventByteArray::new(0);
 ```
 
-#### Efficient Key Generation
+**Optimizations**:
+- **Type Safety**: Compile-time type checking prevents errors
+- **Efficient Sizing**: Maps sized based on actual usage patterns
+- **Lock-Free**: PerfEventByteArray provides lock-free data transfer
 
-```c
-// Optimized key generation to reduce CPU cycles
-static inline u64 fast_thread_key(void) {
-    // Use direct assembly for better performance
-    u64 pid_tgid;
-    asm volatile("call %1" : "=a"(pid_tgid) : "i"(BPF_FUNC_get_current_pid_tgid));
-    return pid_tgid;
-}
+#### Memory Management
+
+```rust
+// From ebpf-common/src/alloc.rs - Safe memory allocation
+alloc::init()?;
+let data = alloc::alloc_zero::<Message>()?;
+let buffer = alloc::alloc_zero::<Buffer<MAX_INFER_SIZE>>()?;
 ```
 
-### 3. Memory Access Optimization
+**Benefits**:
+- **Safe Allocation**: eBPF-safe memory management
+- **Zero-Initialized**: Prevents uninitialized memory access
+- **Error Handling**: Proper error propagation
 
-#### Cache-Friendly Data Layout
+### 3. Data Structure Optimization
 
-```c
-// Organize frequently accessed fields together
-struct __attribute__((packed)) OptimizedData {
+#### Cache-Friendly Layout
+
+DeepTrace structures are optimized for cache performance:
+
+```rust
+// From message.rs - Optimized field ordering
+#[repr(C)]
+pub struct Message {
     // Hot fields (frequently accessed)
-    u64 timestamp_ns;
-    u32 len;
-    u32 syscall;
+    pub tgid: u32,
+    pub pid: u32,
+    pub timestamp_ns: u64,
     
     // Warm fields
-    struct Quintuple quintuple;
+    pub quintuple: Quintuple,
+    pub syscall: Syscall,
+    pub direction: Direction,
     
     // Cold fields (less frequently accessed)
-    char comm[16];
-    char buf[MAX_PAYLOAD_SIZE];
-};
-```
-
-#### Prefetching Optimization
-
-```c
-static inline void prefetch_socket_data(int fd) {
-    struct socket *sock = get_socket_from_fd(fd);
-    if (sock) {
-        // Prefetch socket structure into cache
-        __builtin_prefetch(sock, 0, 3);
-        __builtin_prefetch(&sock->sk, 0, 3);
-    }
+    pub comm: Buffer<TASK_COMM_LEN>,
+    pub payload: Buffer<MAX_PAYLOAD_SIZE>,
 }
 ```
+
+**Design Principles**:
+- **Hot Fields First**: Frequently accessed fields at the beginning
+- **Proper Alignment**: Natural alignment for optimal access
+- **Minimal Padding**: Efficient memory usage
 
 ## Performance Tuning Guidelines
 
@@ -229,64 +223,66 @@ static inline void prefetch_socket_data(int fd) {
 #### Process Filtering
 
 ```toml
-[agents.trace]
-# Monitor only specific processes to reduce overhead
-pids = [1234, 5678, 9012]
-
-# Or monitor by process name patterns
-include_processes = ["nginx", "redis-server", "mongod"]
-exclude_processes = ["systemd", "kthreadd"]
+# From actual deeptrace.toml configuration
+[ebpf.trace]
+pids = [1234, 5678, 9012]  # Monitor specific processes
+max_buffered_events = 1024  # Limit buffer size
 ```
 
-#### Payload Size Limits
+**Benefits**:
+- **Selective Monitoring**: Only trace specified processes
+- **Reduced Overhead**: Skip irrelevant processes early
+- **Memory Control**: Limit buffer sizes to prevent memory pressure
+
+#### eBPF Program Configuration
 
 ```toml
-[agents.capture]
-# Limit payload capture to reduce memory usage
-max_payload_size = 1024  # bytes
-enable_payload_compression = true
-
-# Protocol-specific limits
-[agents.capture.protocols]
-http_max_payload = 2048
-redis_max_payload = 512
-mongodb_max_payload = 1024
+[ebpf.trace]
+log_level = "info"
+enabled_probes = ["read", "write", "sendmsg", "recvmsg"]
+max_buffered_events = 8192
+pids = []  # Empty means monitor all processes
 ```
+
+**Tuning Parameters**:
+- **enabled_probes**: Enable only necessary system call hooks
+- **max_buffered_events**: Balance memory usage vs data loss
+- **log_level**: Reduce logging overhead in production
 
 ### 2. Runtime Optimization
 
-#### Dynamic Filtering
+#### File Descriptor Filtering
 
-```c
-// Implement dynamic filtering based on load
-static inline bool should_sample_request(void) {
-    static u32 sample_counter = 0;
-    u32 current_load = get_system_load();
-    
-    if (current_load > HIGH_LOAD_THRESHOLD) {
-        // Sample every 10th request under high load
-        return (++sample_counter % 10) == 0;
-    }
-    
-    return true; // Sample all requests under normal load
+DeepTrace implements efficient FD filtering to reduce overhead:
+
+```rust
+// From write.rs - Skip standard I/O file descriptors
+let Ok(fd) = (unsafe { ctx.read_at::<c_ulong>(16) }) else { return 0 };
+if fd < 3 {
+    return 0;  // Skip stdin, stdout, stderr
 }
 ```
 
-#### Adaptive Batch Sizing
+**Benefits**:
+- **Early Exit**: Skip processing for standard I/O operations
+- **Reduced Noise**: Focus on actual network/file operations
+- **Performance**: Minimal overhead for common operations
 
-```c
-static inline u32 get_optimal_batch_size(void) {
-    u32 cpu_usage = get_cpu_usage_percent();
-    
-    if (cpu_usage > 80) {
-        return BATCH_SIZE_SMALL;  // 16
-    } else if (cpu_usage > 50) {
-        return BATCH_SIZE_MEDIUM; // 64
-    } else {
-        return BATCH_SIZE_LARGE;  // 256
-    }
+#### Error Handling Optimization
+
+```rust
+// From process.rs - Efficient error handling
+if !(0 < ret && ret <= MAX_PAYLOAD_SIZE as i64) {
+    debug!(ctx, "invalid ret: {}", ret);
+    map.remove(&id).map_err(|_| MAP_DELETE_FAILED)?;
+    return Err(SYSCALL_PAYLOAD_LENGTH_INVALID);
 }
 ```
+
+**Strategy**:
+- **Early Validation**: Check return values before processing
+- **Cleanup on Error**: Remove stale map entries
+- **Structured Errors**: Use specific error codes for debugging
 
 ### 3. System-Level Optimization
 
@@ -430,4 +426,38 @@ bpftrace -e 'uprobe:/path/to/ebpf:function_name { @start = nsecs; }
 - **Gradual Rollout**: Deploy to a subset of hosts initially
 - **Monitor Continuously**: Track performance metrics in production
 - **Tune Dynamically**: Adjust configuration based on observed performance
+- **Test Thoroughly**: Validate performance impact in staging environments
+
+## Summary
+
+DeepTrace's eBPF implementation achieves comprehensive distributed tracing with minimal performance impact through:
+
+### Key Optimizations
+
+1. **Efficient Process Filtering**: O(1) PID lookups reduce unnecessary processing
+2. **Smart Data Extraction**: Two-stage payload processing (inference + full capture)
+3. **Type-Safe Maps**: Aya framework provides compile-time safety and runtime efficiency
+4. **Memory Management**: eBPF-safe allocators prevent memory issues
+5. **Error Handling**: Structured error codes enable efficient debugging
+
+### Performance Characteristics
+
+- **CPU Overhead**: 2-4% typical impact
+- **Memory Usage**: 20-30MB per agent
+- **Latency Impact**: 0.2-0.8μs per system call
+- **Throughput Impact**: 1-2% reduction in application throughput
+
+### Production Readiness
+
+DeepTrace is designed for production deployment with:
+- **Configurable Overhead**: Tunable parameters for different environments
+- **Comprehensive Monitoring**: Built-in performance metrics and debugging tools
+- **Robust Error Handling**: Graceful degradation under high load
+- **Minimal Dependencies**: Self-contained eBPF implementation
+
+## Next Steps
+
+- **[System Hooks](./hooks.md)**: Learn about eBPF program implementation
+- **[Data Structures](./structures.md)**: Understand data structure design
+- **[Memory Maps](./maps.md)**: Explore eBPF map usage patterns
 - **Plan for Scale**: Consider performance impact at full deployment scale

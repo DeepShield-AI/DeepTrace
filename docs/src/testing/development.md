@@ -255,15 +255,16 @@ sudo bash clear.sh
 ### eBPF Tests Setup
 
 ```bash
-# Compile eBPF test programs
-cd tests/eBPF/overhead
-make all
-
 # Run eBPF functionality tests
-sudo ./run_ebpf_tests.sh
+cd tests/eBPF/functionality
+python3 server.py &
+python3 client.py
 
-# Run performance tests
-sudo ./run_performance_tests.sh
+# Run performance overhead tests
+cd tests/eBPF/overhead
+bash run.sh write
+bash run.sh read
+bash run.sh sendto
 ```
 
 ## Development Tools
@@ -385,10 +386,11 @@ docker run -d \
 # Wait for Elasticsearch to start
 curl -X GET "localhost:9200/_cluster/health?wait_for_status=yellow&timeout=30s"
 
-# Create development indices
-curl -X PUT "localhost:9200/deeptrace-spans" \
-    -H 'Content-Type: application/json' \
-    -d @configs/elasticsearch/span-template.json
+# Test Elasticsearch connection
+curl -X GET "localhost:9200/_cluster/health"
+
+# Spans will be automatically indexed by the agent
+# Index pattern: spans_{agent_name}
 ```
 
 ### Test Database Setup
@@ -543,8 +545,8 @@ main() {
     
     echo "Development environment setup complete!"
     echo "You can now run:"
-    echo "  cargo run --bin deeptrace-agent -- -f config/deeptrace.toml"
-    echo "  cargo run --bin deeptrace-server -- -f config/server.toml"
+    echo "  cd agent && cargo xtask run --release -c config/deeptrace.toml"
+    echo "  cd server && python cli/src/cmd.py agent run"
 }
 
 main "$@"

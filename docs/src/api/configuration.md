@@ -168,9 +168,9 @@ elastic_password = "your_password"  # Elasticsearch password
 
 # Agent management configuration
 [[agents]]
-  [agents.agent_info]
+  [agents.agent]
   # Agent identification and SSH connection (ALL REQUIRED)
-  agent_name = "agent-1"            # Unique agent identifier
+  name = "agent-1"                  # Unique agent identifier
   user_name = "ubuntu"              # SSH username
   host_ip = "192.168.1.101"         # Agent host IP address
   ssh_port = 22                     # SSH port (usually 22)
@@ -201,7 +201,7 @@ Agent management configuration (array of agents):
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `agent_name` | string | Yes | Unique agent identifier |
+| `name` | string | Yes | Unique agent identifier |
 | `user_name` | string | Yes | SSH username for agent host |
 | `host_ip` | string | Yes | IP address of agent host |
 | `ssh_port` | integer | Yes | SSH port (usually 22) |
@@ -209,84 +209,31 @@ Agent management configuration (array of agents):
 
 ## Environment Variables
 
-Configuration values can be overridden using environment variables:
-
-### Agent Environment Variables
-
-```bash
-# Agent identification
-DEEPTRACE_AGENT_ID="agent-001"
-DEEPTRACE_HOSTNAME="web-server-01"
-
-# Trace collection
-DEEPTRACE_TRACE_BATCH_SIZE=1024
-DEEPTRACE_TRACE_SAMPLING_RATE=1.0
-DEEPTRACE_TRACE_FLUSH_INTERVAL=5000
-
-# Server communication
-DEEPTRACE_SERVER_URL="http://localhost:7901"
-DEEPTRACE_SENDER_TIMEOUT=30000
-DEEPTRACE_SENDER_RETRY_COUNT=3
-
-# eBPF settings
-DEEPTRACE_EBPF_RING_BUFFER_SIZE=262144
-DEEPTRACE_EBPF_ENABLE_DEBUG=false
-
-# Logging
-DEEPTRACE_LOG_LEVEL="info"
-DEEPTRACE_LOG_FORMAT="json"
-```
-
-### Server Environment Variables
-
-```bash
-# Server settings
-DEEPTRACE_SERVER_HOST="0.0.0.0"
-DEEPTRACE_SERVER_PORT=7901
-DEEPTRACE_SERVER_WORKERS=4
-
-# Elasticsearch
-DEEPTRACE_ELASTICSEARCH_HOSTS="http://localhost:9200"
-DEEPTRACE_ELASTICSEARCH_USERNAME="elastic"
-DEEPTRACE_ELASTICSEARCH_PASSWORD="changeme"
-DEEPTRACE_ELASTICSEARCH_INDEX_PREFIX="deeptrace"
-
-# Correlation
-DEEPTRACE_CORRELATION_ALGORITHM="deeptrace"
-DEEPTRACE_CORRELATION_AUTO=true
-DEEPTRACE_CORRELATION_INTERVAL=60
-
-# API
-DEEPTRACE_API_ENABLE_AUTH=false
-DEEPTRACE_API_RATE_LIMIT=100
-```
+**Note**: DeepTrace currently does not support environment variable overrides. All configuration must be specified in the TOML configuration files.
 
 ## Configuration Validation
 
 ### Agent Configuration Validation
 
 ```bash
-# Validate agent configuration
-deeptrace-agent --config agent.toml --validate
+# Check TOML syntax
+toml-check agent/config/deeptrace.toml
 
-# Check configuration syntax
-deeptrace-agent --config agent.toml --check-syntax
-
-# Show effective configuration
-deeptrace-agent --config agent.toml --show-config
+# Or use Python
+python -c "import toml; toml.load('agent/config/deeptrace.toml')"
 ```
 
 ### Server Configuration Validation
 
 ```bash
-# Validate server configuration
-deeptrace-server --config server.toml --validate
+# Check TOML syntax
+toml-check server/config/config.toml
 
-# Test Elasticsearch connection
-deeptrace-server --config server.toml --test-elasticsearch
+# Or use Python
+python -c "import toml; toml.load('server/config/config.toml')"
 
-# Validate correlation settings
-deeptrace-server --config server.toml --test-correlation
+# Test agent connections
+python server/cli/src/cmd.py agent test
 ```
 
 ## Configuration Examples
@@ -294,109 +241,112 @@ deeptrace-server --config server.toml --test-correlation
 ### High-Throughput Agent
 
 ```toml
-[agents.trace]
-batch_size = 4096
-flush_interval = 1000
-sampling_rate = 0.1
-max_queue_size = 50000
+[agent]
+name = "high-throughput-agent"
 
-[agents.sender]
-mem_buffer_size = 64
-batch_timeout = 1000
-max_batch_size = 4096
-compression = "lz4"
+[ebpf.trace]
+log_level = 0  # Disable debug logging for performance
+max_buffered_events = 256  # Larger buffer
+pids = []  # Monitor all processes
 
-[agents.ebpf]
-ring_buffer_size = 1048576
-map_max_entries = 65536
-```
+[sender.elastic.trace]
+node_url = "http://localhost:9200"
+username = "elastic"
+password = "password"
+index_name = "spans_production"
+bulk_size = 128  # Larger bulk size
+request_timeout = 30
 
-### Production Server
-
-```toml
-[server]
-workers = 8
-max_connections = 5000
-
-[elasticsearch]
-hosts = [
-    "http://es-node-1:9200",
-    "http://es-node-2:9200",
-    "http://es-node-3:9200"
-]
-batch_size = 5000
-shards = 3
-replicas = 1
-
-[correlation]
-batch_size = 10000
-correlation_interval = 30
-
-[api]
-enable_auth = true
-api_keys = ["prod-api-key-1", "prod-api-key-2"]
-rate_limit = 1000
+[trace.span]
+cleanup_interval = 60  # Less frequent cleanup
+max_sockets = 4096  # More sockets
 ```
 
 ### Development Environment
 
 ```toml
-[agents.trace]
-sampling_rate = 1.0
-enable_async = false
+[agent]
+name = "dev-agent"
 
-[logging]
-level = "debug"
-format = "text"
-output = "stdout"
+[ebpf.trace]
+log_level = 3  # Verbose logging
+max_buffered_events = 32
+pids = [12345]  # Monitor specific process
 
-[correlation]
-default_algorithm = "fifo"
-auto_correlation = true
+[sender.elastic.trace]
+node_url = "http://localhost:9200"
+username = "elastic"
+password = "dev_password"
+index_name = "spans_dev"
+bulk_size = 16
 
-[api]
-enable_auth = false
-enable_cors = true
+[trace.span]
+cleanup_interval = 10  # Frequent cleanup for testing
+max_sockets = 256
 ```
 
-## Configuration Migration
+### Multi-Agent Server
 
-### Version Compatibility
+```toml
+[server]
+ip = "192.168.1.100"
 
-| Version | Config Version | Migration Required |
-|---------|----------------|-------------------|
-| 0.1.x   | v1            | No                |
-| 0.2.x   | v2            | Yes               |
+[elastic]
+elastic_password = "production_password"
 
-### Migration Tools
+[[agents]]
+  [agents.agent]
+  name = "web-server-1"
+  user_name = "ubuntu"
+  host_ip = "192.168.1.101"
+  ssh_port = 22
+  host_password = "ssh_pass_1"
 
-```bash
-# Migrate configuration from v1 to v2
-deeptrace-migrate --from v1 --to v2 --config old-config.toml --output new-config.toml
+[[agents]]
+  [agents.agent]
+  name = "web-server-2"
+  user_name = "ubuntu"
+  host_ip = "192.168.1.102"
+  ssh_port = 22
+  host_password = "ssh_pass_2"
 
-# Validate migrated configuration
-deeptrace-server --config new-config.toml --validate
+[[agents]]
+  [agents.agent]
+  name = "database-server"
+  user_name = "ubuntu"
+  host_ip = "192.168.1.103"
+  ssh_port = 22
+  host_password = "ssh_pass_3"
 ```
+
+## Configuration Tips
 
 ## Best Practices
 
 ### Performance Optimization
 
-1. **Batch Size Tuning**: Increase batch sizes for high-throughput environments
-2. **Sampling**: Use sampling in production to reduce overhead
-3. **Buffer Sizing**: Adjust buffer sizes based on memory availability
-4. **Compression**: Enable compression for network efficiency
+1. **Batch Size Tuning**: Increase `bulk_size` for high-throughput environments
+2. **Buffer Sizing**: Adjust `max_buffered_events` based on workload
+3. **Socket Tracking**: Set `max_sockets` based on application connection count
+4. **Log Level**: Use `log_level=0` in production to minimize overhead
+5. **Process Filtering**: Use `pids` array to monitor only relevant processes
 
 ### Security
 
-1. **API Authentication**: Enable API authentication in production
-2. **Network Security**: Use HTTPS for server communication
-3. **Access Control**: Restrict API access using network policies
-4. **Credential Management**: Use environment variables for sensitive data
+1. **Credential Protection**: Store passwords securely, avoid committing to version control
+2. **SSH Keys**: Consider using SSH keys instead of passwords for agent management
+3. **Network Security**: Use firewall rules to restrict Elasticsearch access
+4. **Elasticsearch Security**: Enable Elasticsearch security features in production
 
 ### Monitoring
 
-1. **Health Checks**: Enable health check endpoints
-2. **Metrics Collection**: Enable metrics for monitoring
-3. **Log Levels**: Use appropriate log levels for different environments
-4. **Alerting**: Configure alerting for critical issues
+1. **Metrics Collection**: Enable file-based metrics collection for agent monitoring
+2. **Log Levels**: Use `log_level=1` for debugging, `log_level=0` for production
+3. **Cleanup Intervals**: Adjust `cleanup_interval` based on span lifetime
+4. **Index Management**: Use separate indices per agent for better organization
+
+## Next Steps
+
+- **[Agent API](./agent.md)**: Agent management and control
+- **[Server API](./server.md)**: Server management and CLI tools
+- **[Data Formats](./data-formats.md)**: Span and trace data structures

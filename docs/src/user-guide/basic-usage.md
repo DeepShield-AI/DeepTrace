@@ -1,152 +1,138 @@
 # Basic Usage
 
-This guide covers the essential operations for using DeepTrace. After completing the installation and initial setup, follow these instructions to start collecting and analyzing distributed traces.
+This guide covers essential operations for using DeepTrace after completing the initial setup. It focuses on day-to-day operations and advanced usage patterns.
 
-## Prerequisites
-
-- ✅ **Completed installation** ([Installation Guide](../getting-started/installation.md))
-- ✅ **Configured the system** ([Configuration Guide](../getting-started/configuration.md))
-- ✅ **Deployed server and agent** ([All-in-One Guide](../getting-started/all-in-one.md))
-- ✅ **Deployed microservice applications** to trace
+> **Prerequisites**: Complete the [Quick Start Guide](../getting-started/quick-start.md) before using this guide.
 
 ## Core Workflow
 
-1. Deploy and start agents
-2. Generate traffic to microservice applications
-3. Correlate spans using chosen algorithm
-4. Assemble traces from correlated spans
-5. Analyze results in Kibana
+DeepTrace follows a simple workflow for distributed tracing:
 
-## 1. Agent Management
+```
+1. Agent Collection → 2. Span Correlation → 3. Trace Assembly → 4. Analysis
+```
 
-### Installing the Agent
+## Advanced Agent Operations
+
+### Agent Status Management
 
 ```bash
-# Install agent on configured hosts
-sudo docker exec -it deeptrace_server python -m cli.src.cmd agent install
+# Check agent status
+sudo docker exec -it deeptrace_server python -m cli.src.cmd agent status
+
+# Restart agent with new configuration
+sudo docker exec -it deeptrace_server python -m cli.src.cmd agent restart
+
+# View agent logs
+sudo docker exec -it deeptrace_server python -m cli.src.cmd agent logs
 ```
 
-### Starting the Agent
-
-```bash
-# Start the agent on target hosts
-sudo docker exec -it deeptrace_server python -m cli.src.cmd agent run
-```
-
-### Stopping the Agent
-
-```bash
-# Stop the agent
-sudo docker exec -it deeptrace_server python -m cli.src.cmd agent stop
-```
-
-## 2. Span Collection
-
-By default, DeepTrace automatically collects spans from all Docker containers on the monitored hosts.
-
-### Configure Specific Processes
-
-Edit the configuration file to monitor specific PIDs:
-
-```toml
-# In server/config/config.toml
-[ebpf.trace]
-pids = [1234, 5678, 9012]  # Specific process IDs to monitor
-```
-
-## 3. Span Correlation
+## Span Correlation
 
 ### Available Algorithms
 
-DeepTrace supports two correlation algorithms:
+| Algorithm | Description | Use Case |
+|-----------|-------------|----------|
+| `deeptrace` | Advanced transaction-based correlation | **Recommended** for most scenarios |
+| `fifo` | Simple first-in-first-out correlation | Testing and simple applications |
 
-| Algorithm | Description |
-|-----------| -------------|
-| `deeptrace` | Advanced transaction-based correlation (Recommended) |
-| `fifo` | Simple first-in-first-out correlation |
-
-### Running Correlation
+### Run Correlation
 
 ```bash
 # Use DeepTrace algorithm (recommended)
 sudo docker exec -it deeptrace_server python -m cli.src.cmd asso algo deeptrace
 
-# Use FIFO algorithm
+# Alternative: Use FIFO algorithm
 sudo docker exec -it deeptrace_server python -m cli.src.cmd asso algo fifo
 ```
 
-## 4. Trace Assembly
+## Trace Assembly
+
+After correlation, assemble traces from correlated spans:
 
 ```bash
-# Assemble traces from correlated spans
+# Assemble traces
 sudo docker exec -it deeptrace_server python -m cli.src.cmd assemble
 ```
 
-## 5. Data Analysis
+## Advanced Data Analysis
 
-### Web Interface Access
+For basic trace viewing, see the [Quick Start Guide](../getting-started/quick-start.md). This section covers advanced analysis techniques.
 
-Access Kibana to view and analyze traces:
-
-```
-URL: http://YOUR_SERVER_IP:5601
-Username: elastic
-Password: YOUR_ELASTIC_PASSWORD
-```
-
-### Viewing Traces
-
-1. Navigate to **Discover** in Kibana
-2. Select the `traces` index pattern
-3. Set the time range
-4. View and analyze collected traces
-
-## 6. Common Operations
-
-### Monitoring System Health
+### Advanced Kibana Operations
 
 ```bash
-# Check Elasticsearch health
+# Create custom index patterns
+# Set up advanced visualizations  
+# Configure dashboards for monitoring
+```
+
+For detailed analysis techniques, see [Trace Analysis](./trace-analysis.md).
+
+## System Monitoring
+
+### Health Checks
+
+```bash
+# Check Elasticsearch cluster health
 curl http://localhost:9200/_cluster/health
 
 # Monitor container resource usage
 sudo docker stats
+
+# Verify DeepTrace containers
+sudo docker ps | grep deeptrace
 ```
 
 ### Data Management
 
 ```bash
-# Clear all database tables
+# Clear all collected data
 sudo docker exec -it deeptrace_server python -m cli.src.cmd db clear
 
-# Delete specific index
+# Delete specific Elasticsearch index
 curl -X DELETE "localhost:9200/traces"
 ```
 
-## 7. Troubleshooting
+## Troubleshooting
 
 ### No Traces Collected
 
-1. Verify agent is running
-2. Check that traffic is being sent to the microservice application
-3. Ensure PIDs are correctly configured in the configuration file
-4. Check Elasticsearch is accessible
+**Common causes and solutions:**
+
+1. **Agent not running**: Verify agent status and restart if needed
+2. **No traffic**: Ensure microservice applications are receiving requests
+3. **Network issues**: Check connectivity between agent and server
+4. **Elasticsearch issues**: Verify Elasticsearch is accessible and healthy
 
 ### Poor Correlation Results
 
-1. Try different correlation algorithms (deeptrace vs fifo)
-2. Ensure sufficient spans are collected before correlation
-3. Verify microservice application is generating proper network traffic
+**Optimization strategies:**
 
-## 8. Cleanup
+1. **Try different algorithms**: Switch between `deeptrace` and `fifo`
+2. **Increase data collection**: Ensure sufficient spans before correlation
+3. **Check application traffic**: Verify microservices are generating network activity
+4. **Review configuration**: Ensure proper agent and server configuration
 
-Remove DeepTrace agents and server:
+## Cleanup
+
+### Remove DeepTrace
+
+To completely remove DeepTrace and all components:
 
 ```bash
 sudo bash scripts/clear.sh
 ```
 
-## Additional Resources
+This will:
+- Stop all containers
+- Remove Docker images
+- Clean up temporary files
+- Reset the environment
 
-- **[Workloads](./workloads.md)**: Deploy test microservice applications
-- **[Configuration](../getting-started/configuration.md)**: Detailed configuration options
+## Next Steps
+
+- **[Web UI](./web-ui.md)**: Explore the web-based monitoring interface
+- **[Database Setup](./database.md)**: Advanced Elasticsearch configuration
+- **[Workload Applications](./workloads.md)**: Deploy additional test applications
+- **[Configuration Guide](../getting-started/configuration.md)**: Advanced configuration options
