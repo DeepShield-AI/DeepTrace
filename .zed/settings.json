@@ -57,12 +57,12 @@
 		"rust-analyzer": {
 			"initialization_options": {
 				"check": {
-					"overrideCommand": ["cargo", "xtask", "clippy", "--", "--workspace", "--quiet"],
+					"overrideCommand": ["cd agent && ", "cargo", "xtask", "clippy", "--", "--workspace", "--quiet"],
 					"invocationStrategy": "once"
 				},
 				"cargo": {
 					"buildScripts": {
-						"overrideCommand": ["cargo", "xtask", "clippy", "--", "--workspace", "--quiet"],
+						"overrideCommand": ["cd agent && ", "cargo", "xtask", "clippy", "--", "--workspace", "--quiet"],
 						"invocationStrategy": "once"
 					},
 					"target": "x86_64-unknown-linux-gnu",
@@ -70,12 +70,12 @@
 					"cfgs": ["debug_assertions", "target_arch=bpf", "target_arch=x86_64"]
 				},
 				"linkedProjects": [
-					"Cargo.toml",
-					"crates/observ-trace-ebpf/Cargo.toml",
-					"crates/observ-cpu-ebpf/Cargo.toml",
-					"crates/observ-memory-ebpf/Cargo.toml",
-					"crates/observ-disk-ebpf/Cargo.toml",
-					"crates/observ-network-ebpf/Cargo.toml"
+					"agent/Cargo.toml",
+					"agent/crates/observ-trace-ebpf/Cargo.toml",
+					"agent/crates/observ-cpu-ebpf/Cargo.toml",
+					"agent/crates/observ-memory-ebpf/Cargo.toml",
+					"agent/crates/observ-disk-ebpf/Cargo.toml",
+					"agent/crates/observ-network-ebpf/Cargo.toml"
 				],
 				"procMacro": {
 					"enable": true
