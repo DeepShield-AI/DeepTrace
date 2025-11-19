@@ -1,5 +1,6 @@
 [agent]
 name = "prism"
+user = "user"
 
 [metric]
 interval = 10

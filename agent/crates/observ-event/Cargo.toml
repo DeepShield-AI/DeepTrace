@@ -15,6 +15,7 @@ path = "src/lib.rs"
 [dependencies]
 observ-trace-common = { workspace = true, features = ["user"], optional = true }
 
+bollard.workspace = true
 bytes.workspace = true
 chrono.workspace = true
 cow.workspace = true

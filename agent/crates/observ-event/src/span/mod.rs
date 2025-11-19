@@ -2,20 +2,21 @@ use content::SpanContent;
 use metric::SpanMetric;
 use observ_trace_common::Message;
 use serde::Serialize;
-
+use tag::SpanTag;
 mod content;
 mod metric;
 mod tag;
+
 #[derive(Serialize)]
 pub struct Span {
-	// tag: SpanTag,
+	tag: SpanTag,
 	metric: SpanMetric,
 	content: SpanContent,
 }
 
 impl Span {
 	pub async fn new(req: Message, resp: Message) -> Self {
-		// let tag = SpanTag::set_tags(&req, &resp).await;
+		let tag = SpanTag::set_tags(&req, &resp).await;
 
 		let metric = SpanMetric {
 			start_time: req.timestamp_ns,
@@ -27,7 +28,6 @@ impl Span {
 
 		let content = SpanContent { req_content: req.payload, resp_content: resp.payload };
 
-		Self { metric, content }
-		// Self { tag, metric, content }
+		Self { tag, metric, content }
 	}
 }

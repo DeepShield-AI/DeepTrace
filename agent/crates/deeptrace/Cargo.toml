@@ -68,7 +68,7 @@ config = { version = "0.15.11", default-features = true }
 ## cpu
 # core_affinity = { version = "0.8.3", default-features = false }
 ## docker
-bollard = { version = "0.16", default-features = true }
+bollard.workspace = true
 ## elasticsearch
 elasticsearch = { version = "8.17.0-alpha.1", default-features = false }
 ## k8s

@@ -1,5 +1,6 @@
 [agent]
 name = "deeptrace"
+user = "user"
 
 [metric]
 interval = 10
