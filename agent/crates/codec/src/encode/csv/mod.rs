@@ -86,14 +86,13 @@ pub struct CsvEncoder {
 // 	}
 // }
 
-impl<I, S> Encoder<I> for CsvEncoder
+impl<S> Encoder<S> for CsvEncoder
 where
-	I: IntoIterator<Item = S>,
 	S: Sendable,
 {
 	type Error = CodecEncodeError;
 
-	fn encode(&mut self, records: I, out: &mut BytesMut) -> Result<(), Self::Error> {
+	fn encode(&mut self, records: S, out: &mut BytesMut) -> Result<(), Self::Error> {
 		let hint = if self.capacity > 0 { self.capacity } else { 8 * 1024 };
 		out.reserve(hint);
 
@@ -165,12 +164,10 @@ where
 			}
 		}
 
-		for field in records.into_iter() {
-			let mut buf = BytesMut::new();
-			let _ = field.encode(&mut buf);
-			write_field(&mut self.writer, &buf, out);
-			write_terminator(&mut self.writer, out);
-		}
+		let mut buf = BytesMut::new();
+		let _ = records.encode(&mut buf);
+		write_field(&mut self.writer, &buf, out);
+		write_terminator(&mut self.writer, out);
 		Ok(())
 	}
 }
