@@ -6,6 +6,7 @@ use tag::SpanTag;
 mod content;
 mod metric;
 mod tag;
+use observ_core::Sendable;
 
 #[derive(Serialize)]
 pub struct Span {
@@ -31,3 +32,5 @@ impl Span {
 		Self { tag, metric, content }
 	}
 }
+
+impl Sendable for Span {}

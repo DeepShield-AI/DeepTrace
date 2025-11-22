@@ -1,7 +1,9 @@
+use arc_swap::access::Access;
 use bollard::{
 	Docker,
 	query_parameters::{InspectContainerOptions, ListContainersOptions},
 };
+use observ_config::agent_config;
 use observ_trace_common::{Direction, L7Protocol, Message};
 use serde::Serialize;
 use std::{cell::RefCell, collections::HashMap, ffi::CStr, process::Command};
@@ -136,6 +138,8 @@ pub(in crate::span) struct SpanTag {
 	pub ebpf_tag: EbpfTag,
 	// docker tags
 	pub docker_tag: Option<DockerTag>,
+	// other tags
+	pub other_tags: HashMap<String, String>,
 }
 
 fn u32_to_ip(ip: u32) -> String {
@@ -178,7 +182,9 @@ impl SpanTag {
 		};
 
 		let docker_tag = DockerTag::get_docker_tags(req.tgid).await;
-
-		SpanTag { ebpf_tag, docker_tag }
+		let mut other_tags = HashMap::new();
+		let agent_config = agent_config().load();
+		other_tags.insert("user".to_string(), agent_config.user.clone());
+		SpanTag { ebpf_tag, docker_tag, other_tags }
 	}
 }

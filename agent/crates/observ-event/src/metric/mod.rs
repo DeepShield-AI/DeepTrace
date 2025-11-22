@@ -8,6 +8,7 @@ pub use value::*;
 mod common;
 use bytes::BytesMut;
 pub(in crate::metric) use common::IntoF64;
+use observ_core::Sendable;
 
 pub type String = Cow<'static, str>;
 
@@ -65,5 +66,12 @@ impl Metric {
 
 		o.extend_from_slice(csv_line.as_bytes());
 		Ok(())
+	}
+}
+
+impl Sendable for Metric {
+	// TODO: why io::Error?
+	fn encode(&self, o: &mut BytesMut) -> Result<(), std::io::Error> {
+		self.encode(o)
 	}
 }

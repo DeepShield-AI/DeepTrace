@@ -13,8 +13,11 @@ workspace = true
 path = "src/lib.rs"
 
 [dependencies]
+observ-config.workspace = true
+observ-core.workspace = true
 observ-trace-common = { workspace = true, features = ["user"], optional = true }
 
+arc-swap.workspace = true
 bollard.workspace = true
 bytes.workspace = true
 chrono.workspace = true
