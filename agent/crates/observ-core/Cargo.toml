@@ -18,7 +18,5 @@ workspace = true
 path = "src/lib.rs"
 
 [dependencies]
-observ-event = { workspace = true, features = ["metric", "span"] }
-
 bytes.workspace = true
 serde_json.workspace = true

@@ -1,5 +1,4 @@
 use bytes::BytesMut;
-use observ_event::{metric::Metric, span::Span};
 use std::future::Future;
 
 /// A abstraction for sending data and serialize data.
@@ -19,15 +18,3 @@ pub trait Sender<S: Sendable>: Send + 'static {
 	/// This is usually called when the buffer is full or when the transport is stopped.
 	fn flush(&mut self) -> impl Future<Output = Result<(), Self::Error>> + Send;
 }
-
-impl Sendable for Metric {
-	// TODO: why io::Error?
-	fn encode(&self, o: &mut BytesMut) -> Result<(), std::io::Error> {
-		self.encode(o)
-	}
-}
-
-// TODO: change metric send logic to
-impl Sendable for Vec<Metric> {}
-
-impl Sendable for Span {}
