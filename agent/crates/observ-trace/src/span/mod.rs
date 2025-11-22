@@ -1,13 +1,13 @@
 use arc_swap::access::Access;
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::{Receiver, RecvTimeoutError, Sender};
 use dashmap::DashMap;
 pub use error::SpanError;
-use log::info;
+use log::{error, info};
 use lru::LruCache;
 use observ_config::{SpanAccess, span_config};
 use observ_core::Module;
 use observ_event::span::Span;
-use observ_runtime::handle;
+use observ_runtime::{block_on, spawn_blocking};
 use observ_trace_common::{L7Protocol, Message, MessageType, Quintuple};
 use std::{
 	num::NonZeroUsize,
@@ -25,10 +25,10 @@ mod error;
 pub struct SessionKey {
 	quintuple: Quintuple,
 	protocol: L7Protocol,
-	uuid: u32,
+	uuid: u64,
 }
 impl SessionKey {
-	pub const fn new(quintuple: Quintuple, protocol: L7Protocol, uuid: u32) -> Self {
+	pub const fn new(quintuple: Quintuple, protocol: L7Protocol, uuid: u64) -> Self {
 		Self { quintuple, protocol, uuid }
 	}
 }
@@ -116,73 +116,89 @@ impl Module for SpanConstructor {
 		let output = self.output.clone();
 		let running = Arc::clone(&self.running);
 
-		self.handle = Some(handle().spawn(async move {
-			let cache = Cache::new();
-			let cleanup_interval = Duration::from_secs(config.cleanup_interval);
-			let mut last_cleanup = Instant::now();
-			while running.load(Ordering::Relaxed) {
-				if let Ok(data) = input.recv() {
-					let key = SessionKey::new(data.quintuple, data.protocol, data.uuid);
-					let mut entry =
-						cache.inner.entry(key).or_insert(CacheEntry::new(config.max_sockets));
-					entry.last_accessed = SystemTime::now();
+		self.handle = Some(spawn_blocking(move || {
+			block_on(async {
+				let cache = Cache::new();
+				let cleanup_interval = Duration::from_secs(config.cleanup_interval);
+				let mut last_cleanup = Instant::now();
+				while running.load(Ordering::Relaxed) {
+					match input.recv_timeout(Duration::from_millis(100)) {
+						Ok(data) => {
+							let key = SessionKey::new(data.quintuple, data.protocol, data.uuid);
+							let mut entry = cache
+								.inner
+								.entry(key)
+								.or_insert(CacheEntry::new(config.max_sockets));
+							entry.last_accessed = SystemTime::now();
 
-					let key = match data.type_ {
-						MessageType::Request => data.seq + 1,
-						MessageType::Response => data.seq,
-						MessageType::Unknown => 0,
-					};
-					match entry.messages.pop(&key) {
-						Some(prev) => {
-							match data.type_ {
-								MessageType::Request
-									if prev.is_response() &&
-										prev.timestamp_ns > data.timestamp_ns =>
-								{
-									output
-										.send(Span::new(data, prev).await)
-										.expect("Failed to send span");
-								},
-								MessageType::Response
-									if prev.is_request() &&
-										prev.timestamp_ns < data.timestamp_ns =>
-								{
-									output
-										.send(Span::new(prev, data).await)
-										.expect("Failed to send span");
-								},
-								_ if data.type_ != MessageType::Unknown => {
-									match data.timestamp_ns > prev.timestamp_ns {
-										true => {
-											entry.messages.put(key, data);
-										},
-										false => {
-											entry.messages.put(key, prev);
-										},
-									}
-								},
-								_ => {
-									// info!("Unexpected message: {:?}", json!(data));
-								},
+							let key = match data.type_ {
+								MessageType::Request => data.seq + 1,
+								MessageType::Response => data.seq,
+								MessageType::Unknown => 0,
 							};
-						},
-						None => {
-							if entry.messages.len() >= config.max_sockets {
-								let flush_size = 100_u64;
-								// Prevent too many logs from being cached
-								for _ in 0..flush_size {
-									let _ = entry.messages.pop_lru();
-								}
+							match entry.messages.pop(&key) {
+								Some(prev) => {
+									match data.type_ {
+										MessageType::Request
+											if prev.is_response() &&
+												prev.timestamp_ns > data.timestamp_ns =>
+										{
+											if let Err(e) = output.send(Span::new(data, prev).await)
+											{
+												error!("Failed to send span: {:?}", e);
+											}
+										},
+										MessageType::Response
+											if prev.is_request() &&
+												prev.timestamp_ns < data.timestamp_ns =>
+										{
+											if let Err(e) = output.send(Span::new(prev, data).await)
+											{
+												error!("Failed to send span: {:?}", e);
+											}
+										},
+										_ if data.type_ != MessageType::Unknown => {
+											match data.timestamp_ns > prev.timestamp_ns {
+												true => {
+													entry.messages.put(key, data);
+												},
+												false => {
+													entry.messages.put(key, prev);
+												},
+											}
+										},
+										_ => {
+											// info!("Unexpected message: {:?}", json!(data));
+										},
+									};
+								},
+								None => {
+									if entry.messages.len() >= config.max_sockets {
+										let flush_size = 100_u64;
+										// Prevent too many logs from being cached
+										for _ in 0..flush_size {
+											let _ = entry.messages.pop_lru();
+										}
+									}
+									entry.messages.put(key, data);
+								},
 							}
-							entry.messages.put(key, data);
+						},
+						Err(RecvTimeoutError::Timeout) => {
+							// continue to cleanup
+						},
+						Err(RecvTimeoutError::Disconnected) => {
+							log::warn!("Span constructor input disconnected");
+							break;
 						},
 					}
+
+					if last_cleanup.elapsed() >= cleanup_interval {
+						cache.cleanup_expired(cleanup_interval);
+						last_cleanup = Instant::now();
+					}
 				}
-				if last_cleanup.elapsed() >= cleanup_interval {
-					cache.cleanup_expired(cleanup_interval);
-					last_cleanup = Instant::now();
-				}
-			}
+			});
 		}));
 		Ok(())
 	}

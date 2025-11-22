@@ -4,7 +4,7 @@ use log::{info, warn};
 use observ_config::Configurator;
 use observ_core::Module;
 use observ_metric::MetricCollector;
-use observ_runtime::handle;
+use observ_runtime::spawn;
 use observ_sender::{Sender, file::FileSender};
 use tokio::{sync::watch, task::JoinHandle};
 
@@ -62,8 +62,7 @@ impl Module for Agent {
 		let mut state_rx = self.state_tx.subscribe();
 		let state_tx = self.state_tx.clone();
 		let configurator = Configurator::new(self.config_path.clone())?;
-		self.handle =
-			Some(handle().spawn(async move { run(configurator, state_tx, &mut state_rx).await }));
+		self.handle = Some(spawn(async move { run(configurator, state_tx, &mut state_rx).await }));
 		info!("Starting agent");
 		Ok(())
 	}

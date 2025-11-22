@@ -1,7 +1,7 @@
 use futures::Stream;
 use futures_util::TryStreamExt;
 use log::error;
-use observ_runtime::handle;
+use observ_runtime::spawn_blocking;
 use std::{io, path::Path, str::FromStr};
 use tokio::{
 	fs::File,
@@ -19,7 +19,7 @@ where
 	T: AsRef<Path> + Send + 'static,
 {
 	let path = path.as_ref().to_owned();
-	handle().spawn_blocking(move || path.exists()).await.map_err(join_err_to_io)
+	spawn_blocking(move || path.exists()).await.map_err(join_err_to_io)
 }
 
 pub async fn path_exists_lossy<T>(path: T) -> bool
@@ -35,8 +35,7 @@ where
 {
 	let path = path.as_ref().to_owned();
 
-	handle()
-		.spawn_blocking(move || std::fs::read_to_string(&path))
+	spawn_blocking(move || std::fs::read_to_string(&path))
 		.await
 		.map_err(join_err_to_io)?
 }

@@ -1,23 +1,23 @@
 use arc_swap::access::Access;
 use aya::{
 	Ebpf,
-	maps::{AsyncPerfEventArray, perf::Events},
+	maps::{PerfEventArray, perf::Events},
 	util::online_cpus,
 };
 use bytes::BytesMut;
 use crossbeam_channel::Sender;
 use ebpf_manager::utils::{optimal_page_count, unlock_memory};
 pub use error::TraceError;
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use observ_config::{TraceAccess, TraceConfig, ebpf_config, trace_config};
 use observ_core::Module;
-use observ_runtime::handle;
+use observ_runtime::{block_on, spawn_blocking};
 use observ_trace_common::{Message, maps::EVENT_MAP};
 use std::sync::{
 	Arc,
 	atomic::{AtomicBool, Ordering},
 };
-use tokio::{task::JoinHandle, time};
+use tokio::task::JoinHandle;
 
 mod ebpf;
 mod error;
@@ -72,7 +72,7 @@ impl Module for TraceCollector {
 		let running = Arc::clone(&self.running);
 		let mut handles = Vec::new();
 
-		let mut perf_array = AsyncPerfEventArray::try_from(
+		let mut perf_array = PerfEventArray::try_from(
 			self.ebpf.take_map(EVENT_MAP).expect("Failed to take EVENTS map"),
 		)?;
 		// TODO: refactor this into a new submodule such as ebpf_collector
@@ -84,30 +84,33 @@ impl Module for TraceCollector {
 			let output = self.output.clone();
 			let run = Arc::clone(&running);
 
-			let handle = handle().spawn(async move {
-				let mut buffers = (0..max_buffered_events)
-					.map(|_| BytesMut::with_capacity(size_of::<Message>()))
-					.collect::<Vec<_>>();
-				let timeout = time::Duration::from_millis(10);
-				while run.load(Ordering::Relaxed) {
-					let events = match time::timeout(timeout, buf.read_events(&mut buffers)).await {
-						Ok(events) => events?,
-						Err(_) => Events { read: 0, lost: 0 },
-					};
+			let handle = spawn_blocking(move || {
+				block_on(async {
+					let mut buffers = (0..max_buffered_events)
+						.map(|_| BytesMut::with_capacity(size_of::<Message>()))
+						.collect::<Vec<_>>();
+					while run.load(Ordering::Relaxed) {
+						let events = match buf.read_events(&mut buffers) {
+							Ok(events) => events,
+							Err(_) => Events { read: 0, lost: 0 },
+						};
 
-					// checking out lost events
-					if events.lost > 0 || events.read > 0 {
-						// TODO: handle lost events
-					}
+						// checking out lost events
+						if events.lost > 0 || events.read > 0 {
+							// TODO: handle lost events
+						}
 
-					for buf in buffers.iter().take(events.read) {
-						let message = Message::decode(buf);
-						debug!("Received message {}", message.pid);
-						// info!("Received message {:?}", json!(message));
-						output.send(message).expect("Error sending message");
+						for buf in buffers.iter().take(events.read) {
+							let message = Message::decode(buf);
+							debug!("Received message {}", message.pid);
+							// info!("Received message {:?}", json!(message));
+							if let Err(e) = output.send(message) {
+								error!("Error sending message: {:?}", e);
+							}
+						}
 					}
-				}
-				Ok(())
+					Ok(())
+				})
 			});
 			handles.push(handle);
 		}
