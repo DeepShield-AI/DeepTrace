@@ -5,7 +5,7 @@ version = "0.1.0"
 
 [dependencies]
 aya-ebpf = { version = "0.1.1", default-features = false }
-aya-log-ebpf = { version = "0.1.1", default-features = false }
+aya-log-ebpf = { version = "0.1.0", default-features = false }
 
 [[bin]]
 name = "observ_cpu_ebpf"
