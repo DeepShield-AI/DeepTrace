@@ -1,16 +1,14 @@
 use super::AgentError;
 use arc_swap::access::Access;
-use codec::encode::json::{JsonEncoder, JsonEncoderBuilder};
+use codec::encode::json::JsonEncoderBuilder;
 use log::{info, warn};
 use observ_config::{Configurator, trace_config};
 use observ_core::Module;
-use observ_runtime::handle;
-use observ_sender::{Sender, elastic::ElasticSender, file::FileSender};
+use observ_runtime::{init_runtime, spawn};
+use observ_sender::{Sender, elastic::ElasticSender};
+use observ_synchronizer::Synchronizer;
 use observ_trace::{TraceCollector, span::SpanConstructor};
-use tokio::{
-	sync::{mpsc, watch},
-	task::JoinHandle,
-};
+use tokio::{sync::watch, task::JoinHandle};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub(crate) enum State {
@@ -63,8 +61,8 @@ impl Module for Agent {
 		let mut state_rx = self.state_tx.subscribe();
 		let state_tx = self.state_tx.clone();
 		let configurator = Configurator::new(self.config_path.clone())?;
-		self.handle =
-			Some(handle().spawn(async move { run(configurator, state_tx, &mut state_rx).await }));
+		init_runtime();
+		self.handle = Some(spawn(async move { run(configurator, state_tx, &mut state_rx).await }));
 		info!("Starting agent");
 		Ok(())
 	}
@@ -103,7 +101,9 @@ async fn run(
 ) -> Result<(), AgentError> {
 	info!("Start configurator");
 	configurator.start()?;
-	info!("Starting configurator");
+	info!("Start synchronizer");
+	let mut synchronizer = Synchronizer::new();
+	synchronizer.start()?;
 	let (message_sender, message_receiver) = crossbeam_channel::bounded(1024);
 	let (span_sender, span_receiver) = crossbeam_channel::bounded(1024);
 	let sender = ElasticSender::new(trace_config().load().sender.clone())?;
@@ -131,6 +131,7 @@ async fn run(
 	trace_collector.stop().await?;
 	span_constructor.stop().await?;
 	trace_sender.stop().await?;
+	synchronizer.stop().await?;
 	configurator.stop().await?;
 
 	Ok(())

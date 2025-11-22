@@ -1,7 +1,4 @@
-// use crate::{app::Context, config, metric, sender, synchronizer, trace};
-use std::io;
 use thiserror::Error;
-use tokio::sync::SetError;
 
 #[derive(Debug, Error)]
 pub enum AgentError {
@@ -15,4 +12,6 @@ pub enum AgentError {
 	ElasticSender(#[from] observ_sender::elastic::ElasticError),
 	#[error("Span constructor error: {0}")]
 	SpanConstructor(#[from] observ_trace::span::SpanError),
+	#[error("Synchronizer module error: {0}")]
+	Synchronizer(#[from] observ_synchronizer::SynchronizerError),
 }
