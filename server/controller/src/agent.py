@@ -66,7 +66,7 @@ class Agent:
 
 
     def sync_config(self):
-        toml_dict = {'agent': {'name': self.agent_name}}
+        toml_dict = {'agent': {'name': self.agent_name, 'user': self.agent_info['user_id']}}
 
         # 复制存在的区块
         for key in ('metric', 'sender', 'trace', 'ebpf'):
@@ -110,6 +110,34 @@ class Agent:
         
 
 
+    def query_config(self):
+        """
+        查询远程 Agent 的配置
+        """
+        # 目标文件路径
+        remote_file_path = f"{self.code_path}/DeepTrace/agent/config/deeptrace.toml"
+
+        try:
+            # 连接到远程主机
+            self.connect()
+            sftp = self.ssh_client.open_sftp()
+
+            # 从远程主机读取配置文件内容
+            with sftp.file(remote_file_path, 'rb') as remote_file:
+                toml_content = remote_file.read().decode('utf-8')
+            sftp.close()
+
+            # 解析 TOML 内容
+            config_data = toml.loads(toml_content)
+            print(f"{self.agent_name}: Configuration file content retrieved successfully")
+            return config_data
+        except FileNotFoundError:
+            print(f"{self.agent_name}: Configuration file not found at {remote_file_path}")
+            return None
+        except Exception as e:
+            print(f"{self.agent_name}: Failed to retrieve configuration file - {str(e)}")
+            return None
+
     def clone_code(self, progress_dict):
         try:
             # 清除老代码
@@ -142,7 +170,7 @@ class Agent:
             print(f"克隆代码到 {self.agent_name} 失败: {str(e)}")
     
 
-    def install(self, progress_dict):
+    def install(self, progress_dict, print_log=False):
         t1 = time.time()
         # check_command = f"cd {self.code_path}/DeepTrace/agent && echo {self.host_password} | sudo -S [ -d target ] && sudo -S rm -rf target"
         # self.execute_command(check_command)
@@ -165,6 +193,8 @@ class Agent:
                 if output and output.strip() != last_line:
                     last_line = output.strip()
                     progress_dict[self.agent_name] = last_line
+                    if print_log:
+                        print(f"{self.agent_name} install log: {last_line}")
                 time.sleep(1)
 
         t_install = threading.Thread(target=run_install)
