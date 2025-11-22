@@ -109,11 +109,12 @@ impl<const N: usize> Buffer<N> {
 		if let Some(dst) = self
 			.buf
 			// we need to clamp as we cast offset and bounds might be lost by verifier
-			.get_mut((offset as usize).clamp(0, N)..N) &&
-			let Some(src) = other.get(..(size as usize).clamp(0, N))
+			.get_mut((offset as usize).clamp(0, N)..N)
 		{
-			dst.copy_from_slice(src);
-			self.len += size as usize;
+			if let Some(src) = other.get(..(size as usize).clamp(0, N)) {
+				dst.copy_from_slice(src);
+				self.len += size as usize;
+			}
 		}
 		Ok(())
 	}

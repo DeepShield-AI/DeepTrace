@@ -211,7 +211,6 @@ macro_rules! try_or_log {
 		match $expr {
 			Ok(val) => val,
 			Err(code) => {
-				// Remove aya_log_ebpf::error! to avoid __bpf_trap
 				aya_log_ebpf::debug!(
 					$ctx,
 					"ERROR: [{:X}:{:X}]",
