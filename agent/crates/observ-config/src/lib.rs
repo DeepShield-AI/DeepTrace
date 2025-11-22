@@ -8,9 +8,9 @@ use log::{debug, error, info, warn};
 pub use metric::MetricConfig;
 use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use observ_core::Module;
-use observ_runtime::handle;
+use observ_runtime::spawn;
 use rustc_hash::FxHashMap;
-pub use sender::{ElasticSenderConfig, SenderConfig};
+pub use sender::{ElasticSenderConfig, FileSenderConfig, SenderConfig};
 use serde::Deserialize;
 use std::{
 	path::{Path, PathBuf},
@@ -21,8 +21,9 @@ use std::{
 	},
 	time::Duration,
 };
+pub use synchronizer::SynchronizerConfig;
 use tokio::{sync::OnceCell, task::JoinHandle, time::sleep};
-pub use trace::TraceConfig;
+pub use trace::{SpanConfig, TraceConfig};
 
 mod access;
 mod agent;
@@ -30,6 +31,7 @@ mod ebpf;
 mod error;
 mod metric;
 mod sender;
+mod synchronizer;
 mod trace;
 
 static CONFIG: OnceCell<Arc<ArcSwap<ObservConfig>>> = OnceCell::const_new();
@@ -38,6 +40,7 @@ static CONFIG: OnceCell<Arc<ArcSwap<ObservConfig>>> = OnceCell::const_new();
 pub struct ObservConfig {
 	pub(crate) agent: AgentConfig,
 	pub(crate) sender: Option<SenderConfig>,
+	pub(crate) synchronizer: Option<SynchronizerConfig>,
 	pub(crate) metric: Option<MetricConfig>,
 	pub(crate) trace: Option<TraceConfig>,
 	pub(crate) ebpf: Option<FxHashMap<String, EbpfConfig>>,
@@ -159,7 +162,7 @@ impl Module for Configurator {
 			warn!("Observ Configurator is already running.");
 		}
 		let config_path = self.path.clone();
-		self.handle = Some(handle().spawn(async move {
+		self.handle = Some(spawn(async move {
 			let (tx, rx) = channel();
 
 			// Automatically select the best implementation for your platform.

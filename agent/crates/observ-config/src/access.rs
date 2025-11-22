@@ -1,11 +1,6 @@
 use super::{
-	ObservConfig,
-	agent::AgentConfig,
-	config,
-	ebpf::EbpfConfig,
-	metric::MetricConfig,
-	sender::{ElasticSenderConfig, FileSenderConfig, SenderConfig},
-	trace::{SpanConfig, TraceConfig},
+	AgentConfig, EbpfConfig, ElasticSenderConfig, FileSenderConfig, MetricConfig, ObservConfig,
+	SenderConfig, SpanConfig, SynchronizerConfig, TraceConfig, config,
 };
 use arc_swap::{
 	ArcSwap,
@@ -24,7 +19,7 @@ type EbpfAccess = Access<FxHashMap<String, EbpfConfig>>;
 type MetricAccess = Access<MetricConfig>;
 pub type SpanAccess = Access<SpanConfig>;
 pub type TraceAccess = Access<TraceConfig>;
-
+type SynchronizerAccess = Access<SynchronizerConfig>;
 pub fn agent_config() -> AgentAccess {
 	Map::new(config(), |config: &ObservConfig| -> &AgentConfig { &config.agent })
 }
@@ -97,5 +92,11 @@ pub fn span_config() -> SpanAccess {
 pub fn trace_config() -> TraceAccess {
 	Map::new(config(), |config: &ObservConfig| -> &TraceConfig {
 		config.trace.as_ref().expect("trace config not found")
+	})
+}
+
+pub fn synchronizer_config() -> SynchronizerAccess {
+	Map::new(config(), |config: &ObservConfig| -> &SynchronizerConfig {
+		config.synchronizer.as_ref().expect("synchronizer config not found")
 	})
 }
