@@ -5,7 +5,7 @@ use log::{info, warn};
 use observ_core::Module;
 use observ_event::metric::Metric;
 use observ_metric_common::init_roots;
-use observ_runtime::handle;
+use observ_runtime::spawn;
 use std::{
 	mem,
 	sync::{
@@ -29,11 +29,11 @@ pub struct MetricCollector {
 	running: Arc<AtomicBool>,
 	collectors: Option<Vec<Box<dyn Collector>>>,
 	handle: Option<JoinHandle<Result<(), MetricError>>>,
-	output: Sender<Vec<Metric>>,
+	output: Sender<Metric>,
 }
 
 impl MetricCollector {
-	pub fn new(output: Sender<Vec<Metric>>) -> Result<Self, MetricError> {
+	pub fn new(output: Sender<Metric>) -> Result<Self, MetricError> {
 		init_roots();
 		let mut collectors: Vec<Box<dyn Collector>> = Vec::new();
 		let host_collector = HostCollector::new()?;
@@ -65,7 +65,7 @@ impl Module for MetricCollector {
 		let running = Arc::clone(&self.running);
 		let output = self.output.clone();
 		let collectors = self.collectors.take().ok_or(Self::Error::Init)?;
-		self.handle = Some(handle().spawn(async move {
+		self.handle = Some(spawn(async move {
 			let mut interval = IntervalStream::new(time::interval(Duration::from_secs(1)));
 			let mut buffer = Vec::new();
 			while running.load(Ordering::Relaxed) && interval.next().await.is_some() {
@@ -75,7 +75,9 @@ impl Module for MetricCollector {
 					}
 				}
 				let metrics = mem::take(&mut buffer);
-				output.send(metrics).map_err(|_| MetricError::Send)?;
+				for metric in metrics {
+					output.send(metric).map_err(|_| MetricError::Send)?;
+				}
 				// for metrics in buffer.drain(..) {
 				// 	if output.send(metrics).await.is_err() {
 				// 		warn!("Metric channel closed");

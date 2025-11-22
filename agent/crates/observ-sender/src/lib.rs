@@ -1,10 +1,10 @@
 use bytes::BytesMut;
 use codec::encode::Encoder;
-use crossbeam_channel::{Receiver, RecvError};
+use crossbeam_channel::{Receiver, RecvTimeoutError};
 pub use error::SendError;
-use log::{info, warn};
+use log::{info, warn, error};
 use observ_core::{Module, Sendable};
-use observ_runtime::handle;
+use observ_runtime::{block_on, spawn_blocking};
 use std::sync::{
 	Arc,
 	atomic::{AtomicBool, Ordering},
@@ -52,6 +52,8 @@ where
 	S: observ_core::Sender<T>,
 	E: Encoder<T>,
 	SendError: From<<E as Encoder<T>>::Error> + From<<S as observ_core::Sender<T>>::Error>,
+	<E as Encoder<T>>::Error: std::fmt::Debug,
+	<S as observ_core::Sender<T>>::Error: std::fmt::Debug,
 {
 	type Config = ();
 	type Error = SendError;
@@ -71,25 +73,36 @@ where
 		let receiver = self.receiver.clone();
 		let mut sender = self.sender.take().unwrap();
 		let mut encoder = self.encoder.take().unwrap();
-		self.handle = Some(handle().spawn(async move {
-			while running.load(Ordering::Relaxed) {
-				match receiver.recv() {
-					Ok(message) => {
-						// debug!("Sending message");
-						let mut encoded = BytesMut::new();
-						encoder.encode(message, &mut encoded)?;
-						// debug!("Encoded message: {encoded:?}");
-						sender.send(encoded).await?;
-					},
-					Err(RecvError) => {
-						warn!("Sender receiver disconnected.");
-						break;
-					},
+		self.handle = Some(spawn_blocking(move || {
+			block_on(async {
+				while running.load(Ordering::Relaxed) {
+					match receiver.recv_timeout(std::time::Duration::from_secs(1)) {
+						Ok(message) => {
+							// debug!("Sending message");
+							let mut encoded = BytesMut::new();
+							if let Err(e) = encoder.encode(message, &mut encoded) {
+								error!("Failed to encode message: {:?}", e);
+								continue;
+							}
+							// debug!("Encoded message: {encoded:?}");
+							if let Err(e) = sender.send(encoded).await {
+								error!("Failed to send message: {:?}", e);
+							}
+						},
+						Err(RecvTimeoutError::Timeout) =>
+							if let Err(e) = sender.flush().await {
+								error!("Failed to flush sender: {:?}", e);
+							},
+						Err(RecvTimeoutError::Disconnected) => {
+							warn!("Sender receiver disconnected.");
+							break;
+						},
+					}
 				}
-			}
-			// sender.flush().await?;
-			info!("{} sender stopped.", name);
-			Ok(())
+				// sender.flush().await?;
+				info!("{} sender stopped.", name);
+				Ok(())
+			})
 		}));
 		info!("{} sender started.", self.name);
 		Ok(())
