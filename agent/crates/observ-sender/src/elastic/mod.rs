@@ -2,6 +2,7 @@ use bytes::BytesMut;
 use elasticsearch::{
 	BulkParts, Elasticsearch,
 	auth::Credentials,
+	cert::CertificateValidation,
 	http::{
 		Url,
 		transport::{SingleNodeConnectionPool, TransportBuilder},
@@ -32,6 +33,7 @@ impl ElasticSender {
 		let transport = TransportBuilder::new(conn_pool)
 			.disable_proxy()
 			.auth(Credentials::Basic(config.username.clone(), config.password.clone()))
+			.cert_validation(CertificateValidation::None)
 			.timeout(Duration::from_secs(config.request_timeout))
 			.build()?;
 
@@ -44,12 +46,13 @@ impl ElasticSender {
 impl<S: Sendable + Serialize> Sender<S> for ElasticSender {
 	type Error = ElasticError;
 	async fn send(&mut self, item: BytesMut) -> Result<(), Self::Error> {
-		let index = json!({
+		let mut index = json!({
 			"index": {
 				"_index": self.config.index_name,
 			}
 		})
 		.to_string();
+		index.push('\n');
 		self.buf.push(BytesMut::from(index.as_bytes()));
 		self.buf.push(item);
 		if self.buf.len() > self.config.bulk_size * 2 {
@@ -59,6 +62,9 @@ impl<S: Sendable + Serialize> Sender<S> for ElasticSender {
 	}
 
 	async fn flush(&mut self) -> Result<(), Self::Error> {
+		if self.buf.is_empty() {
+			return Ok(());
+		}
 		let bulk_body = self.buf.drain(..).collect();
 		let response = self.client.bulk(BulkParts::None).body(bulk_body).send().await?;
 		let status = response.status_code();
@@ -68,6 +74,15 @@ impl<S: Sendable + Serialize> Sender<S> for ElasticSender {
 
 			return Err(ElasticError::Response(err));
 		}
+		// Check for errors in the response body even if status is 200
+		let body: serde_json::Value =
+			response.json().await.map_err(|e| ElasticError::Response(e.to_string()))?;
+		if let Some(errors) = body.get("errors") {
+			if errors.as_bool().unwrap_or(false) {
+				log::error!("Elastic bulk response contains errors: {:?}", body);
+			}
+		}
+
 		Ok(())
 	}
 }
