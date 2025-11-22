@@ -30,8 +30,7 @@ fn sys_enter_sendto(ctx: TracePointContext) -> u32 {
 	let timestamp = unsafe { bpf_ktime_get_ns() };
 	let Ok(fd) = (unsafe { ctx.read_at::<c_ulong>(16) }) else { return 0 };
 	let ubuf = match unsafe { ctx.read_at::<c_ulong>(24) } {
-		Ok(ubuf) if ubuf != 0 => 
-			ubuf as *mut u8,
+		Ok(ubuf) if ubuf != 0 => ubuf as *mut u8,
 		_ => return 0,
 	};
 	let len = match unsafe { ctx.read_at::<c_ulong>(32) } {

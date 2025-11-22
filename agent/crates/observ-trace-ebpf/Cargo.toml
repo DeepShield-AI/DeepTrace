@@ -6,7 +6,7 @@ readme = "README.md"
 
 [dependencies]
 aya-ebpf = { version = "0.1.1", default-features = false }
-aya-log-ebpf = { version = "0.1.1", default-features = false }
+aya-log-ebpf = { version = "0.1.0", default-features = false }
 l7-parser = { path = "../l7-parser", default-features = false, features = ["ebpf"] }
 bitflags = { version = "2.9.4", default-features = false }
 ebpf-common = { path = "../ebpf-common", default-features = false }

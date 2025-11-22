@@ -33,15 +33,9 @@ impl Args {
 		Self::new(fd, timestamp, SysBufPtr::MMsg(mmsg, vlen), enter_seq)
 	}
 	#[inline(always)]
-	pub fn extract<const N: usize>(
-		&self,
-		buffer: &mut Buffer<N>,
-		ret: u32,
-	) -> Result<()> {
+	pub fn extract<const N: usize>(&self, buffer: &mut Buffer<N>, ret: u32) -> Result<()> {
 		match self.buffer {
-			SysBufPtr::Ubuf(ubuf, size) => {
-				buffer.read_user_at(ubuf, min(size, ret))
-			},
+			SysBufPtr::Ubuf(ubuf, size) => buffer.read_user_at(ubuf, min(size, ret)),
 			SysBufPtr::Msg(iovec, vlen) =>
 				buffer.fill_from_iovec::<IOV_MAX>(iovec, vlen, Some(ret as usize)),
 			SysBufPtr::MMsg(mmsg, vlen) =>

@@ -11,14 +11,15 @@ version.workspace = true
 [features]
 default = []
 std = []
-user = ["std"]
+user = ["std", "observ-core", "serde/std"]
 
 [dependencies]
+observ-core = { workspace = true, optional = true }
 ebpf-common.workspace = true
 
 aya-ebpf.workspace = true
-num_enum = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
+num_enum = { workspace = true, default-features = false }
+serde = { workspace = true, default-features = false, features = ["derive"] }
 
 [lib]
 path = "src/lib.rs"

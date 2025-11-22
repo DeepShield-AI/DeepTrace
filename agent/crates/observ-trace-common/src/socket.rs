@@ -3,6 +3,7 @@ use crate::{
 	direction::Direction,
 	protocols::{L4Protocol, L7Protocol},
 };
+use aya_ebpf::helpers::bpf_get_prandom_u32;
 use ebpf_common::buffer::Buffer;
 
 #[cfg_attr(feature = "user", derive(serde::Serialize, Hash, Eq, PartialEq))]
@@ -56,7 +57,7 @@ impl std::fmt::Display for Quintuple {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct SocketInfo {
-	pub uuid: u32,
+	pub uuid: u64,
 	pub exit_seq: u32,
 	pub seq: u32,
 	pub direction: Direction,
@@ -64,4 +65,19 @@ pub struct SocketInfo {
 	pub l7protocol: L7Protocol,
 	padding: u8,
 	pub prev_buf: Buffer<MAX_INFER_SIZE>,
+}
+
+impl SocketInfo {
+	pub fn new() -> Self {
+		Self {
+			uuid: unsafe { core::mem::transmute([bpf_get_prandom_u32(), bpf_get_prandom_u32()]) },
+			exit_seq: 0,
+			seq: 0,
+			pre_direction: Direction::Unknown,
+			direction: Direction::Unknown,
+			l7protocol: L7Protocol::Unknown,
+			padding: 0,
+			prev_buf: Buffer::new(),
+		}
+	}
 }

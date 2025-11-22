@@ -1,6 +1,8 @@
 use crate::{direction::Direction, protocols::L7Protocol, socket::Quintuple, syscall::Syscall};
 use aya_ebpf::TASK_COMM_LEN;
 pub use ebpf_common::{buffer::Buffer, constants::MAX_PAYLOAD_SIZE};
+#[cfg(feature = "user")]
+use observ_core::Sendable;
 
 #[cfg_attr(feature = "user", derive(serde::Serialize))]
 #[derive(Clone, Copy, PartialEq)]
@@ -37,7 +39,7 @@ pub struct Message {
 	pub timestamp_ns: u64,
 	// this is needed for span constructor, but this field should not deliver to sender, so we skip serialize it
 	#[cfg_attr(feature = "user", serde(skip))]
-	pub uuid: u32,
+	pub uuid: u64,
 	#[cfg_attr(feature = "user", serde(flatten))]
 	pub quintuple: Quintuple,
 	pub syscall: Syscall,
@@ -85,6 +87,9 @@ impl Message {
 		self.type_ == MessageType::Response
 	}
 }
+
+#[cfg(feature = "user")]
+impl Sendable for Message {}
 
 #[cfg(feature = "user")]
 impl std::fmt::Display for Message {

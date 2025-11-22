@@ -7,7 +7,7 @@ use crate::{
 use aya_ebpf::{
 	EbpfContext,
 	cty::c_long,
-	helpers::{bpf_get_current_pid_tgid, r#gen::bpf_ktime_get_ns},
+	helpers::{bpf_get_current_pid_tgid, bpf_ktime_get_ns},
 	programs::TracePointContext,
 };
 use aya_log_ebpf::debug;
@@ -94,6 +94,7 @@ pub fn try_exit(
 		key,
 		args.enter_seq,
 		data.exit_seq,
+		ret,
 	)?;
 	data.timestamp_ns = unsafe { bpf_ktime_get_ns() };
 	data.syscall = syscall;
@@ -126,8 +127,7 @@ pub fn try_close(fd: u64) -> Result<u32> {
 pub fn try_socket(fd: u64) -> Result<u32> {
 	let key = gen_connect_key(bpf_get_current_pid_tgid(), fd);
 	let map = unsafe { &SOCKET_INFO };
-	alloc::init()?;
-	let socket_info = alloc::alloc_zero::<SocketInfo>()?;
-	map.insert(&key, socket_info, 0).map_err(|_| MAP_INSERT_FAILED)?;
+	let socket_info = SocketInfo::new();
+	map.insert(&key, &socket_info, 0).map_err(|_| MAP_INSERT_FAILED)?;
 	Ok(0)
 }
