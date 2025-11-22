@@ -5,7 +5,7 @@ user = "user"
 [metric]
 interval = 10
 
-[sender.file.metric]
+[sender.elastic.metric]
 # path to the file where metrics will be written
 node_url = "http://localhost:9200"
 username = "elastic"
