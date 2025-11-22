@@ -4,7 +4,6 @@ use crate::{
 };
 use aya_ebpf::programs::TracePointContext;
 use ebpf_common::{
-	alloc,
 	error::{Result, code::*},
 	utils::is_filtered_comm,
 };
@@ -23,6 +22,8 @@ pub(crate) trait Infer {
 		key: u64,
 		enter_seq: u32,
 		exit_seq: u32,
+		// syscall return value
+		count: u32,
 	) -> Result<Classification>;
 }
 
@@ -38,19 +39,20 @@ pub fn protocol_infer(
 	key: u64,
 	enter_seq: u32,
 	exit_seq: u32,
+	count: u32,
 ) -> Result<Classification> {
 	if is_filtered_comm() {
 		return Ok(Classification::default());
 	}
 	let mut result =
-		protocol_infer_impl(ctx, quintuple, direction, buffer, key, enter_seq, exit_seq);
+		protocol_infer_impl(ctx, quintuple, direction, buffer, key, enter_seq, exit_seq, count);
 	let map = unsafe { &SOCKET_INFO };
 	let sock_info = {
 		match map.get_ptr_mut(&key) {
 			Some(ptr) => &mut unsafe { *ptr },
 			None => {
-				let sock_info = alloc::alloc_zero::<SocketInfo>()?;
-				map.insert(&key, sock_info, 0).map_err(|_| MAP_INSERT_FAILED)?;
+				let sock_info = SocketInfo::new();
+				map.insert(&key, &sock_info, 0).map_err(|_| MAP_INSERT_FAILED)?;
 				let ptr = map.get_ptr_mut(&key).ok_or(0_u32)?;
 				&mut unsafe { *ptr }
 			},
@@ -85,6 +87,7 @@ fn protocol_infer_impl(
 	key: u64,
 	enter_seq: u32,
 	exit_seq: u32,
+	count: u32,
 ) -> Classification {
 	let _skip = L7Protocol::Unknown;
 	// TODO: + 用户态可配置的逻辑
@@ -100,6 +103,8 @@ fn protocol_infer_impl(
 		RocketMQ::parse,
 	]
 	.iter()
-	.find_map(|parser| parser(ctx, quintuple, direction, buffer, key, enter_seq, exit_seq).ok())
+	.find_map(|parser| {
+		parser(ctx, quintuple, direction, buffer, key, enter_seq, exit_seq, count).ok()
+	})
 	.unwrap_or_default()
 }

@@ -7,8 +7,8 @@ use nom::{
 	number::streaming::le_i32,
 };
 
-fn message_length(expected: usize) -> impl Fn(&[u8]) -> IResult<&[u8], i32> {
-	move |i| verify(le_i32, |&message_length| message_length as usize >= expected).parse(i)
+fn message_length(expected: u32) -> impl Fn(&[u8]) -> IResult<&[u8], i32> {
+	move |i| verify(le_i32, |&message_length| message_length as u32 >= expected).parse(i)
 }
 
 fn request_id(i: &[u8]) -> IResult<&[u8], i32> {
@@ -26,7 +26,7 @@ fn opcode(i: &[u8]) -> IResult<&[u8], OpCode> {
 	.parse(i)
 }
 
-pub(super) fn mongodb(i: &[u8], count: usize) -> Result<MongoDB> {
+pub(super) fn mongodb(i: &[u8], count: u32) -> Result<MongoDB> {
 	let mut header = (message_length(count), request_id, response_to, opcode);
 	let (_, (message_length, request_id, response_to, op_code)) =
 		header.parse(i).map_err(|_| PARSE_MONGODB_FAILED)?;

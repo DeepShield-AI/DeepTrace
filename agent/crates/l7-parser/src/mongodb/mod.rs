@@ -57,6 +57,7 @@ impl Infer for MongoDB {
 		key: u64,
 		enter_seq: u32,
 		_exit_seq: u32,
+		count: u32,
 	) -> Result<Classification> {
 		if buffer.len() <= MONGODB_HEADER_SIZE && direction == Direction::Ingress {
 			return Err(INFER_PAYLOAD_TOO_SHORT);
@@ -65,7 +66,7 @@ impl Infer for MongoDB {
 			return Err(SOCKET_PROTOCOL_MISMATCH);
 		}
 
-		mongodb(buffer.as_slice(), buffer.len())
+		mongodb(buffer.as_slice(), count)
 			.or_else(|_| {
 				unsafe { SOCKET_INFO.get(&key) }.ok_or(MAP_GET_FAILED).and_then(|socket_info| {
 					if socket_info.prev_buf.len() > 0 &&
@@ -75,7 +76,7 @@ impl Infer for MongoDB {
 						let buf = alloc::alloc_zero::<Buffer<MAX_INFER_SIZE>>()?;
 						buf.append(socket_info.prev_buf.as_slice())?;
 						buf.append(buffer.as_slice())?;
-						mongodb(buf.as_slice(), buf.len())
+						mongodb(buf.as_slice(), count + socket_info.prev_buf.len() as u32)
 					} else if socket_info.l7protocol == L7Protocol::MongoDB &&
 						direction == Direction::Egress
 					{

@@ -35,6 +35,7 @@ impl Infer for MySQL {
 		key: u64,
 		enter_seq: u32,
 		_exit_seq: u32,
+		count: u32,
 	) -> Result<Classification> {
 		if quintuple.l4_protocol != L4Protocol::IPPROTO_TCP {
 			return Err(MYSQL_L4_PROTOCOL_INVALID);
@@ -46,7 +47,7 @@ impl Infer for MySQL {
 			return Err(INFER_PAYLOAD_TOO_SHORT);
 		}
 
-		mysql(buffer.as_slice(), buffer.len(), direction)
+		mysql(buffer.as_slice(), count, direction)
 			.or_else(|_| {
 				unsafe { SOCKET_INFO.get(&key) }.ok_or(MAP_GET_FAILED).and_then(|socket_info| {
 					if socket_info.prev_buf.len() > 0 &&
@@ -56,7 +57,7 @@ impl Infer for MySQL {
 						let buf = alloc::alloc_zero::<Buffer<MAX_INFER_SIZE>>()?;
 						buf.append(socket_info.prev_buf.as_slice())?;
 						buf.append(buffer.as_slice())?;
-						mysql(buf.as_slice(), buf.len(), direction)
+						mysql(buf.as_slice(), count + socket_info.prev_buf.len() as u32, direction)
 					} else {
 						Err(PARSE_MYSQL_FAILED)
 					}

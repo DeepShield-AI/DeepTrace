@@ -70,8 +70,9 @@ impl Infer for DNS {
 		key: u64,
 		_enter_seq: u32,
 		_exit_seq: u32,
+		count: u32,
 	) -> Result<Classification> {
-		if buffer.len() < DNS_HEADER_SIZE || buffer.len() > DNS_MSG_MAX_SIZE {
+		if count < DNS_HEADER_SIZE || count > DNS_MSG_MAX_SIZE {
 			return Err(INFER_PAYLOAD_LENGTH_INVALID);
 		}
 		if !check_protocol(key, L7Protocol::DNS) {
@@ -82,7 +83,7 @@ impl Infer for DNS {
 		let payload = if quintuple.l4_protocol == L4Protocol::IPPROTO_TCP {
 			let length =
 				u16::from_be_bytes(tmp.get(0..2).ok_or(0_u32)?.try_into().map_err(|_| 0_u32)?);
-			let start = if length as usize + 2 == buffer.len() || direction == Direction::Egress {
+			let start = if length as u32 + 2 == count || direction == Direction::Egress {
 				2_usize
 			} else {
 				0_usize

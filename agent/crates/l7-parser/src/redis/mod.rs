@@ -36,6 +36,7 @@ impl Infer for Redis {
 		key: u64,
 		_enter_seq: u32,
 		_exit_seq: u32,
+		_count: u32,
 	) -> Result<Classification> {
 		let payload = buffer.as_slice();
 		if buffer.len() < 4 {

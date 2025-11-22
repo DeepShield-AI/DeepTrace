@@ -32,6 +32,7 @@ impl Infer for RocketMQ {
 		key: u64,
 		_enter_seq: u32,
 		_exit_seq: u32,
+		_count: u32,
 	) -> Result<Classification> {
 		if buffer.len() < ROCKETMQ_HEADER_MIN_SIZE {
 			return Err(INFER_PAYLOAD_TOO_SHORT);

@@ -33,6 +33,7 @@ impl Infer for HTTP1 {
 		key: u64,
 		enter_seq: u32,
 		_exit_seq: u32,
+		_count: u32,
 	) -> Result<Classification> {
 		if buffer.len() < HTTP1_MIN_SIZE {
 			return Err(INFER_PAYLOAD_TOO_SHORT);

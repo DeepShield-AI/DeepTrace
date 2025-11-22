@@ -2,7 +2,7 @@ use observ_trace_common::{L7Protocol, MessageType};
 
 #[repr(C)]
 pub struct Classification {
-	pub uuid: u32,
+	pub uuid: u64,
 	pub seq: u32,
 	pub protocol: L7Protocol,
 	pub type_: MessageType,

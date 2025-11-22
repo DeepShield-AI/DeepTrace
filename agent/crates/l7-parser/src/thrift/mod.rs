@@ -34,13 +34,14 @@ impl Infer for Thrift {
 		key: u64,
 		_enter_seq: u32,
 		_exit_seq: u32,
+		count: u32,
 	) -> Result<Classification> {
 		if !check_protocol(key, L7Protocol::Thrift) {
 			return Err(SOCKET_PROTOCOL_MISMATCH);
 		}
 		let payload = buffer.as_slice();
 
-		binary_thrift(payload, buffer.len())
+		binary_thrift(payload, count)
 			.or_else(|_| compact_thrift(payload))
 			.map(|thrift| {
 				let mut classification = Classification::new();

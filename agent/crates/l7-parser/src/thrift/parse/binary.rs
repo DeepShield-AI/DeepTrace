@@ -26,13 +26,10 @@ fn name_length(i: &[u8]) -> IResult<&[u8], i32> {
 }
 
 #[inline]
-pub(in crate::thrift) fn binary_thrift(i: &[u8], len: usize) -> Result<Thrift> {
+pub(in crate::thrift) fn binary_thrift(i: &[u8], len: u32) -> Result<Thrift> {
 	let mut binary = alt((
 		(version, be_u8, kind, name_length),
-		preceded(
-			verify(be_u32, |&length| length as usize == len - 4),
-			(version, be_u8, kind, name_length),
-		),
+		preceded(verify(be_u32, |&length| length == len - 4), (version, be_u8, kind, name_length)),
 	));
 	let (_, (_, _, kind, _)) = binary.parse(i).map_err(|_| PARSE_BINARY_THRIFT_FAILED)?;
 	Ok(Thrift { kind })

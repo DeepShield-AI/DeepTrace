@@ -86,6 +86,7 @@ impl Infer for Memcached {
 		key: u64,
 		_enter_seq: u32,
 		_exit_seq: u32,
+		_count: u32,
 	) -> Result<Classification> {
 		if buffer.len() < MEMCACHED_HEADER_SIZE {
 			return Err(INFER_PAYLOAD_TOO_SHORT);
