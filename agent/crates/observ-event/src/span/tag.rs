@@ -12,6 +12,10 @@ thread_local! {
 	static TGID_DOCKER_MAP: RefCell<HashMap<u32, DockerTag>> = RefCell::new(HashMap::new());
 }
 
+thread_local! {
+    static TGID_K8S_MAP: RefCell<HashMap<u32, K8sTag>> = RefCell::new(HashMap::new());
+}
+
 #[derive(Serialize, Clone)]
 pub(in crate::span) struct DockerTag {
 	pub container_id: String,
@@ -118,6 +122,124 @@ impl DockerTag {
 	}
 }
 
+#[derive(Serialize, Clone, Debug)]
+pub struct K8sTag {
+    pub tgid: u32,
+    pub name: String,
+    pub state: String,
+    pub created_at: String,
+    pub image: String,
+    pub namespace: String,
+    pub cpu_period: String,
+    pub cpu_shares: String,
+}
+
+impl K8sTag {
+    pub async fn get_k8s_tags(tgid: u32) -> Option<K8sTag> {
+        // 先查缓存
+        if let Some(tag) = TGID_K8S_MAP.with(|map_cell| map_cell.borrow().get(&tgid).cloned()) {
+            return Some(tag);
+        }
+
+        // 获取所有容器ID
+        let output = Command::new("crictl")
+            .arg("ps")
+            .arg("-q")
+            .output()
+            .ok()?;
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let container_ids: Vec<&str> = stdout.lines().collect();
+
+        for container_id in container_ids {
+            let inspect_output = Command::new("crictl")
+                .arg("inspect")
+                .arg(container_id)
+                .output()
+                .ok()?;
+            let inspect_stdout = String::from_utf8_lossy(&inspect_output.stdout);
+            let inspect_json: serde_json::Value = serde_json::from_str(&inspect_stdout).ok()?;
+
+            let pid = inspect_json.get("info")
+                .and_then(|info| info.get("pid"))
+                .and_then(|pid| pid.as_u64());
+
+            if let Some(pid) = pid {
+                if pid as u32 != tgid {
+                    continue;
+                }
+
+                let name = inspect_json.get("status")
+                    .and_then(|s| s.get("metadata"))
+                    .and_then(|m| m.get("name"))
+                    .and_then(|n| n.as_str())
+                    .unwrap_or_default()
+                    .to_string();
+
+                let state = inspect_json.get("status")
+                    .and_then(|s| s.get("state"))
+                    .and_then(|state| state.as_str())
+                    .unwrap_or_default()
+                    .to_string();
+
+                let created_at = inspect_json.get("status")
+                    .and_then(|s| s.get("createdAt"))
+                    .and_then(|c| c.as_str())
+                    .unwrap_or_default()
+                    .to_string();
+
+                let image = inspect_json.get("status")
+                    .and_then(|s| s.get("image"))
+                    .and_then(|img| img.get("image"))
+                    .and_then(|i| i.as_str())
+                    .unwrap_or_default()
+                    .to_string();
+
+                let namespace = inspect_json.get("status")
+                    .and_then(|s| s.get("labels"))
+                    .and_then(|labels| labels.get("io.kubernetes.pod.namespace"))
+                    .and_then(|ns| ns.as_str())
+                    .unwrap_or_default()
+                    .to_string();
+
+                let cpu_period = inspect_json.get("info")
+                    .and_then(|info| info.get("config"))
+                    .and_then(|config| config.get("linux"))
+                    .and_then(|linux| linux.get("resources"))
+                    .and_then(|res| res.get("cpu_period"))
+                    .map(|v| v.to_string())
+                    .unwrap_or_default();
+
+                let cpu_shares = inspect_json.get("info")
+                    .and_then(|info| info.get("config"))
+                    .and_then(|config| config.get("linux"))
+                    .and_then(|linux| linux.get("resources"))
+                    .and_then(|res| res.get("cpu_shares"))
+                    .map(|v| v.to_string())
+                    .unwrap_or_default();
+
+                let tag = K8sTag {
+                    tgid: pid as u32,
+                    name,
+                    state,
+                    created_at,
+                    image,
+                    namespace,
+                    cpu_period,
+                    cpu_shares,
+                };
+
+                TGID_K8S_MAP.with(|map_cell| {
+                    map_cell.borrow_mut().insert(pid as u32, tag.clone());
+                });
+
+                return Some(tag);
+            }
+        }
+
+        None
+    }
+}
+
 #[derive(Serialize, Clone)]
 pub struct EbpfTag {
 	pub tgid: u32,
@@ -138,6 +260,8 @@ pub(in crate::span) struct SpanTag {
 	pub ebpf_tag: EbpfTag,
 	// docker tags
 	pub docker_tag: Option<DockerTag>,
+	// k8s tags
+	pub k8s_tag: Option<K8sTag>,
 	// other tags
 	pub other_tags: HashMap<String, String>,
 }
@@ -182,9 +306,10 @@ impl SpanTag {
 		};
 
 		let docker_tag = DockerTag::get_docker_tags(req.tgid).await;
+		let k8s_tag = K8sTag::get_k8s_tags(req.tgid).await;
 		let mut other_tags = HashMap::new();
 		let agent_config = agent_config().load();
 		other_tags.insert("user".to_string(), agent_config.user.clone());
-		SpanTag { ebpf_tag, docker_tag, other_tags }
+		SpanTag { ebpf_tag, docker_tag, k8s_tag, other_tags }
 	}
 }
