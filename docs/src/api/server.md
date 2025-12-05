@@ -490,3 +490,238 @@ python server/cli/src/cmd.py db clear
 - **[Agent API](./agent.md)**: Agent management and monitoring
 - **[Configuration Schema](./configuration.md)**: Detailed configuration options
 - **[Data Formats](./data-formats.md)**: Span and trace data structures
+
+
+
+# Server API Documentation
+
+This service is implemented with Flask and provides management interfaces for Agent registration, start, stop, deletion, configuration delivery, and configuration query.
+
+## Basic Information
+- Service address: `http://<server_ip>:59002`
+- All endpoints use the `POST` method and accept `application/json` data
+
+---
+
+## 1. Register Agent
+- **Endpoint**: `/register_agent`
+- **Method**: POST
+- **Request Body**:
+  ```json
+  {
+    "host_ip": "string",
+    "user_name": "string",
+    "host_password": "string",
+    "user_id": "string",
+    "ssh_port": int,
+    "agent_name": "string"
+  }
+  ```
+- **Response Example**:
+  ```json
+  {"message": "Agent agent1 registered successfully"}
+  ```
+
+---
+
+## 2. Start Agent
+- **Endpoint**: `/start_agent`
+- **Method**: POST
+- **Request Body**: Same as Register Agent
+- **Response Example**:
+  ```json
+  {"message": "Agent agent1 started successfully"}
+  ```
+
+---
+
+## 3. Stop Agent
+- **Endpoint**: `/stop_agent`
+- **Method**: POST
+- **Request Body**: Same as Register Agent
+- **Response Example**:
+  ```json
+  {"message": "Agent agent1 stopped successfully"}
+  ```
+
+---
+
+## 4. Delete Agent
+- **Endpoint**: `/delete_agent`
+- **Method**: POST
+- **Request Body**: Same as Register Agent
+- **Response Example**:
+  ```json
+  {"message": "Agent agent1 deleted successfully"}
+  ```
+
+---
+
+## 5. Sync Agent Configuration
+- **Endpoint**: `/sync_agent_config`
+- **Method**: POST
+- **Request Body**:
+  ```json
+  {
+    "agent_info": {
+      "agent_name": "string",
+      "host_password": "string",
+      "host_ip": "string",
+      "user_name": "string",
+      "ssh_port": int,
+      "user_id": "string"
+    },
+    "metric": { ... },
+    "sender": { ... },
+    "trace": { ... },
+    "ebpf": { ... }
+  }
+  ```
+- **Response Example**:
+  ```json
+  {"message": "Configuration updated for agent agent1"}
+  ```
+
+---
+
+## 6. Query Agent Configuration
+- **Endpoint**: `/query_agent_config`
+- **Method**: POST
+- **Request Body**: Same as Register Agent
+- **Response Example**:
+  ```json
+  {
+    "agent_info": {
+      "agent_name": "agent1",
+      "host_password": "xxx",
+      "host_ip": "118.229.43.254",
+      "user_name": "ubuntu",
+      "ssh_port": 6114
+    },
+    "metric": { ... },
+    "sender": { ... },
+    "trace": { ... },
+    "ebpf": { ... }
+  }
+  ```
+
+---
+
+## 7. Example curl Commands
+  "user_id": "user123",
+  "ssh_port": 6114,
+  "agent_name": "agent1"
+}'
+
+curl -X POST http://127.0.0.1:59002/start_agent -H "Content-Type: application/json" -d '{
+  "host_ip": "118.229.43.254",
+  "user_name": "ubuntu",
+  "host_password": "netsys204",
+  "user_id": "user123",
+  "ssh_port": 6114,
+  "agent_name": "agent1"
+}'
+
+curl -X POST http://127.0.0.1:59002/stop_agent -H "Content-Type: application/json" -d '{
+  "host_ip": "118.229.43.254",
+  "user_name": "ubuntu",
+  "host_password": "netsys204",
+  "user_id": "user123",
+  "ssh_port": 6114,
+  "agent_name": "agent1"
+}'
+
+curl -X POST http://127.0.0.1:59002/delete_agent -H "Content-Type: application/json" -d '{
+  "host_ip": "118.229.43.254",
+  "user_name": "ubuntu",
+  "host_password": "netsys204",
+  "user_id": "user123",
+  "ssh_port": 6114,
+  "agent_name": "agent1"
+}'
+
+curl -X POST http://127.0.0.1:59002/query_agent_config -H "Content-Type: application/json" -d '{
+  "host_ip": "118.229.43.254",
+  "user_name": "ubuntu",
+  "host_password": "netsys204",
+  "user_id": "user123",
+  "ssh_port": 6114,
+  "agent_name": "agent1"
+}'
+
+curl -X POST http://127.0.0.1:59002/sync_agent_config -H "Content-Type: application/json" -d '{
+  "agent_info": {
+    "agent_name": "agent1",
+    "host_password": "netsys204",
+    "host_ip": "118.229.43.254",
+    "user_name": "ubuntu",
+    "ssh_port": 6114,
+    "user_id": "user123"
+  },
+  "metric": {
+    "interval": 10,
+    "sender": "metric"
+  },
+  "sender": {
+    "elastic": {
+      "trace": {
+        "node_url": "http://localhost:9200",
+        "username": "elastic",
+        "password": "new_password",
+        "request_timeout": 10,
+        "index_name": "agent1",
+        "bulk_size": 64
+      }
+    },
+    "file": {
+      "metric": {
+        "path": "metrics.csv",
+        "rotate": true,
+        "max_size": 512,
+        "max_age": 6,
+        "rotate_time": 11,
+        "data_format": "%Y%m%d"
+      }
+    }
+  },
+  "trace": {
+    "ebpf": "trace",
+    "sender": "trace",
+    "span": {
+      "cleanup_interval": 30,
+      "max_sockets": 1024
+    }
+  },
+  "ebpf": {
+    "trace": {
+      "log_level": 1,
+      "pids": [523094],
+      "max_buffered_events": 128,
+      "enabled_probes": [
+        "sys_enter_read",
+        "sys_exit_read",
+        "sys_enter_readv",
+        "sys_exit_readv",
+        "sys_enter_recvfrom",
+        "sys_exit_recvfrom",
+        "sys_enter_recvmsg",
+        "sys_exit_recvmsg",
+        "sys_enter_recvmmsg",
+        "sys_exit_recvmmsg",
+        "sys_enter_write",
+        "sys_exit_write",
+        "sys_enter_writev",
+        "sys_exit_writev",
+        "sys_enter_sendto",
+        "sys_exit_sendto",
+        "sys_enter_sendmsg",
+        "sys_exit_sendmsg",
+        "sys_enter_sendmmsg",
+        "sys_exit_sendmmsg",
+        "sys_exit_socket",
+        "sys_enter_close"
+      ]
+    }
+  }
+}'
+```
