@@ -25,8 +25,9 @@
   - [BookInfo](./user-guide/workloads/bookinfo.md)
   - [Social Network](./user-guide/workloads/social-network.md)
 - [Trace Analysis](./user-guide/trace-analysis.md)
-- [Web UI](./user-guide/web-ui.md)
+- [Web Interface](./user-guide/web-interface.md)
 - [Database Management](./user-guide/database.md)
+- [Tags](./user-guide/tags.md)
 
 ---
 
@@ -35,6 +36,8 @@
 - [System Overview](./architecture/overview.md)
 - [Agent Architecture](./architecture/agent.md)
 - [Server Architecture](./architecture/server.md)
+- [Data Flow](./architecture/data-flow.md)
+- [Protocol Support](./architecture/protocols.md)
 
 ---
 
@@ -44,6 +47,7 @@
 - [System Hooks](./ebpf/hooks.md)
 - [Data Structures](./ebpf/structures.md)
 - [Memory Maps](./ebpf/maps.md)
+- [Performance Analysis](./ebpf/performance.md)
 
 ---
 
@@ -55,14 +59,14 @@
 - [Performance Tuning](./advanced/performance-tuning.md)
 - [Monitoring & Observability](./advanced/monitoring.md)
 
-<!-- --- -->
+---
 
-<!-- # API Reference
+# API Reference
 
 - [Agent API](./api/agent.md)
 - [Server API](./api/server.md)
 - [Configuration Schema](./api/configuration.md)
-- [Data Formats](./api/data-formats.md) -->
+- [Data Formats](./api/data-formats.md)
 
 ---
 
