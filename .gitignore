@@ -12,5 +12,4 @@ target/
 
 resources/docker/images/**/ubuntu.*
 **/__pycache__/
-Cargo.lock
 output/
