@@ -32,3 +32,9 @@ libc.workspace = true
 [features]
 default = []
 ebpf = []
+## Enable tokio-metrics integration for runtime monitoring
+tokio-metrics = ["dep:tokio-metrics"]
+
+[dependencies.tokio-metrics]
+version = "0.4"
+optional = true
