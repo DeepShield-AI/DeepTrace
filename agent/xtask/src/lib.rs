@@ -1,4 +1,4 @@
-use clap::{Args, Parser, Subcommand, ValueEnum, builder::OsStr, command};
+use clap::{Args, Parser, Subcommand, ValueEnum, builder::OsStr};
 use std::fmt::Display;
 use utils::{default_target, runner};
 
