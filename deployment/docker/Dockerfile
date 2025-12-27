@@ -79,7 +79,8 @@ WORKDIR /workspace
 COPY --from=planner /workspace/recipe.json recipe.json
 
 # build dependencies (support workspace)
-RUN cargo chef cook --release --recipe-path recipe.json
-RUN rm -rf /workspace/*
+RUN --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/root/.cargo/git \
+    cargo chef cook --release --recipe-path recipe.json
 
 CMD ["/bin/bash"]
