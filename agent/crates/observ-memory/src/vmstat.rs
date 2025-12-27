@@ -206,5 +206,5 @@ pub struct VmStat {
 
 pub async fn vmstat() -> Result<VmStat, MemoryMetricError> {
 	let content = read_to_string(procfs_root().join("vmstat")).await?;
-	VmStat::parse(&content).map_err(Into::into)
+	VmStat::parse(&content).map_err(|e| MemoryMetricError::ParseError(Box::new(e)))
 }

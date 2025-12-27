@@ -165,5 +165,5 @@ pub struct MemInfo {
 
 pub async fn meminfo() -> Result<MemInfo, MemoryMetricError> {
 	let content = read_to_string(procfs_root().join("meminfo")).await?;
-	MemInfo::parse(&content).map_err(Into::into)
+	MemInfo::parse(&content).map_err(|e| MemoryMetricError::ParseError(Box::new(e)))
 }
