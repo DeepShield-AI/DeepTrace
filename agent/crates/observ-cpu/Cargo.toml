@@ -18,7 +18,9 @@ observ-metric-common.workspace = true
 observ-metric-utils.workspace = true
 
 libc.workspace = true
+memchr.workspace = true
 nom = { workspace = true, features = ["alloc"] }
 paste.workspace = true
+phf.workspace = true
 thiserror.workspace = true
 uom.workspace = true

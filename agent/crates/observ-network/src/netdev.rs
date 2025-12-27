@@ -55,7 +55,8 @@ impl Interface {
 			)));
 		};
 
-		let parsed = Self::parse_all(&input)?;
+		let parsed = Self::parse_all(&input)
+			.map_err(|e| NetworkMetricError::ParseError(Box::new(e)))?;
 
 		let interfaces = parsed
 			.into_iter()

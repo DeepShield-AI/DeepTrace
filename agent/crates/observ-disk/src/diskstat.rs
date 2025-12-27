@@ -80,5 +80,5 @@ pub struct DiskStat {
 
 pub async fn diskstat() -> Result<Vec<DiskStat>, DiskMetricError> {
 	let content = read_to_string(procfs_root().join("diskstats")).await?;
-	DiskStat::parse_all(&content).map_err(Into::into)
+	DiskStat::parse_all(&content).map_err(|e| DiskMetricError::ParseError(Box::new(e)))
 }

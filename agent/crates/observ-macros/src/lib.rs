@@ -26,16 +26,15 @@
 //! - `pub(crate) struct MyStruct` → `pub(crate) fn get_field()` (crate-visible)
 
 use proc_macro::TokenStream;
-use syn::{DeriveInput, Error, parse_macro_input};
+use syn::{DeriveInput, parse_macro_input};
 
-mod ast;
-mod attr;
+mod common;
 mod proc_parser;
-mod types;
-mod utils;
 
 #[proc_macro_derive(ProcParser, attributes(fmt, arg))]
 pub fn proc_parser_derive(input: TokenStream) -> TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
-	proc_parser::derive(&input).unwrap_or_else(Error::into_compile_error).into()
+	proc_parser::derive(&input)
+		.map(Into::into)
+		.unwrap_or_else(|e| e.write_errors().into())
 }
