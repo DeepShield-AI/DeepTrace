@@ -1,0 +1,5 @@
+error: `optional` attribute requires `Option<T>` type
+ --> tests/ui/optional_without_option_type.rs:8:2
+  |
+8 |     field: u64,
+  |     ^^^^^

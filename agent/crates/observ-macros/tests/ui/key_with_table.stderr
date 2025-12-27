@@ -1,0 +1,5 @@
+error: use `index` instead of `key` for table format
+ --> tests/ui/key_with_table.rs:9:2
+  |
+9 |     field: u64,
+  |     ^^^^^

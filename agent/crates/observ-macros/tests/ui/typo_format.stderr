@@ -1,0 +1,5 @@
+error: unknown format `key-value`, did you mean `kv`?
+ --> tests/ui/typo_format.rs:6:9
+  |
+6 | #[fmt = "keyvalue"]
+  |         ^^^^^^^^^^

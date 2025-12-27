@@ -1,0 +1,5 @@
+error: unknown format `invalid`, expected one of: `kv`, `space`, `table`
+ --> tests/ui/invalid_format.rs:6:9
+  |
+6 | #[fmt = "invalid"]
+  |         ^^^^^^^^^

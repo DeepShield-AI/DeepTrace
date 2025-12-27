@@ -1,0 +1,5 @@
+error: `index` attribute requires `#[fmt = "table"]`
+ --> tests/ui/index_without_table.rs:9:2
+  |
+9 |     field: u64,
+  |     ^^^^^
