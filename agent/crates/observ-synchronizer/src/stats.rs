@@ -89,8 +89,6 @@ struct Stats {
 	cur_analyzer_ip: String,
 	/// 异常信息            
 	error_info: Option<String>,
-	/// 数据节点通信耗时间         
-	synced_analyzer_at: Option<String>,
 	/// 控制器同步耗时间  
 	synced_controller_at: Option<String>,
 	/// 授权类型
@@ -102,7 +100,7 @@ struct Stats {
 	/// 更新时间           
 	update_time: String,
 	/// 所属用户                
-	user_id: Option<i32>,
+	user_id: Option<String>,
 }
 
 impl Stats {
@@ -141,7 +139,7 @@ impl Stats {
 		});
 
 		let create_time = _static.timestamp.clone();
-
+		let user_id = agent_config().load().user.clone();
 		Self {
 			update_time,
 			state,
@@ -171,12 +169,11 @@ impl Stats {
 			analyzer_ip: "".to_string(),
 			cur_analyzer_ip,
 			error_info: None,
-			synced_analyzer_at: None,
 			synced_controller_at: None,
 			license_type: "".to_string(),
 			license_functions: None,
 			create_time,
-			user_id: None,
+			user_id: Some(user_id),
 		}
 	}
 	fn get_local_ip() -> Result<IpAddr, Box<dyn std::error::Error>> {
