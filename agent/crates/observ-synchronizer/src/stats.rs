@@ -333,10 +333,7 @@ pub(super) async fn health_checker(running: Arc<AtomicBool>) {
 			client
 				.update(UpdateParts::IndexId(es_index_name, state_id.as_str()))
 				.body(json!({
-					"doc": {
-						"id": state_id,
-						"state": state
-					},
+					"doc": state,
 					"doc_as_upsert": true
 				}))
 				.send()
@@ -345,10 +342,7 @@ pub(super) async fn health_checker(running: Arc<AtomicBool>) {
 			debug!("Indexing new state with ID: {}", state_id);
 			client
 				.index(IndexParts::IndexId(es_index_name, state_id.as_str()))
-				.body(json!({
-					"id": state_id,
-					"state": state
-				}))
+				.body(json!(state))
 				.send()
 				.await
 		};
